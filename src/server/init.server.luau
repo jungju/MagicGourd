@@ -1,0 +1,1 @@
+print('MagicGourd server started')
