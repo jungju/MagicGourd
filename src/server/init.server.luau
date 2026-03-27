@@ -16,19 +16,22 @@ local assets = {
 		name = "HeungbuHouse",
 		assetId = 93969099298348,
 		position = Vector3.new(-72, 1.6, 28),
-		yaw = 30,
+		yaw = 0,
+		scale = 5,
 	},
 	{
 		name = "NolbuHouse",
 		assetId = 76012677304613,
 		position = Vector3.new(74, 1.6, 18),
-		yaw = -35,
+		yaw = 0,
+		scale = 5,
 	},
 	{
 		name = "Nolbu",
 		assetId = 81648951264309,
 		position = Vector3.new(58, 3.2, 34),
 		yaw = 180,
+		scale = 1,
 	},
 }
 
@@ -79,11 +82,21 @@ local function placeAsset(def)
 		local primary = getPrimary(candidate)
 		if primary then
 			candidate.PrimaryPart = primary
+
+			if typeof(def.scale) == "number" and def.scale > 0 and def.scale ~= 1 then
+				pcall(function()
+					candidate:ScaleTo(def.scale)
+				end)
+			end
+
 			candidate:PivotTo(cf)
 		else
 			warn(string.format("[MagicGourd] Asset %s has no BasePart to pivot", def.name))
 		end
 	elseif candidate:IsA("BasePart") then
+		if typeof(def.scale) == "number" and def.scale > 0 and def.scale ~= 1 then
+			candidate.Size = candidate.Size * def.scale
+		end
 		candidate.CFrame = cf
 		candidate.Anchored = true
 	end
