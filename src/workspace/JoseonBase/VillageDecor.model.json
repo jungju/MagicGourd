@@ -1,0 +1,206 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    {
+      "Name": "HeungbuFenceWest",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "WoodPlanks",
+        "Color": [0.451, 0.3216, 0.2],
+        "Size": [2, 3, 30],
+        "Position": [-108, 2.2, 30]
+      }
+    },
+    {
+      "Name": "HeungbuFenceNorth",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "WoodPlanks",
+        "Color": [0.451, 0.3216, 0.2],
+        "Size": [34, 3, 2],
+        "Position": [-90, 2.2, 14]
+      }
+    },
+    {
+      "Name": "HeungbuFenceSouth",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "WoodPlanks",
+        "Color": [0.451, 0.3216, 0.2],
+        "Size": [24, 3, 2],
+        "Position": [-96, 2.2, 54]
+      }
+    },
+    {
+      "Name": "NolbuFenceEast",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "WoodPlanks",
+        "Color": [0.502, 0.3765, 0.2471],
+        "Size": [2, 3, 34],
+        "Position": [120, 2.2, 26]
+      }
+    },
+    {
+      "Name": "NolbuFenceNorth",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "WoodPlanks",
+        "Color": [0.502, 0.3765, 0.2471],
+        "Size": [32, 3, 2],
+        "Position": [92, 2.2, 8]
+      }
+    },
+    {
+      "Name": "NolbuFenceSouth",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "WoodPlanks",
+        "Color": [0.502, 0.3765, 0.2471],
+        "Size": [26, 3, 2],
+        "Position": [96, 2.2, 48]
+      }
+    },
+    {
+      "Name": "VillageTreeA",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Shape": "Ball",
+        "Material": "Grass",
+        "Color": [0.2706, 0.5216, 0.2392],
+        "Size": [10, 10, 10],
+        "Position": [-132, 9, 82]
+      }
+    },
+    {
+      "Name": "VillageTreeB",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Shape": "Ball",
+        "Material": "Grass",
+        "Color": [0.2392, 0.4706, 0.2118],
+        "Size": [12, 12, 12],
+        "Position": [126, 10, 76]
+      }
+    },
+    {
+      "Name": "VillageTreeC",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Shape": "Ball",
+        "Material": "Grass",
+        "Color": [0.2902, 0.5608, 0.2588],
+        "Size": [9, 9, 9],
+        "Position": [-18, 8, 108]
+      }
+    },
+    {
+      "Name": "VillageTrunkA",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Wood",
+        "Color": [0.3961, 0.2627, 0.1294],
+        "Size": [2.5, 8, 2.5],
+        "Position": [-132, 4, 82]
+      }
+    },
+    {
+      "Name": "VillageTrunkB",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Wood",
+        "Color": [0.3961, 0.2627, 0.1294],
+        "Size": [2.5, 9, 2.5],
+        "Position": [126, 4.5, 76]
+      }
+    },
+    {
+      "Name": "VillageTrunkC",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Wood",
+        "Color": [0.3961, 0.2627, 0.1294],
+        "Size": [2.5, 7, 2.5],
+        "Position": [-18, 3.5, 108]
+      }
+    },
+    {
+      "Name": "StoneClusterA",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Slate",
+        "Color": [0.4471, 0.4353, 0.4275],
+        "Size": [7, 3, 5],
+        "Position": [-38, 2.3, 62]
+      }
+    },
+    {
+      "Name": "StoneClusterB",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Slate",
+        "Color": [0.4471, 0.4353, 0.4275],
+        "Size": [6, 2.5, 4],
+        "Position": [44, 2.05, 70]
+      }
+    },
+    {
+      "Name": "LanternPostA",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Wood",
+        "Color": [0.3961, 0.2627, 0.1294],
+        "Size": [1.5, 8, 1.5],
+        "Position": [-6, 5, 44]
+      }
+    },
+    {
+      "Name": "LanternGlowA",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Neon",
+        "Color": [1, 0.8118, 0.4392],
+        "Size": [1.8, 1.8, 1.8],
+        "Position": [-6, 8.8, 44]
+      }
+    },
+    {
+      "Name": "LanternPostB",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Wood",
+        "Color": [0.3961, 0.2627, 0.1294],
+        "Size": [1.5, 8, 1.5],
+        "Position": [18, 5, 44]
+      }
+    },
+    {
+      "Name": "LanternGlowB",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Neon",
+        "Color": [1, 0.8118, 0.4392],
+        "Size": [1.8, 1.8, 1.8],
+        "Position": [18, 8.8, 44]
+      }
+    }
+  ]
+}
