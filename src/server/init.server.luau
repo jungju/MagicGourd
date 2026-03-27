@@ -13,22 +13,6 @@ end
 
 local assets = {
 	{
-		name = "HeungbuHouse",
-		assetId = 93969099298348,
-		position = Vector3.new(-72, 1.0, 28),
-		rotation = Vector3.new(-90, 0, 0),
-		scale = 10,
-		groundOffset = 0,
-	},
-	{
-		name = "NolbuHouse",
-		assetId = 76012677304613,
-		position = Vector3.new(74, 1.0, 18),
-		rotation = Vector3.new(-90, 0, 0),
-		scale = 10,
-		groundOffset = 0,
-	},
-	{
 		name = "Nolbu",
 		assetId = 81648951264309,
 		position = Vector3.new(58, 3.2, 34),
