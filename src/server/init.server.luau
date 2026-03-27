@@ -17,7 +17,7 @@ local assets = {
 		assetId = 93969099298348,
 		position = Vector3.new(-72, 1.0, 28),
 		rotation = Vector3.new(90, 0, 0),
-		scale = 10,
+		scale = 6,
 		groundOffset = 0,
 	},
 	{
