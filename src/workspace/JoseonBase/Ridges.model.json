@@ -1,0 +1,27 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    {
+      "Name": "NorthRidge",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Rock",
+        "Color": [0.4118, 0.3804, 0.3569],
+        "Size": [360, 18, 28],
+        "Position": [0, 8, -148]
+      }
+    },
+    {
+      "Name": "SouthRidge",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Rock",
+        "Color": [0.3882, 0.3569, 0.3333],
+        "Size": [360, 16, 24],
+        "Position": [0, 7, 152]
+      }
+    }
+  ]
+}

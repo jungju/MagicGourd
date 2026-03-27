@@ -1,0 +1,27 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    {
+      "Name": "MainPath",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Ground",
+        "Color": [0.5216, 0.4314, 0.3137],
+        "Size": [28, 0.4, 120],
+        "Position": [0, 1.05, 18]
+      }
+    },
+    {
+      "Name": "CrossPath",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "Material": "Ground",
+        "Color": [0.4902, 0.4039, 0.2902],
+        "Size": [120, 0.4, 20],
+        "Position": [0, 1.05, 42]
+      }
+    }
+  ]
+}
