@@ -37,18 +37,21 @@ function UpgradeService:start(remotes)
 					worldText = string.format("%s Up", displayName),
 					worldPosition = promptPosition,
 					tone = "good",
+					intensity = "T3",
 				})
 			elseif reason == "money" then
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("Need %d money for %s", cost, displayName),
 					detail = "Break another pumpkin or two, then come back to the plaza.",
 					tone = "warn",
+					intensity = "T1",
 				})
 			elseif reason == "max" then
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("%s is maxed", displayName),
 					detail = "Buy a different upgrade or keep the loop moving.",
 					tone = "warn",
+					intensity = "T1",
 				})
 			end
 		end)
