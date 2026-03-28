@@ -229,6 +229,9 @@ local activePromptOwners = {}
 local promptOwnerGraceByKey = {}
 local promptOwnerGraceDuration = 0.24
 local trackedPumpkinPromptConnections = {}
+local trackedPumpkinFolders = {}
+local trackedRuntimeFolders = {}
+local trackedArcadeLoopFolders = {}
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
 local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
@@ -1232,9 +1235,14 @@ for _, attributeName in ipairs({
 end
 
 local function connectPumpkinFolder(folder)
-	if not folder then
+	if not folder or trackedPumpkinFolders[folder] then
 		return
 	end
+
+	trackedPumpkinFolders[folder] = true
+	folder.Destroying:Connect(function()
+		trackedPumpkinFolders[folder] = nil
+	end)
 
 	folder.ChildAdded:Connect(refreshHud)
 	folder.ChildRemoved:Connect(refreshHud)
@@ -1265,9 +1273,14 @@ local function connectPumpkinFolder(folder)
 end
 
 local function connectRuntimeFolder(runtimeFolder)
-	if not runtimeFolder then
+	if not runtimeFolder or trackedRuntimeFolders[runtimeFolder] then
 		return
 	end
+
+	trackedRuntimeFolders[runtimeFolder] = true
+	runtimeFolder.Destroying:Connect(function()
+		trackedRuntimeFolders[runtimeFolder] = nil
+	end)
 
 	connectPumpkinFolder(findPumpkinFolder())
 
@@ -1280,12 +1293,18 @@ local function connectRuntimeFolder(runtimeFolder)
 
 		if child.Name == "ArcadeLoop" then
 			connectPumpkinFolder(child:FindFirstChild("Pumpkins"))
-			child.ChildAdded:Connect(function(grandChild)
-				if grandChild.Name == "Pumpkins" then
-					connectPumpkinFolder(grandChild)
-					refreshHud()
-				end
-			end)
+			if not trackedArcadeLoopFolders[child] then
+				trackedArcadeLoopFolders[child] = true
+				child.Destroying:Connect(function()
+					trackedArcadeLoopFolders[child] = nil
+				end)
+				child.ChildAdded:Connect(function(grandChild)
+					if grandChild.Name == "Pumpkins" then
+						connectPumpkinFolder(grandChild)
+						refreshHud()
+					end
+				end)
+			end
 			refreshHud()
 		end
 	end
@@ -1295,12 +1314,18 @@ local function connectRuntimeFolder(runtimeFolder)
 	local arcadeLoopFolder = runtimeFolder:FindFirstChild("ArcadeLoop")
 	if arcadeLoopFolder then
 		connectPumpkinFolder(arcadeLoopFolder:FindFirstChild("Pumpkins"))
-		arcadeLoopFolder.ChildAdded:Connect(function(child)
-			if child.Name == "Pumpkins" then
-				connectPumpkinFolder(child)
-				refreshHud()
-			end
-		end)
+		if not trackedArcadeLoopFolders[arcadeLoopFolder] then
+			trackedArcadeLoopFolders[arcadeLoopFolder] = true
+			arcadeLoopFolder.Destroying:Connect(function()
+				trackedArcadeLoopFolders[arcadeLoopFolder] = nil
+			end)
+			arcadeLoopFolder.ChildAdded:Connect(function(child)
+				if child.Name == "Pumpkins" then
+					connectPumpkinFolder(child)
+					refreshHud()
+				end
+			end)
+		end
 	end
 end
 
