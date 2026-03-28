@@ -52,7 +52,10 @@ local QUEST = {
 	CLAIM_HELP = 5,
 	HEAR_NOLBU = 6,
 	DELIVER_TRIBUTE = 7,
-	COMPLETE = 8,
+	INVESTIGATE_SWALLOW = 8,
+	GATHER_HERBS = 9,
+	BRING_HERBS = 10,
+	COMPLETE = 11,
 }
 
 local QUEST_TITLES = {
@@ -64,6 +67,9 @@ local QUEST_TITLES = {
 	[QUEST.CLAIM_HELP] = "Heungbu's Thanks",
 	[QUEST.HEAR_NOLBU] = "Nolbu's Demand",
 	[QUEST.DELIVER_TRIBUTE] = "One More Delivery",
+	[QUEST.INVESTIGATE_SWALLOW] = "The Hurt Swallow",
+	[QUEST.GATHER_HERBS] = "Find Healing Herbs",
+	[QUEST.BRING_HERBS] = "Bring the Herbs Home",
 	[QUEST.COMPLETE] = "Village Friend",
 }
 
@@ -76,6 +82,9 @@ local QUEST_OBJECTIVES = {
 	[QUEST.CLAIM_HELP] = "Speak with Heungbu again to hear what comes next.",
 	[QUEST.HEAR_NOLBU] = "Listen to Nolbu near his estate gate.",
 	[QUEST.DELIVER_TRIBUTE] = "Grow one more gourd and bring it to Nolbu's gate.",
+	[QUEST.INVESTIGATE_SWALLOW] = "Check the injured swallow near Nolbu's wall.",
+	[QUEST.GATHER_HERBS] = "Gather healing herbs from the village well garden.",
+	[QUEST.BRING_HERBS] = "Carry the healing herbs to Heungbu.",
 	[QUEST.COMPLETE] = "Keep helping the village. Extra gourds still earn coins from Heungbu.",
 }
 
@@ -83,6 +92,8 @@ local villageState = {
 	gourdsHarvested = 0,
 	heungbuDeliveries = 0,
 	nolbuTributes = 0,
+	herbBundlesPicked = 0,
+	swallowHelped = 0,
 }
 
 local playerData = {}
@@ -97,12 +108,15 @@ local villageLayout = {
 		yardPad = { name = "NolbuFrontYard", size = Vector3.new(40, 0.8, 28), position = Vector3.new(74, 1.0, 44), yaw = 18 },
 		talkPart = { name = "NolbuComplaint", position = Vector3.new(74, 5, 48), size = Vector3.new(8, 8, 8) },
 		tributePart = { name = "NolbuTribute", position = Vector3.new(84, 4.2, 57), size = Vector3.new(8, 5, 8) },
+		swallowPart = { name = "InjuredSwallow", position = Vector3.new(61, 3.8, 56), size = Vector3.new(6, 5, 6) },
 	},
 	village = {
 		well = { name = "VillageWell", size = Vector3.new(10, 5, 10), position = Vector3.new(0, 3.1, 36) },
 		seedMat = { name = "SeedMat", size = Vector3.new(12, 0.6, 10), position = Vector3.new(-24, 1.2, 34) },
 		storyStone = { name = "FestivalStone", size = Vector3.new(8, 2, 8), position = Vector3.new(22, 1.8, 54) },
 		gourdPatch = { name = "GourdPatch", size = Vector3.new(14, 1, 12), position = Vector3.new(-96, 1.5, 13) },
+		herbPatch = { name = "HealingHerbPatch", size = Vector3.new(9, 1, 7), position = Vector3.new(-8, 1.7, 50) },
+		clothesline = { name = "HeungbuClothesline", size = Vector3.new(16, 0.8, 2), position = Vector3.new(-56, 7.5, 56) },
 	},
 }
 
@@ -115,11 +129,14 @@ local function getPlayerProfile(player)
 	profile = {
 		seeds = 1,
 		gourds = 0,
+		herbs = 0,
 		coins = 0,
 		questStage = QUEST.INTRO,
 		heungbuDeliveries = 0,
 		nolbuTributes = 0,
 		bonusSeedsClaimed = false,
+		swallowInspected = false,
+		swallowHelped = false,
 	}
 	playerData[player] = profile
 	return profile
@@ -139,6 +156,7 @@ local function syncPlayerAttributes(player)
 
 	player:SetAttribute("Seeds", profile.seeds)
 	player:SetAttribute("Gourds", profile.gourds)
+	player:SetAttribute("Herbs", profile.herbs)
 	player:SetAttribute("Coins", profile.coins)
 	player:SetAttribute("QuestStage", profile.questStage)
 	player:SetAttribute("QuestTitle", title)
@@ -220,6 +238,12 @@ local function addPart(parent, name, size, cf, color, material)
 	part.Color = color
 	part.Material = material
 	part.Parent = parent
+	return part
+end
+
+local function addCylinder(parent, name, size, cf, color, material)
+	local part = addPart(parent, name, size, cf, color, material)
+	part.Shape = Enum.PartType.Cylinder
 	return part
 end
 
@@ -631,6 +655,17 @@ local marketMat = addPart(placedAssets, villageLayout.village.seedMat.name, vill
 local gourdPatch = addPart(placedAssets, villageLayout.village.gourdPatch.name, villageLayout.village.gourdPatch.size, CFrame.new(villageLayout.village.gourdPatch.position), Color3.fromRGB(80, 55, 34), Enum.Material.Mud)
 local festivalStone = addPart(placedAssets, villageLayout.village.storyStone.name, villageLayout.village.storyStone.size, CFrame.new(villageLayout.village.storyStone.position), Color3.fromRGB(124, 118, 112), Enum.Material.Slate)
 local tributeBasket = addPart(placedAssets, "NolbuTributeBasket", Vector3.new(6, 2.2, 6), CFrame.new(villageLayout.nolbu.tributePart.position.X, 2.2, villageLayout.nolbu.tributePart.position.Z), Color3.fromRGB(101, 71, 43), Enum.Material.WoodPlanks)
+local herbPatch = addPart(placedAssets, villageLayout.village.herbPatch.name, villageLayout.village.herbPatch.size, CFrame.new(villageLayout.village.herbPatch.position), Color3.fromRGB(73, 107, 49), Enum.Material.Grass)
+local clotheslineBeam = addPart(placedAssets, villageLayout.village.clothesline.name, villageLayout.village.clothesline.size, CFrame.new(villageLayout.village.clothesline.position), Color3.fromRGB(104, 78, 58), Enum.Material.WoodPlanks)
+local clothesPoleA = addPart(placedAssets, "ClothesPoleA", Vector3.new(1, 8, 1), CFrame.new(villageLayout.village.clothesline.position + Vector3.new(-7, -4, 0)), Color3.fromRGB(117, 86, 61), Enum.Material.Wood)
+local clothesPoleB = addPart(placedAssets, "ClothesPoleB", Vector3.new(1, 8, 1), CFrame.new(villageLayout.village.clothesline.position + Vector3.new(7, -4, 0)), Color3.fromRGB(117, 86, 61), Enum.Material.Wood)
+local clothA = addPart(placedAssets, "DryingClothA", Vector3.new(3, 2.5, 0.2), CFrame.new(villageLayout.village.clothesline.position + Vector3.new(-3, -1, 0.3)), Color3.fromRGB(222, 219, 204), Enum.Material.Fabric)
+local clothB = addPart(placedAssets, "DryingClothB", Vector3.new(3, 2.5, 0.2), CFrame.new(villageLayout.village.clothesline.position + Vector3.new(2, -1.2, -0.3)), Color3.fromRGB(196, 214, 164), Enum.Material.Fabric)
+local swallowNest = addCylinder(placedAssets, "SwallowNest", Vector3.new(2.2, 1.6, 2.2), CFrame.new(villageLayout.nolbu.swallowPart.position + Vector3.new(0, -2.2, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(111, 79, 49), Enum.Material.WoodPlanks)
+local injuredSwallowMarker = addPart(placedAssets, "InjuredSwallowMarker", Vector3.new(1.6, 0.6, 2.4), CFrame.new(villageLayout.nolbu.swallowPart.position + Vector3.new(0, -1.1, 0)) * CFrame.Angles(0, math.rad(-24), math.rad(14)), Color3.fromRGB(43, 43, 46), Enum.Material.SmoothPlastic)
+injuredSwallowMarker.CanCollide = false
+local swallowWing = addPart(placedAssets, "SwallowWing", Vector3.new(2.8, 0.2, 1.1), injuredSwallowMarker.CFrame * CFrame.new(0, 0.15, 0), Color3.fromRGB(222, 226, 234), Enum.Material.SmoothPlastic)
+swallowWing.CanCollide = false
 
 local heungbuPadSign = attachBillboard(heungbuPad, "Heungbu Yard", "A small place to plant hope.", Color3.fromRGB(111, 224, 128))
 local nolbuPadSign = attachBillboard(nolbuPad, "Nolbu Gate", "His workers patrol the road with stiff little loops.", Color3.fromRGB(226, 117, 94))
@@ -638,6 +673,9 @@ attachBillboard(villageWell, "Village Well", "The center of the little valley.",
 attachBillboard(marketMat, "Seed Mat", "Pick up a seed pouch if you need one.", Color3.fromRGB(227, 188, 96))
 attachBillboard(festivalStone, "Story Stone", "A tale of kindness, greed, and a magic gourd.", Color3.fromRGB(194, 162, 255))
 local tributeSign = attachBillboard(tributeBasket, "Tribute Basket", "Nolbu demands proof that your harvest is real.", Color3.fromRGB(240, 154, 107))
+local herbSign = attachBillboard(herbPatch, "Herb Garden", "Mint and mugwort grow near the well.", Color3.fromRGB(103, 220, 117))
+local swallowSign = attachBillboard(injuredSwallowMarker, "Wall Swallow", "Something small is trembling by Nolbu's wall.", Color3.fromRGB(167, 205, 255))
+attachBillboard(clotheslineBeam, "Laundry Line", "Patched cloth dries in the morning wind.", Color3.fromRGB(230, 218, 188))
 
 local patrolANodes = buildWanderRing("NolbuPatrolA", Vector3.new(72, 2, 34), 18, 6)
 local patrolBNodes = buildWanderRing("NolbuPatrolB", Vector3.new(92, 2, 30), 14, 5)
@@ -673,6 +711,12 @@ local nolbuPrompt = createPrompt(nolbuTalkPart, "Listen", "Nolbu", 0.15, 12)
 local tributePart = ensureInteractionPart(villageLayout.nolbu.tributePart.name, villageLayout.nolbu.tributePart.position, villageLayout.nolbu.tributePart.size)
 local tributePrompt = createPrompt(tributePart, "Offer", "Tribute Basket", 0.15, 12)
 
+local swallowPart = ensureInteractionPart(villageLayout.nolbu.swallowPart.name, villageLayout.nolbu.swallowPart.position, villageLayout.nolbu.swallowPart.size)
+local swallowPrompt = createPrompt(swallowPart, "Inspect", "Injured Swallow", 0.1, 12)
+
+local herbPart = ensureInteractionPart("HealingHerbs", villageLayout.village.herbPatch.position + Vector3.new(0, 1.8, 0), Vector3.new(7, 5, 7))
+local herbPrompt = createPrompt(herbPart, "Gather", "Healing Herbs", 0.15, 12)
+
 local storyStonePart = ensureInteractionPart("StoryStonePrompt", villageLayout.village.storyStone.position + Vector3.new(0, 1.7, 0), Vector3.new(8, 5, 8))
 local storyPrompt = createPrompt(storyStonePart, "Read", "Story Stone", 0.1, 12)
 
@@ -687,10 +731,12 @@ local function setPatchText(text)
 end
 
 local function refreshVillageSigns()
-	setBillboardBody(heungbuSign, string.format("Deliveries: %d · Village coins shared: %d", villageState.heungbuDeliveries, villageState.heungbuDeliveries * 5))
+	setBillboardBody(heungbuSign, string.format("Deliveries: %d · Swallows helped: %d", villageState.heungbuDeliveries, villageState.swallowHelped))
 	setBillboardBody(heungbuPadSign, string.format("Harvests gathered: %d · Kindness still lives here.", villageState.gourdsHarvested))
 	setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes))
 	setBillboardBody(tributeSign, string.format("Tributes paid: %d · Nolbu still wants more.", villageState.nolbuTributes))
+	setBillboardBody(herbSign, string.format("Herb bundles picked: %d · The well garden smells sharp and clean.", villageState.herbBundlesPicked))
+	setBillboardBody(swallowSign, villageState.swallowHelped > 0 and "The swallow has been tended. It twitches with a little strength now." or "Something small is trembling by Nolbu's wall.")
 end
 
 refreshVillageSigns()
@@ -806,6 +852,32 @@ heungbuPrompt.Triggered:Connect(function(player)
 		return
 	end
 
+	if profile.questStage == QUEST.BRING_HERBS then
+		if profile.herbs <= 0 then
+			showDialogue(player, "Heungbu", {
+				"The swallow is still breathing, but barely.",
+				"Please bring fresh herbs from the well garden.",
+			}, Color3.fromRGB(111, 224, 128))
+			return
+		end
+
+		profile.herbs -= 1
+		profile.coins += 10
+		profile.seeds += 1
+		profile.swallowHelped = true
+		villageState.swallowHelped += 1
+		setQuestStage(player, QUEST.COMPLETE)
+		syncPlayerAttributes(player)
+		refreshVillageSigns()
+		setBillboardBody(heungbuSign, "Heungbu: 'Even a hurt swallow can find home again.'")
+		showDialogue(player, "Heungbu", {
+			"These herbs will do. My family knows how to bind a little wing.",
+			"Kindness came back to the yard with you today.",
+			"Take this seed and these coins. The next gourd may yet split this story wide open.",
+		}, Color3.fromRGB(111, 224, 128))
+		return
+	end
+
 	if profile.gourds <= 0 then
 		if profile.questStage == QUEST.CLAIM_HELP then
 			if not profile.bonusSeedsClaimed then
@@ -884,6 +956,14 @@ nolbuPrompt.Triggered:Connect(function(player)
 		return
 	end
 
+	if profile.questStage >= QUEST.INVESTIGATE_SWALLOW and not profile.swallowHelped then
+		showDialogue(player, "Nolbu", {
+			"A bird hit my wall. Hardly my problem.",
+			"If Heungbu wants to play healer, let him waste his morning on it.",
+		}, Color3.fromRGB(226, 117, 94))
+		return
+	end
+
 	showDialogue(player, "Nolbu", {
 		string.format("My estate still has %d patrol steps and %d reasons to stay impressed.", #patrolANodes + #patrolBNodes, villageState.nolbuTributes),
 		"If you have a spare gourd, the basket is right there.",
@@ -900,6 +980,14 @@ tributePrompt.Triggered:Connect(function(player)
 		return
 	end
 
+	if profile.questStage >= QUEST.INVESTIGATE_SWALLOW then
+		showDialogue(player, "Tribute Basket", {
+			"The tribute is already paid.",
+			"Something more important is happening by the wall.",
+		}, Color3.fromRGB(240, 154, 107))
+		return
+	end
+
 	if profile.gourds <= 0 then
 		showDialogue(player, "Tribute Basket", {
 			"You have nothing to offer.",
@@ -912,14 +1000,95 @@ tributePrompt.Triggered:Connect(function(player)
 	profile.coins += 8
 	profile.nolbuTributes += 1
 	villageState.nolbuTributes += 1
-	setQuestStage(player, QUEST.COMPLETE)
+	setQuestStage(player, QUEST.INVESTIGATE_SWALLOW)
 	syncPlayerAttributes(player)
 	refreshVillageSigns()
 	showDialogue(player, "Nolbu", {
 		"Hmph. At least the harvest looks worthy.",
-		"Take your coin and go. The village will talk about this for days.",
-		"If you keep farming, Heungbu will always welcome more help.",
+		"Take your coin and move aside— ah, what was that fluttering by the wall?",
+		"If you must fuss over it, do it somewhere else.",
 	}, Color3.fromRGB(226, 117, 94))
+end)
+
+swallowPrompt.Triggered:Connect(function(player)
+	local profile = getPlayerProfile(player)
+	if profile.questStage < QUEST.INVESTIGATE_SWALLOW then
+		showDialogue(player, "Swallow", {
+			"A little nest clings to the wall.",
+			"Nothing has happened here yet.",
+		}, Color3.fromRGB(167, 205, 255))
+		return
+	end
+
+	if profile.swallowHelped then
+		showDialogue(player, "Swallow", {
+			"The swallow blinks and settles into the nest.",
+			"It still looks fragile, but it is no longer alone.",
+		}, Color3.fromRGB(167, 205, 255))
+		return
+	end
+
+	if not profile.swallowInspected then
+		profile.swallowInspected = true
+		setQuestStage(player, QUEST.GATHER_HERBS)
+		syncPlayerAttributes(player)
+		setBillboardBody(swallowSign, "A swallow lies here with a bent wing. Heungbu might know how to help.")
+		showDialogue(player, "Swallow", {
+			"A swallow is shivering against the wall, one wing hanging low.",
+			"There is a faint thread tied to its leg—as if it nested near Heungbu's yard before.",
+			"Fresh herbs from the well garden might keep it alive long enough to carry home.",
+		}, Color3.fromRGB(167, 205, 255))
+		return
+	end
+
+	showDialogue(player, "Swallow", {
+		"The bird gives a weak flutter.",
+		"It still needs healing herbs from the village well.",
+	}, Color3.fromRGB(167, 205, 255))
+end)
+
+herbPrompt.Triggered:Connect(function(player)
+	local profile = getPlayerProfile(player)
+	if profile.questStage < QUEST.GATHER_HERBS then
+		showDialogue(player, "Herb Garden", {
+			"The herb patch smells fresh and sharp.",
+			"You do not need anything from it yet.",
+		}, Color3.fromRGB(103, 220, 117))
+		return
+	end
+
+	if profile.questStage > QUEST.BRING_HERBS then
+		showDialogue(player, "Herb Garden", {
+			"The leaves sway quietly by the well.",
+			"For now, the village only asks you to keep growing.",
+		}, Color3.fromRGB(103, 220, 117))
+		return
+	end
+
+	if profile.herbs > 0 then
+		showDialogue(player, "Herb Garden", {
+			"You already gathered a fresh bundle.",
+			"Bring it to Heungbu before the leaves wilt.",
+		}, Color3.fromRGB(103, 220, 117))
+		return
+	end
+
+	profile.herbs += 1
+	villageState.herbBundlesPicked += 1
+	setQuestStage(player, QUEST.BRING_HERBS)
+	syncPlayerAttributes(player)
+	refreshVillageSigns()
+	herbPrompt.ObjectText = string.format("Herbs for %s", player.Name)
+	showDialogue(player, "Herb Garden", {
+		"You gather a careful bundle of healing herbs.",
+		"The leaves are cool with well mist.",
+		"Bring them to Heungbu before the swallow fades.",
+	}, Color3.fromRGB(103, 220, 117))
+	task.delay(2, function()
+		if herbPrompt.Parent then
+			herbPrompt.ObjectText = "Healing Herbs"
+		end
+	end)
 end)
 
 storyPrompt.Triggered:Connect(function(player)
@@ -932,7 +1101,7 @@ storyPrompt.Triggered:Connect(function(player)
 	showDialogue(player, "Story Stone", {
 		"In this valley, kindness grows quietly and greed makes a lot of noise.",
 		"Heungbu shares what little he has. Nolbu counts what everyone else owes.",
-		"A single magic gourd can push their story forward.",
+		"A single magic gourd can push their story forward, but even a swallow can change the ending.",
 	}, Color3.fromRGB(194, 162, 255))
 	task.delay(3, function()
 		if storyPrompt.Parent then

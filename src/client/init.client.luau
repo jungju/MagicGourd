@@ -18,7 +18,7 @@ local questFrame = Instance.new("Frame")
 questFrame.Name = "QuestTracker"
 questFrame.AnchorPoint = Vector2.new(0, 0)
 questFrame.Position = UDim2.fromOffset(20, 20)
-questFrame.Size = UDim2.fromOffset(360, 116)
+questFrame.Size = UDim2.fromOffset(380, 126)
 questFrame.BackgroundColor3 = Color3.fromRGB(26, 18, 12)
 questFrame.BackgroundTransparency = 0.2
 questFrame.BorderSizePixel = 0
@@ -36,7 +36,7 @@ questStroke.Parent = questFrame
 local questTitle = Instance.new("TextLabel")
 questTitle.BackgroundTransparency = 1
 questTitle.Position = UDim2.fromOffset(12, 10)
-questTitle.Size = UDim2.new(1, -24, 0, 28)
+questTitle.Size = UDim2.new(1, -24, 0, 30)
 questTitle.Font = Enum.Font.GothamBold
 questTitle.TextXAlignment = Enum.TextXAlignment.Left
 questTitle.TextColor3 = Color3.fromRGB(255, 239, 204)
@@ -46,8 +46,8 @@ questTitle.Parent = questFrame
 
 local questBody = Instance.new("TextLabel")
 questBody.BackgroundTransparency = 1
-questBody.Position = UDim2.fromOffset(12, 40)
-questBody.Size = UDim2.new(1, -24, 0, 38)
+questBody.Position = UDim2.fromOffset(12, 42)
+questBody.Size = UDim2.new(1, -24, 0, 44)
 questBody.Font = Enum.Font.Gotham
 questBody.TextXAlignment = Enum.TextXAlignment.Left
 questBody.TextYAlignment = Enum.TextYAlignment.Top
@@ -59,14 +59,25 @@ questBody.Parent = questFrame
 
 local statsLabel = Instance.new("TextLabel")
 statsLabel.BackgroundTransparency = 1
-statsLabel.Position = UDim2.fromOffset(12, 82)
+statsLabel.Position = UDim2.fromOffset(12, 88)
 statsLabel.Size = UDim2.new(1, -24, 0, 22)
 statsLabel.Font = Enum.Font.GothamMedium
 statsLabel.TextXAlignment = Enum.TextXAlignment.Left
 statsLabel.TextColor3 = Color3.fromRGB(214, 201, 180)
 statsLabel.TextScaled = true
-statsLabel.Text = "Seeds 0 · Gourds 0 · Coins 0"
+statsLabel.Text = "Seeds 0 · Gourds 0 · Herbs 0 · Coins 0"
 statsLabel.Parent = questFrame
+
+local hintLabel = Instance.new("TextLabel")
+hintLabel.BackgroundTransparency = 1
+hintLabel.Position = UDim2.fromOffset(12, 106)
+hintLabel.Size = UDim2.new(1, -24, 0, 14)
+hintLabel.Font = Enum.Font.Gotham
+hintLabel.TextXAlignment = Enum.TextXAlignment.Left
+hintLabel.TextColor3 = Color3.fromRGB(180, 168, 148)
+hintLabel.TextScaled = true
+hintLabel.Text = "Watch the village signs for story changes."
+hintLabel.Parent = questFrame
 
 local dialogueFrame = Instance.new("Frame")
 dialogueFrame.Name = "DialogueBox"
@@ -117,8 +128,9 @@ local activeDialogueToken = 0
 local function formatStats()
 	local seeds = player:GetAttribute("Seeds") or 0
 	local gourds = player:GetAttribute("Gourds") or 0
+	local herbs = player:GetAttribute("Herbs") or 0
 	local coins = player:GetAttribute("Coins") or 0
-	statsLabel.Text = string.format("Seeds %d  ·  Gourds %d  ·  Coins %d", seeds, gourds, coins)
+	statsLabel.Text = string.format("Seeds %d  ·  Gourds %d  ·  Herbs %d  ·  Coins %d", seeds, gourds, herbs, coins)
 end
 
 local function refreshQuest()
@@ -146,7 +158,7 @@ local function showDialogue(payload)
 	end)
 end
 
-for _, attributeName in ipairs({ "QuestTitle", "QuestObjective", "Seeds", "Gourds", "Coins" }) do
+for _, attributeName in ipairs({ "QuestTitle", "QuestObjective", "Seeds", "Gourds", "Herbs", "Coins" }) do
 	player:GetAttributeChangedSignal(attributeName):Connect(refreshQuest)
 end
 
