@@ -142,7 +142,7 @@ function PumpkinService:_useSeed(player)
 	rootPart:SetAttribute(self.config.Attributes.Pumpkin.ExpiresAt, expiresAt)
 	rootPart:SetAttribute(self.config.Attributes.Interaction.Kind, "Pumpkin")
 	rootPart:SetAttribute(self.config.Attributes.Interaction.EntityId, pumpkinId)
-	createPrompt(rootPart, "Break", "Owned Pumpkin", self.config.Pumpkins.PromptDistance)
+	createPrompt(rootPart, "Break", "Pumpkin", self.config.Pumpkins.PromptDistance)
 
 	self.pumpkins[pumpkinId] = {
 		id = pumpkinId,

@@ -214,6 +214,7 @@ local recentLoopReset = nil
 local activePromptOwners = {}
 local promptOwnerGraceByKey = {}
 local promptOwnerGraceDuration = 0.24
+local trackedPumpkinPromptConnections = {}
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
 local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
@@ -431,6 +432,65 @@ local function getPromptOwnerKey(prompt)
 	end
 
 	return prompt:GetDebugId()
+end
+
+local function syncPumpkinPrompt(prompt)
+	if typeof(prompt) ~= "Instance" or not prompt:IsA("ProximityPrompt") then
+		return
+	end
+
+	local parent = prompt.Parent
+	if not parent or not parent:IsA("BasePart") then
+		return
+	end
+
+	if parent:GetAttribute(interactionAttributes.Kind) ~= "Pumpkin" then
+		return
+	end
+
+	local ownerUserId = parent:GetAttribute(ArcadeConfig.Attributes.Pumpkin.Owner)
+	local isOwnedByLocalPlayer = ownerUserId == player.UserId
+	prompt.Enabled = isOwnedByLocalPlayer
+	prompt.ObjectText = isOwnedByLocalPlayer and "Your Pumpkin" or "Pumpkin"
+end
+
+local function trackPumpkinPrompt(prompt)
+	if typeof(prompt) ~= "Instance" or not prompt:IsA("ProximityPrompt") then
+		return
+	end
+
+	local parent = prompt.Parent
+	if not parent or not parent:IsA("BasePart") then
+		return
+	end
+
+	if parent:GetAttribute(interactionAttributes.Kind) ~= "Pumpkin" then
+		return
+	end
+
+	if trackedPumpkinPromptConnections[prompt] then
+		syncPumpkinPrompt(prompt)
+		return
+	end
+
+	trackedPumpkinPromptConnections[prompt] = {
+		parent:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(function()
+			syncPumpkinPrompt(prompt)
+			refreshHud()
+		end),
+		prompt.Destroying:Connect(function()
+			local connections = trackedPumpkinPromptConnections[prompt]
+			if not connections then
+				return
+			end
+			for _, connection in ipairs(connections) do
+				connection:Disconnect()
+			end
+			trackedPumpkinPromptConnections[prompt] = nil
+		end),
+	}
+
+	syncPumpkinPrompt(prompt)
 end
 
 local function getPromptOwnerState(prompt)
@@ -1027,6 +1087,8 @@ local function connectPumpkinFolder(folder)
 	for _, descendant in ipairs(folder:GetDescendants()) do
 		if descendant:IsA("BasePart") then
 			descendant:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(refreshHud)
+		elseif descendant:IsA("ProximityPrompt") then
+			trackPumpkinPrompt(descendant)
 		end
 	end
 
@@ -1034,11 +1096,14 @@ local function connectPumpkinFolder(folder)
 		if descendant:IsA("BasePart") then
 			descendant:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(refreshHud)
 			refreshHud()
+		elseif descendant:IsA("ProximityPrompt") then
+			trackPumpkinPrompt(descendant)
+			refreshHud()
 		end
 	end)
 
 	folder.DescendantRemoving:Connect(function(descendant)
-		if descendant:IsA("BasePart") then
+		if descendant:IsA("BasePart") or descendant:IsA("ProximityPrompt") then
 			refreshHud()
 		end
 	end)
