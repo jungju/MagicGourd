@@ -39,7 +39,7 @@
 | MG-PM-201 | Quest HUD | guided quest slice | done | quest title/objective/stats HUD 구현됨 | 유지 | P1 |
 | MG-PM-202 | Dialogue box system | guided quest slice | done | RemoteEvent 기반 대화창 구현됨 | 유지 | P1 |
 | MG-PM-203 | Dialogue readability / sizing polish | guided quest slice | rebuild | 실제 화면 기준 검증 필요 메모 존재 | 실기 검증 후 보정 | P2 |
-| MG-PM-204 | Stronger cinematic payoff UI/effects | magic payoff target | new | 박 보상 연출/UI는 아직 없음 | 설계 후 구현 | P2 |
+| MG-PM-204 | Stronger cinematic payoff UI/effects | 2026-03-28 payoff presentation pass | done | `StoryEffectEvent` kind/duration/pulse 기반 연출, Heungbu ceremony multi-beat 보상 타이밍, retaliation/restoration presentation이 구현됨 | 유지, Studio 체감만 추가 검증 | P2 |
 
 ## Systems / Robustness
 
@@ -67,7 +67,7 @@
 - 대화창 실제 화면 가독성 조정
 
 ### Next new work to prioritize
-1. Blessed seed / magic gourd payoff
-2. Nolbu retaliation / consequence
-3. payoff UI / special event presentation
-4. ending / branching structure
+1. ending / branching structure
+2. house placement/orientation final polish
+3. dialogue readability / sizing polish
+4. retaliation expansion beyond the current sabotage beat

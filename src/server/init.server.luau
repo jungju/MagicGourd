@@ -212,10 +212,13 @@ end
 local function playPresentationSequence(player, beats, onComplete)
 	local token = startPresentation(player)
 	task.spawn(function()
-		for _, beat in ipairs(beats) do
+		for index, beat in ipairs(beats) do
 			local profile = getPlayerProfile(player)
 			if profile.activePresentationToken ~= token then
 				return
+			end
+			if beat.onStart then
+				beat.onStart(index, token)
 			end
 			if beat.effect then
 				showEffect(
@@ -234,13 +237,20 @@ local function playPresentationSequence(player, beats, onComplete)
 			if beat.delay and beat.delay > 0 then
 				task.wait(beat.delay)
 			end
+			profile = getPlayerProfile(player)
+			if profile.activePresentationToken ~= token then
+				return
+			end
+			if beat.onComplete then
+				beat.onComplete(index, token)
+			end
 		end
 		local profile = getPlayerProfile(player)
 		if profile.activePresentationToken ~= token then
 			return
 		end
 		if onComplete then
-			onComplete()
+			onComplete(token)
 		end
 		finishPresentation(player, token)
 	end)
@@ -643,13 +653,39 @@ bramblePrompt.Enabled = false
 
 local currentCrop = { state = "empty", owner = nil, readyAt = 0, cropType = "normal" }
 local bramblesActive = false
+local patchGlowLight = Instance.new("PointLight")
+patchGlowLight.Name = "PatchGlow"
+patchGlowLight.Brightness = 0
+patchGlowLight.Range = 18
+patchGlowLight.Color = Color3.fromRGB(255, 225, 150)
+patchGlowLight.Parent = gourdPatch
 
 local function setPatchText(text) setBillboardBody(patchSign, text) end
+
+local function setPatchMood(mode)
+	if mode == "blessed" then
+		gourdPatch.Color = Color3.fromRGB(246, 212, 92)
+		gourdPatch.Material = Enum.Material.Neon
+		patchGlowLight.Color = Color3.fromRGB(255, 224, 144)
+		patchGlowLight.Brightness = 2.1
+	elseif mode == "brambles" then
+		gourdPatch.Color = Color3.fromRGB(66, 94, 45)
+		gourdPatch.Material = Enum.Material.Grass
+		patchGlowLight.Color = Color3.fromRGB(170, 112, 96)
+		patchGlowLight.Brightness = 0.9
+	else
+		gourdPatch.Color = Color3.fromRGB(80, 55, 34)
+		gourdPatch.Material = Enum.Material.Mud
+		patchGlowLight.Color = Color3.fromRGB(255, 225, 150)
+		patchGlowLight.Brightness = 0
+	end
+end
 
 local function setBramblesVisible(visible)
 	bramblesActive = visible
 	bramblePrompt.Enabled = visible
 	for _, part in ipairs(brambleParts) do part.Transparency = visible and 0.18 or 1 end
+	setPatchMood(visible and "brambles" or "idle")
 	setPatchText(visible and "Thorny brambles choke the patch. Clear them first." or "Bring a seed, then return when the vine is ready.")
 end
 
@@ -687,6 +723,9 @@ plantPrompt.Triggered:Connect(function(player)
 			currentCrop.cropType = "blessed"
 			currentCrop.readyAt = os.clock() + 14
 			gourdPatch.Color = Color3.fromRGB(229, 191, 76)
+			gourdPatch.Material = Enum.Material.Neon
+			patchGlowLight.Color = Color3.fromRGB(255, 212, 120)
+			patchGlowLight.Brightness = 1.2
 			plantPrompt.ObjectText = "Golden Vine"
 			setPatchText("A warm golden vine is coiling upward. This is no ordinary crop.")
 			syncPlayerAttributes(player)
@@ -694,7 +733,7 @@ plantPrompt.Triggered:Connect(function(player)
 			task.delay(14, function()
 				if currentCrop.state == "growing" and currentCrop.cropType == "blessed" then
 					currentCrop.state = "ready"
-					gourdPatch.Color = Color3.fromRGB(246, 212, 92)
+					setPatchMood("blessed")
 					plantPrompt.ObjectText = "Harvest Magic Gourd"
 					setPatchText("The vine glows with a full true magic gourd. Harvest it.")
 					if currentCrop.owner then
@@ -717,6 +756,8 @@ plantPrompt.Triggered:Connect(function(player)
 		currentCrop.cropType = "normal"
 		currentCrop.readyAt = os.clock() + 20
 		gourdPatch.Color = Color3.fromRGB(84, 124, 52)
+		gourdPatch.Material = Enum.Material.Grass
+		patchGlowLight.Brightness = 0
 		setPatchText("A vine is curling out of the soil. Give it a moment.")
 		plantPrompt.ObjectText = "Growing..."
 		syncPlayerAttributes(player)
@@ -725,6 +766,8 @@ plantPrompt.Triggered:Connect(function(player)
 			if currentCrop.state == "growing" and currentCrop.cropType == "normal" then
 				currentCrop.state = "ready"
 				gourdPatch.Color = Color3.fromRGB(196, 138, 58)
+				gourdPatch.Material = Enum.Material.Sand
+				patchGlowLight.Brightness = 0
 				setPatchText("The vine is heavy now. The gourd is ready to harvest.")
 				plantPrompt.ObjectText = "Harvest Gourd"
 			end
@@ -751,7 +794,7 @@ plantPrompt.Triggered:Connect(function(player)
 		currentCrop.owner = nil
 		currentCrop.readyAt = 0
 		currentCrop.cropType = "normal"
-		gourdPatch.Color = Color3.fromRGB(80, 55, 34)
+		setPatchMood("idle")
 		plantPrompt.ObjectText = "Gourd Patch"
 		setPatchText("Bring a seed, then return when the vine is ready.")
 		syncPlayerAttributes(player)
@@ -795,6 +838,10 @@ heungbuPrompt.Triggered:Connect(function(player)
 		villageState.magicPayoffs += 1
 		playPresentationSequence(player, {
 			{
+				onStart = function()
+					setPatchMood("blessed")
+					setPatchText("The yard feels warm with a miracle harvest.")
+				end,
 				effect = {
 					kind = "celebration",
 					title = "Heungbu's Blessing",
@@ -814,6 +861,17 @@ heungbuPrompt.Triggered:Connect(function(player)
 				delay = 1.75,
 			},
 			{
+				onStart = function(_, token)
+					local latestProfile = getPlayerProfile(player)
+					if latestProfile.activePresentationToken ~= token then
+						return
+					end
+					latestProfile.coins += 20
+					latestProfile.seeds += 3
+					setQuestStage(player, QUEST.NOLBU_RETALIATION)
+					syncPlayerAttributes(player)
+					refreshVillageSigns()
+				end,
 				effect = {
 					kind = "celebration",
 					title = "Prosperity Spreads",
@@ -833,11 +891,7 @@ heungbuPrompt.Triggered:Connect(function(player)
 				delay = 0.5,
 			},
 		}, function()
-			profile.coins += 20
-			profile.seeds += 3
-			setQuestStage(player, QUEST.NOLBU_RETALIATION)
-			syncPlayerAttributes(player)
-			refreshVillageSigns()
+			setPatchText("The blessed harvest is over, but the yard still carries its warmth.")
 		end)
 		return
 	end
@@ -1002,8 +1056,33 @@ bramblePrompt.Triggered:Connect(function(player)
 	setBramblesVisible(false)
 	syncPlayerAttributes(player)
 	refreshVillageSigns()
-	showEffect(player, "restoration", "Hope Returns", "The patch breathes again. Kindness still grows here.", Color3.fromRGB(142, 220, 116), 4.8, 1)
-	showDialogue(player, "Heungbu", { "You cleared the patch before the thorns could win.", "Kindness grows back faster than spite here.", "Take one more seed. The valley can keep going now." }, Color3.fromRGB(111, 224, 128))
+	playPresentationSequence(player, {
+		{
+			onStart = function()
+				setPatchText("Fresh air returns to the patch. The soil can breathe again.")
+			end,
+			effect = {
+				kind = "restoration",
+				title = "Hope Returns",
+				body = "The patch breathes again. Kindness still grows here.",
+				color = Color3.fromRGB(142, 220, 116),
+				duration = 4.8,
+				pulseCount = 1,
+			},
+			dialogue = {
+				speaker = "Heungbu",
+				lines = {
+					"You cleared the patch before the thorns could win.",
+					"Kindness grows back faster than spite here.",
+					"Take one more seed. The valley can keep going now.",
+				},
+				accent = Color3.fromRGB(111, 224, 128),
+			},
+			delay = 0.2,
+		},
+	}, function()
+		setPatchText("Bring a seed, then return when the vine is ready.")
+	end)
 end)
 
 storyPrompt.Triggered:Connect(function(player)
