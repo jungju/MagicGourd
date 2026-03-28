@@ -142,10 +142,53 @@ local config = {
 		TouchSlowFactor = 0.55,
 		TouchCooldown = 1.5,
 	},
+	Feedback = {
+		DefaultIntensity = "T2",
+		PopupYieldWindow = 0.32,
+		BannerDurationByIntensity = {
+			T1 = 1.55,
+			T2 = 2.1,
+			T3 = 2.55,
+			T4 = 2.65,
+		},
+		WorldPopupPriorityByIntensity = {
+			T1 = 1,
+			T2 = 2,
+			T3 = 3,
+			T4 = 4,
+		},
+		WorldPopupByIntensity = {
+			T1 = {
+				duration = 0.65,
+				rise = 1.6,
+				size = Vector2.new(158, 42),
+				maxDistance = 95,
+			},
+			T2 = {
+				duration = 0.82,
+				rise = 2.2,
+				size = Vector2.new(170, 46),
+				maxDistance = 110,
+			},
+			T3 = {
+				duration = 1.02,
+				rise = 2.8,
+				size = Vector2.new(188, 50),
+				maxDistance = 120,
+			},
+			T4 = {
+				duration = 1.1,
+				rise = 3.0,
+				size = Vector2.new(194, 54),
+				maxDistance = 122,
+			},
+		},
+	},
 }
 
 config.Upgrades = {
 	Costs = { 20, 40, 80 },
+	PromptDistance = 9,
 	Order = { "MoveSpeed", "AttackSpeed", "SeedMultiplier" },
 	Definitions = {
 		MoveSpeed = {

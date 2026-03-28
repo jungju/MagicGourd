@@ -207,10 +207,13 @@ local feedbackColors = {
 
 local feedbackToken = 0
 local activeWorldPopupCounts = {}
+local activeWorldPopupState = {}
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
+local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
 local bannerDurationByIntensity = feedbackConfig.BannerDurationByIntensity or {}
 local worldPopupByIntensity = feedbackConfig.WorldPopupByIntensity or {}
+local worldPopupPriorityByIntensity = feedbackConfig.WorldPopupPriorityByIntensity or {}
 
 local function getWorldPopupBucketKey(worldPosition)
 	local bucketSize = 10
@@ -240,6 +243,11 @@ end
 
 local function getBannerDuration(payload)
 	return bannerDurationByIntensity[getFeedbackIntensity(payload)] or 2.2
+end
+
+local function getWorldPopupPriority(payload)
+	local intensity = getFeedbackIntensity(payload)
+	return worldPopupPriorityByIntensity[intensity] or worldPopupPriorityByIntensity[defaultIntensity] or 2
 end
 
 local function getWorldPopupProfile(payload, text)
@@ -476,11 +484,22 @@ local function showWorldPopup(payload)
 		return
 	end
 
+	local now = os.clock()
+	local bucketKey = getWorldPopupBucketKey(worldPosition)
+	local priority = getWorldPopupPriority(payload)
+	local bucketState = activeWorldPopupState[bucketKey]
+	if bucketState and now - bucketState.lastShownAt <= popupYieldWindow and priority < bucketState.priority then
+		return
+	end
+
 	local colors = getFeedbackColors(tone)
 	local profile = getWorldPopupProfile(payload, text)
-	local bucketKey = getWorldPopupBucketKey(worldPosition)
 	local activeCount = activeWorldPopupCounts[bucketKey] or 0
 	activeWorldPopupCounts[bucketKey] = activeCount + 1
+	activeWorldPopupState[bucketKey] = {
+		priority = priority,
+		lastShownAt = now,
+	}
 
 	local lateralOffset = ((activeCount % 3) - 1) * 1.2
 	local verticalOffset = 3.6 + math.min(activeCount, 3) * 1.15
@@ -534,6 +553,9 @@ local function showWorldPopup(payload)
 		activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
 		if activeWorldPopupCounts[bucketKey] == 0 then
 			activeWorldPopupCounts[bucketKey] = nil
+		end
+		if activeWorldPopupState[bucketKey] and activeWorldPopupState[bucketKey].lastShownAt == now then
+			activeWorldPopupState[bucketKey] = nil
 		end
 		popupPart:Destroy()
 	end)

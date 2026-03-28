@@ -155,6 +155,7 @@ function GoblinService:_onTouched(index, hit)
 			worldText = "Slowed",
 			worldPosition = playerRoot and playerRoot.Position or goblin.root.Position,
 			tone = "warn",
+			intensity = "T4",
 		})
 	end
 end

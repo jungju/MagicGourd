@@ -63,11 +63,12 @@ function SwallowService:_healSwallow(player, swallowId)
 
 	if self.feedbackRemote then
 		self.feedbackRemote:FireClient(player, {
-			text = string.format("Swallow healed! +%d seed%s", reward, reward == 1 and "" or "s"),
-			detail = reward > 1 and "Blessing upgrade paid out extra seeds." or "Take the seed and plant a pumpkin anywhere.",
+			text = string.format("Swallow healed. +%d seed%s gained.", reward, reward == 1 and "" or "s"),
+			detail = reward > 1 and "Blessing paid out extra seeds for your next planting run." or "Plant a pumpkin anywhere to turn that seed into coins.",
 			worldText = string.format("+%d Seed%s", reward, reward == 1 and "" or "s"),
 			worldPosition = root.Position,
 			tone = "good",
+			intensity = "T2",
 		})
 	end
 
