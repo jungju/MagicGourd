@@ -142,6 +142,21 @@ local AMBIENT_ENDING = {
 	TRIBUTE = "tribute",
 }
 
+local ENDING_SUPPORT_ROTATION_THRESHOLD = 2
+
+local ENDING_SUPPORT_POINTS = {
+	restoration = {
+		{ id = "sharedBasket", name = "Shared Basket", hint = "Shared harvests are being gathered at the basket by the well.", redirect = "The next shared drop is being gathered somewhere else in the village." },
+		{ id = "wellPantry", name = "Well Pantry Drop", hint = "Shared harvests are being gathered by the well pantry drop.", redirect = "The well pantry is resting. The next shared drop is being gathered elsewhere." },
+		{ id = "yardRelief", name = "Yard Relief Mat", hint = "Heungbu's yard marker now serves as the next relief drop.", redirect = "The relief mat is quiet for now. The next shared drop is being gathered elsewhere." },
+	},
+	tribute = {
+		{ id = "roadStand", name = "Road Due", hint = "The next road due is being counted at the stand by Nolbu's road.", redirect = "Today's road due is being counted at another stand." },
+		{ id = "gateTally", name = "Gate Tally Point", hint = "The next road due is being counted by Nolbu's gate.", redirect = "The gate tally point is idle. Today's road due is being counted elsewhere." },
+		{ id = "routeMarker", name = "Route Marker Due", hint = "The road's route marker is collecting today's due.", redirect = "That marker is only keeping watch. Today's road due is being counted elsewhere." },
+	},
+}
+
 local playerData = {}
 
 local villageLayout = {
@@ -228,6 +243,10 @@ local function getPlayerProfile(player)
 		ambientDialogueCursor = {},
 		sharedHarvestDrops = 0,
 		tributeDuesPaid = 0,
+		restorationSupportPointIndex = 1,
+		tributeSupportPointIndex = 1,
+		restorationRotationStep = 0,
+		tributeRotationStep = 0,
 		endingErrandCooldownAt = 0,
 	}
 
@@ -251,11 +270,50 @@ local function getEndingName(choice)
 	return "Unwritten"
 end
 
-local function getEndingHint(choice)
+local function getSupportPointList(errandKind)
+	return ENDING_SUPPORT_POINTS[errandKind] or {}
+end
+
+local function getActiveSupportPoint(profile, errandKind)
+	local points = getSupportPointList(errandKind)
+	if #points == 0 then
+		return nil, 0
+	end
+
+	local index = errandKind == "restoration" and profile.restorationSupportPointIndex or profile.tributeSupportPointIndex
+	if type(index) ~= "number" or index < 1 or index > #points then
+		index = 1
+		if errandKind == "restoration" then
+			profile.restorationSupportPointIndex = index
+		else
+			profile.tributeSupportPointIndex = index
+		end
+	end
+
+	return points[index], index
+end
+
+local function getEndingHint(choice, profile)
 	if choice == "restoration" then
-		return "Ending: Restored Valley · The village protects shared harvests."
+		local drops = profile and profile.sharedHarvestDrops or 0
+		local activePoint = profile and getActiveSupportPoint(profile, "restoration") or nil
+		local activeHint = activePoint and activePoint.hint or "Shared harvests are being gathered near the well."
+		if drops >= 6 then
+			return string.format("Ending: Restored Valley · Shared harvests now return seeds to the valley (%d drops). %s", drops, activeHint)
+		elseif drops >= 3 then
+			return string.format("Ending: Restored Valley · The village is starting to give seeds back (%d drops). %s", drops, activeHint)
+		end
+		return string.format("Ending: Restored Valley · The village protects shared harvests. %s", activeHint)
 	elseif choice == "tribute" then
-		return "Ending: Tribute Road · The harvest still grows under Nolbu's shadow."
+		local dues = profile and profile.tributeDuesPaid or 0
+		local activePoint = profile and getActiveSupportPoint(profile, "tribute") or nil
+		local activeHint = activePoint and activePoint.hint or "The next road due is being counted by Nolbu's road."
+		if dues >= 6 then
+			return string.format("Ending: Tribute Road · The tally stand now expects counted harvests (%d dues). %s", dues, activeHint)
+		elseif dues >= 3 then
+			return string.format("Ending: Tribute Road · The road has started recognizing steady tribute (%d dues). %s", dues, activeHint)
+		end
+		return string.format("Ending: Tribute Road · The harvest still grows under Nolbu's shadow. %s", activeHint)
 	end
 	return "Watch the village signs for story changes."
 end
@@ -271,7 +329,7 @@ local function syncPlayerAttributes(player)
 	player:SetAttribute("QuestStage", profile.questStage)
 	player:SetAttribute("QuestTitle", QUEST_TITLES[profile.questStage] or "Village Tale")
 	player:SetAttribute("QuestObjective", QUEST_OBJECTIVES[profile.questStage] or "Help the village.")
-	player:SetAttribute("QuestHint", getEndingHint(profile.endingChoice))
+	player:SetAttribute("QuestHint", getEndingHint(profile.endingChoice, profile))
 	player:SetAttribute("HeungbuDeliveries", profile.heungbuDeliveries)
 	player:SetAttribute("NolbuTributes", profile.nolbuTributes)
 	player:SetAttribute("EndingName", getEndingName(profile.endingChoice))
@@ -320,7 +378,20 @@ end
 
 local refreshVillageSigns
 
-local function canUseEndingErrand(player, errandKind)
+local function advanceEndingSupportPoint(profile, errandKind)
+	local points = getSupportPointList(errandKind)
+	if #points <= 1 then
+		return nil, nil
+	end
+
+	local indexField = errandKind == "restoration" and "restorationSupportPointIndex" or "tributeSupportPointIndex"
+	local oldPoint = points[profile[indexField]] or points[1]
+	local nextIndex = (profile[indexField] % #points) + 1
+	profile[indexField] = nextIndex
+	return oldPoint, points[nextIndex]
+end
+
+local function canUseEndingErrand(player, errandKind, pointId)
 	local profile = getPlayerProfile(player)
 	if profile.questStage < QUEST.COMPLETE or not profile.endingResolved then
 		return false, "The village is still deciding what your ending means."
@@ -331,6 +402,12 @@ local function canUseEndingErrand(player, errandKind)
 			and "This basket belongs to the valley Heungbu protected, not the road you chose."
 			or "This road due belongs to Nolbu's counted ending, not the valley you chose to restore."
 	end
+
+	local activePoint = getActiveSupportPoint(profile, errandKind)
+	if pointId and activePoint and activePoint.id ~= pointId then
+		return false, activePoint.redirect
+	end
+
 	if profile.gourds <= 0 then
 		return false, errandKind == "restoration"
 			and "Bring one fresh gourd if you want to leave something for the village."
@@ -341,12 +418,12 @@ local function canUseEndingErrand(player, errandKind)
 			and "Let the basket settle for a breath before you leave another shared harvest."
 			or "The tally stand is still being marked. Give it a breath before the next due."
 	end
-	return true
+	return true, nil, activePoint
 end
 
-local function completeEndingErrand(player, errandKind)
+local function completeEndingErrand(player, errandKind, pointId)
 	local profile = getPlayerProfile(player)
-	local ok, message = canUseEndingErrand(player, errandKind)
+	local ok, message, activePoint = canUseEndingErrand(player, errandKind, pointId)
 	if not ok then
 		return false, message
 	end
@@ -354,19 +431,71 @@ local function completeEndingErrand(player, errandKind)
 	profile.gourds -= 1
 	profile.endingErrandCooldownAt = os.clock() + 2.5
 
+	local rewardSummary
+	local ambientLineKey
+	local milestoneLine
+	local milestoneEffect
+	local rotatedFromPoint
+	local rotatedToPoint
+
 	if errandKind == "restoration" then
 		profile.coins += 2
 		profile.sharedHarvestDrops += 1
 		villageState.sharedHarvestDrops += 1
+		rewardSummary = "+2 coins"
+		ambientLineKey = "RestorationErrand"
+
+		if profile.sharedHarvestDrops % 3 == 0 then
+			profile.seeds += 1
+			rewardSummary = rewardSummary .. " · +1 seed returned"
+			milestoneLine = {
+				"Someone has tucked a good seed back into the basket for the next planter.",
+				"That is what a shared harvest becomes when the valley starts trusting itself again.",
+			}
+			milestoneEffect = {
+				kind = "restoration",
+				title = "Shared Harvest Grows Back",
+				body = "+2 coins · +1 seed returned by the village.",
+				color = Color3.fromRGB(142, 220, 116),
+				duration = 4,
+				pulseCount = 2,
+			}
+		end
 	else
 		profile.coins += 3
 		profile.tributeDuesPaid += 1
 		villageState.tributeDuesPaid += 1
+		rewardSummary = "+3 coins"
+		ambientLineKey = "TributeErrand"
+
+		if profile.tributeDuesPaid % 3 == 0 then
+			profile.coins += 1
+			rewardSummary = rewardSummary .. " · +1 inspection coin"
+			milestoneLine = {
+				"The stand marks your name with practiced approval and slides one extra coin back.",
+				"Steady tribute makes the road feel even colder, but undeniably smoother.",
+			}
+			milestoneEffect = {
+				kind = "warning",
+				title = "Road Count Recognized",
+				body = "+3 coins · +1 inspection coin for reliable tribute.",
+				color = Color3.fromRGB(226, 117, 94),
+				duration = 4,
+				pulseCount = 2,
+			}
+		end
+	end
+
+	local rotationStepField = errandKind == "restoration" and "restorationRotationStep" or "tributeRotationStep"
+	profile[rotationStepField] += 1
+	if profile[rotationStepField] >= ENDING_SUPPORT_ROTATION_THRESHOLD then
+		profile[rotationStepField] = 0
+		rotatedFromPoint, rotatedToPoint = advanceEndingSupportPoint(profile, errandKind)
 	end
 
 	syncPlayerAttributes(player)
 	refreshVillageSigns()
-	return true
+	return true, rewardSummary, ambientLineKey, milestoneLine, milestoneEffect, activePoint, rotatedFromPoint, rotatedToPoint
 end
 
 local function startPresentation(player)
@@ -936,11 +1065,15 @@ restorationLanternGlow.Brightness = 0
 restorationLanternGlow.Parent = restorationLantern
 local restorationCrate = addPart(endingAccentFolder, "RestorationSeedCrate", Vector3.new(3.2, 1.4, 2.4), CFrame.new(villageLayout.heungbu.patchPart.position + Vector3.new(7, 1, -1)), Color3.fromRGB(143, 103, 64), Enum.Material.WoodPlanks)
 local tributeLedger = addPart(endingAccentFolder, "TributeLedgerStand", Vector3.new(2.4, 3.2, 1.8), CFrame.new(tributeBasketPosition + Vector3.new(5, 1.6, 0)), Color3.fromRGB(95, 70, 49), Enum.Material.WoodPlanks)
+local repairMarkerBasePosition = toWorldOffset(heungbuFront, heungbuFacingYaw, getPlacementOffset("HeungbuHouse", "yardMarkerOffset", Vector3.new(7, 0.8, -6)))
 local restorationErrandBasket = addPart(endingAccentFolder, "CommunityBasket", Vector3.new(4.2, 1.8, 4.2), CFrame.new(villageWell.Position + Vector3.new(-8, 1.6, 6)), Color3.fromRGB(136, 96, 58), Enum.Material.WoodPlanks)
+local restorationPantryCrate = addPart(endingAccentFolder, "WellPantryDrop", Vector3.new(4.2, 1.6, 3.6), CFrame.new(villageWell.Position + Vector3.new(7, 1.2, -3)), Color3.fromRGB(149, 110, 72), Enum.Material.WoodPlanks)
+local restorationReliefMat = addPart(endingAccentFolder, "YardReliefMat", Vector3.new(4.8, 0.45, 3.6), CFrame.new(repairMarkerBasePosition + Vector3.new(2.8, 0.4, -2.8)), Color3.fromRGB(164, 203, 116), Enum.Material.Fabric)
 local tributeErrandStand = addPart(endingAccentFolder, "RoadDueBasket", Vector3.new(4.4, 2.4, 4.4), CFrame.new(tributeBasketPosition + Vector3.new(9, 2, -5)), Color3.fromRGB(108, 80, 55), Enum.Material.WoodPlanks)
+local tributeGateTallyStand = addPart(endingAccentFolder, "GateTallyStand", Vector3.new(3.2, 2.4, 2.6), CFrame.new(nolbuFront + Vector3.new(-5, 1.8, 8)), Color3.fromRGB(113, 83, 60), Enum.Material.WoodPlanks)
+local tributeRouteMarker = addPart(endingAccentFolder, "TributeRouteMarker", Vector3.new(1.2, 4.6, 1.2), CFrame.new(tributeBasketPosition + Vector3.new(16, 2.3, 6)), Color3.fromRGB(89, 69, 51), Enum.Material.Wood)
 local tributeBanner = addPart(endingAccentFolder, "TributeRoadMarker", Vector3.new(0.6, 6, 0.6), CFrame.new(nolbuFront + Vector3.new(-10, 3, 3)), Color3.fromRGB(86, 67, 55), Enum.Material.Wood)
 local tributeBannerCloth = addPart(endingAccentFolder, "TributeRoadCloth", Vector3.new(2.4, 3.2, 0.2), tributeBanner.CFrame * CFrame.new(1.3, 0.7, 0), Color3.fromRGB(123, 77, 69), Enum.Material.Fabric)
-local repairMarkerBasePosition = toWorldOffset(heungbuFront, heungbuFacingYaw, getPlacementOffset("HeungbuHouse", "yardMarkerOffset", Vector3.new(7, 0.8, -6)))
 local repairMarkerBase = addPart(placedAssets, "HeungbuYardMarkerBase", Vector3.new(3.2, 0.8, 3.2), CFrame.new(repairMarkerBasePosition), Color3.fromRGB(104, 81, 57), Enum.Material.WoodPlanks)
 local repairMarkerPost = addPart(placedAssets, "HeungbuYardMarkerPost", Vector3.new(0.8, 4.8, 0.8), repairMarkerBase.CFrame * CFrame.new(0, 2.8, 0), Color3.fromRGB(122, 90, 62), Enum.Material.Wood)
 local repairMarkerCrossbeam = addPart(placedAssets, "HeungbuYardMarkerCrossbeam", Vector3.new(3, 0.5, 0.8), repairMarkerPost.CFrame * CFrame.new(0, 1.3, 0), Color3.fromRGB(131, 97, 68), Enum.Material.WoodPlanks)
@@ -948,7 +1081,7 @@ local repairMarkerCloth = addPart(placedAssets, "HeungbuYardMarkerCloth", Vector
 local repairMarkerBrokenBeam = addPart(placedAssets, "HeungbuYardMarkerBrokenBeam", Vector3.new(2.6, 0.5, 0.8), repairMarkerPost.CFrame * CFrame.new(-0.4, 0.2, 0) * CFrame.Angles(0, 0, math.rad(-38)), Color3.fromRGB(108, 77, 52), Enum.Material.WoodPlanks)
 local repairMarkerBramble = addPart(placedAssets, "HeungbuYardMarkerBramble", Vector3.new(1.4, 2.4, 1.4), repairMarkerPost.CFrame * CFrame.new(-0.7, -0.2, 0), Color3.fromRGB(81, 100, 50), Enum.Material.Grass)
 
-for _, accentPart in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, tributeLedger, tributeErrandStand, tributeBanner, tributeBannerCloth }) do
+for _, accentPart in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, restorationPantryCrate, restorationReliefMat, tributeLedger, tributeErrandStand, tributeGateTallyStand, tributeRouteMarker, tributeBanner, tributeBannerCloth }) do
 	accentPart.Transparency = 1
 	accentPart.CanCollide = false
 end
@@ -991,9 +1124,21 @@ local repairMarkerSign = attachBillboard(repairMarkerPromptPart, "Yard Marker", 
 local restorationErrandPromptPart = ensureInteractionPart("CommunityBasketPrompt", restorationErrandBasket.Position + Vector3.new(0, 2.4, 0), Vector3.new(7, 6, 7))
 local restorationErrandPrompt = createPrompt(restorationErrandPromptPart, "Leave", "Shared Basket", 0.2, 12)
 local restorationErrandSign = attachBillboard(restorationErrandPromptPart, "Shared Basket", "Leave a fresh gourd so the valley keeps eating together.", Color3.fromRGB(142, 220, 116))
+local restorationPantryPromptPart = ensureInteractionPart("WellPantryDropPrompt", restorationPantryCrate.Position + Vector3.new(0, 2.2, 0), Vector3.new(7, 6, 7))
+local restorationPantryPrompt = createPrompt(restorationPantryPromptPart, "Leave", "Well Pantry", 0.2, 12)
+local restorationPantrySign = attachBillboard(restorationPantryPromptPart, "Well Pantry Drop", "The village pantry by the well stays ready for the next shared harvest.", Color3.fromRGB(142, 220, 116))
+local restorationReliefPromptPart = ensureInteractionPart("YardReliefMatPrompt", restorationReliefMat.Position + Vector3.new(0, 2.1, 0), Vector3.new(7, 5, 7))
+local restorationReliefPrompt = createPrompt(restorationReliefPromptPart, "Leave", "Relief Mat", 0.2, 12)
+local restorationReliefSign = attachBillboard(restorationReliefPromptPart, "Yard Relief Mat", "The repaired yard marker can steady one more family when the valley shares.", Color3.fromRGB(142, 220, 116))
 local tributeErrandPromptPart = ensureInteractionPart("RoadDuePrompt", tributeErrandStand.Position + Vector3.new(0, 2.6, 0), Vector3.new(7, 6, 7))
 local tributeErrandPrompt = createPrompt(tributeErrandPromptPart, "Surrender", "Road Due", 0.2, 12)
 local tributeErrandSign = attachBillboard(tributeErrandPromptPart, "Road Due", "One more gourd keeps Nolbu's road quiet for another day.", Color3.fromRGB(226, 117, 94))
+local tributeGatePromptPart = ensureInteractionPart("GateTallyPrompt", tributeGateTallyStand.Position + Vector3.new(0, 2.2, 0), Vector3.new(7, 6, 7))
+local tributeGatePrompt = createPrompt(tributeGatePromptPart, "Surrender", "Gate Tally", 0.2, 12)
+local tributeGateSign = attachBillboard(tributeGatePromptPart, "Gate Tally Point", "Nolbu's gate keeps a stricter count when tribute is due.", Color3.fromRGB(226, 117, 94))
+local tributeRoutePromptPart = ensureInteractionPart("RouteMarkerDuePrompt", tributeRouteMarker.Position + Vector3.new(0, 2.8, 0), Vector3.new(7, 6, 7))
+local tributeRoutePrompt = createPrompt(tributeRoutePromptPart, "Surrender", "Route Marker", 0.2, 12)
+local tributeRouteSign = attachBillboard(tributeRoutePromptPart, "Route Marker Due", "The roadside marker watches for whichever harvest the road claims next.", Color3.fromRGB(226, 117, 94))
 
 local currentCrop = { state = "empty", owner = nil, readyAt = 0, cropType = "normal" }
 local bramblesActive = false
@@ -1049,15 +1194,19 @@ setSupportPointState("restored")
 local function setEndingAccentVisibility(mode)
 	local restorationVisible = mode == AMBIENT_ENDING.RESTORATION
 	local tributeVisible = mode == AMBIENT_ENDING.TRIBUTE
-	for _, part in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket }) do
+	for _, part in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, restorationPantryCrate, restorationReliefMat }) do
 		part.Transparency = restorationVisible and 0 or 1
 	end
-	for _, part in ipairs({ tributeLedger, tributeErrandStand, tributeBanner, tributeBannerCloth }) do
+	for _, part in ipairs({ tributeLedger, tributeErrandStand, tributeGateTallyStand, tributeRouteMarker, tributeBanner, tributeBannerCloth }) do
 		part.Transparency = tributeVisible and 0 or 1
 	end
 	restorationLanternGlow.Brightness = restorationVisible and 1.2 or 0
-	restorationErrandPrompt.Enabled = restorationVisible
-	tributeErrandPrompt.Enabled = tributeVisible
+	for _, prompt in ipairs({ restorationErrandPrompt, restorationPantryPrompt, restorationReliefPrompt }) do
+		prompt.Enabled = restorationVisible
+	end
+	for _, prompt in ipairs({ tributeErrandPrompt, tributeGatePrompt, tributeRoutePrompt }) do
+		prompt.Enabled = tributeVisible
+	end
 end
 
 local function applyAmbientPatchState(mode)
@@ -1109,18 +1258,18 @@ refreshVillageSigns = function()
 		setBillboardBody(heungbuPadSign, string.format("The yard stays open to all. Restoration endings: %d · Shared drops: %d", villageState.restorationEndings, villageState.sharedHarvestDrops))
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · The gate watches a valley that chose warmth over tribute.", #patrolANodes + #patrolBNodes))
 		setBillboardBody(tributeSign, string.format("Tributes once paid: %d · The basket remains as a warning, not a rule.", villageState.nolbuTributes))
-		setBillboardBody(storyStoneSign, "The valley remembers the day kindness held the patch open.")
-		setBillboardBody(wellSign, string.format("Shared harvests left here: %d · The center of the valley feels calmer after restoration.", villageState.sharedHarvestDrops))
-		setBillboardBody(restorationErrandSign, string.format("Leave a fresh gourd so the valley keeps eating together. Shared drops so far: %d", villageState.sharedHarvestDrops))
+		setBillboardBody(storyStoneSign, villageState.sharedHarvestDrops >= 6 and "The stone now speaks of a valley that shares enough to plant again." or "The valley remembers the day kindness held the patch open.")
+		setBillboardBody(wellSign, villageState.sharedHarvestDrops >= 3 and string.format("Shared harvests left here: %d · Some drops now return seeds to the valley.", villageState.sharedHarvestDrops) or string.format("Shared harvests left here: %d · The center of the valley feels calmer after restoration.", villageState.sharedHarvestDrops))
+		setBillboardBody(restorationErrandSign, villageState.sharedHarvestDrops >= 6 and string.format("Leave a fresh gourd. The basket has started sending seeds back out. Shared drops: %d", villageState.sharedHarvestDrops) or string.format("Leave a fresh gourd so the valley keeps eating together. Shared drops so far: %d", villageState.sharedHarvestDrops))
 		setBillboardBody(tributeErrandSign, "The road-due stand looks out of place in a restored valley.")
 	elseif ambientMode == AMBIENT_ENDING.TRIBUTE then
 		setBillboardBody(heungbuPadSign, string.format("Hope survives under count and caution. Tribute endings lived: %d", villageState.tributeEndings))
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tribute order holds the road in a colder peace.", #patrolANodes + #patrolBNodes))
 		setBillboardBody(tributeSign, string.format("Tributes paid: %d · Nolbu's basket has become part of the road.", villageState.nolbuTributes))
-		setBillboardBody(storyStoneSign, "The stone now tells of a valley that survives by paying what it owes.")
-		setBillboardBody(wellSign, "The center of the valley is busy, productive, and a little quieter than before.")
+		setBillboardBody(storyStoneSign, villageState.tributeDuesPaid >= 6 and "The stone now tells of a valley so practiced at tribute that even the road expects it." or "The stone now tells of a valley that survives by paying what it owes.")
+		setBillboardBody(wellSign, villageState.tributeDuesPaid >= 3 and string.format("The center of the valley is busy, productive, and marked by %d counted road dues.", villageState.tributeDuesPaid) or "The center of the valley is busy, productive, and a little quieter than before.")
 		setBillboardBody(restorationErrandSign, "The shared basket is quiet here; the road now asks to be counted instead.")
-		setBillboardBody(tributeErrandSign, string.format("One more gourd keeps Nolbu's road quiet for another day. Dues paid: %d", villageState.tributeDuesPaid))
+		setBillboardBody(tributeErrandSign, villageState.tributeDuesPaid >= 6 and string.format("One more gourd keeps Nolbu's road quiet. Reliable dues paid: %d", villageState.tributeDuesPaid) or string.format("One more gourd keeps Nolbu's road quiet for another day. Dues paid: %d", villageState.tributeDuesPaid))
 	else
 		setBillboardBody(heungbuPadSign, villageState.magicPayoffs > 0 and string.format("The yard glows a little brighter. Retaliations weathered: %d", villageState.retaliations) or string.format("Harvests gathered: %d · Kindness still lives here.", villageState.gourdsHarvested))
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes))
@@ -1133,7 +1282,37 @@ refreshVillageSigns = function()
 	setBillboardBody(herbSign, string.format("Herb bundles picked: %d · The well garden smells sharp and clean.", villageState.herbBundlesPicked))
 	setBillboardBody(swallowSign, villageState.swallowHelped > 0 and "The swallow has been tended. It twitches with a little strength now." or "Something small is trembling by Nolbu's wall.")
 	setEndingAccentVisibility(ambientMode)
+	updateEndingSupportSigns()
 	applyAmbientPatchState(ambientMode)
+end
+
+local function updateEndingSupportSigns()
+	local ambientMode = getVillageAmbientEndingChoice()
+
+	if ambientMode == AMBIENT_ENDING.RESTORATION then
+		setBillboardBody(restorationPantrySign, villageState.sharedHarvestDrops >= 2
+			and string.format("The well pantry is taking turns with the basket. Shared drops so far: %d", villageState.sharedHarvestDrops)
+			or "The well pantry waits nearby in case the next shared harvest shifts toward the village center.")
+		setBillboardBody(restorationReliefSign, villageState.sharedHarvestDrops >= 4
+			and "Heungbu's repaired yard marker now looks ready to carry the next relief drop."
+			or "The relief mat waits by Heungbu's marker for when the valley needs one more shared stop.")
+		setBillboardBody(tributeGateSign, "Nolbu's tally post is no longer the valley's rule; it stands here as a colder reminder.")
+		setBillboardBody(tributeRouteSign, "The route marker still watches the road, but restored harvests are being claimed elsewhere.")
+	elseif ambientMode == AMBIENT_ENDING.TRIBUTE then
+		setBillboardBody(restorationPantrySign, "The pantry still stands, but the road's count now reaches farther than the shared table.")
+		setBillboardBody(restorationReliefSign, "Heungbu's marker stays standing, though tribute leaves little room for open relief.")
+		setBillboardBody(tributeGateSign, villageState.tributeDuesPaid >= 2
+			and string.format("Nolbu's gate keeps a stricter count now. Counted dues so far: %d", villageState.tributeDuesPaid)
+			or "Nolbu's gate keeps a stricter count when tribute shifts away from the main road stand.")
+		setBillboardBody(tributeRouteSign, villageState.tributeDuesPaid >= 4
+			and "The roadside route marker looks ready to claim the next due before it ever reaches the basket."
+			or "The roadside marker waits for the road's claim whenever the tally shifts off the main stand.")
+	else
+		setBillboardBody(restorationPantrySign, "The village pantry by the well stays ready for the next shared harvest.")
+		setBillboardBody(restorationReliefSign, "The repaired yard marker can steady one more family when the valley shares.")
+		setBillboardBody(tributeGateSign, "Nolbu's gate keeps a stricter count when tribute is due.")
+		setBillboardBody(tributeRouteSign, "The roadside marker watches for whichever harvest the road claims next.")
+	end
 end
 
 local function resolveEndingChoice(player, choice)
@@ -1594,32 +1773,138 @@ nolbuPrompt.Triggered:Connect(function(player)
 	showDialogue(player, "Nolbu", { string.format("My estate still has %d patrol steps and %d reasons to stay impressed.", #patrolANodes + #patrolBNodes, villageState.nolbuTributes), profile.retaliationTriggered and "If Heungbu cannot keep brambles out, perhaps he does not deserve a harvest." or "If you have a spare gourd, the basket is right there." }, Color3.fromRGB(226, 117, 94))
 end)
 
-restorationErrandPrompt.Triggered:Connect(function(player)
-	local ok, message = completeEndingErrand(player, "restoration")
+local function handleEndingSupportPrompt(player, errandKind, pointId, speaker, accent, successTitle, successBody, ambientLines)
+	local ok, message, rewardSummary, ambientLineKey, milestoneLine, milestoneEffect, _, rotatedFromPoint, rotatedToPoint = completeEndingErrand(player, errandKind, pointId)
 	if not ok then
-		showDialogue(player, "Shared Basket", { message }, Color3.fromRGB(142, 220, 116))
+		showDialogue(player, speaker, { message }, accent)
 		return
 	end
-	showEffect(player, "restoration", "Shared Harvest", "+2 coins · A fresh gourd is left where the valley can reach it.", Color3.fromRGB(142, 220, 116), 3.6, 1)
-	showDialogue(player, "Shared Basket", getNextAmbientLine(player, "RestorationErrand", {
-		{ "The basket grows warmer every time someone leaves a real harvest here.", "The village answers with small thanks, not demands." },
-		{ "Another fresh gourd for the shared table.", "Kindness feels more believable when it keeps costing something small and real." },
-		{ "Someone will come by the well and find this before dusk.", "That is what a restored valley is supposed to feel like." },
-	}), Color3.fromRGB(142, 220, 116))
+
+	if milestoneEffect then
+		showEffect(player, milestoneEffect.kind, milestoneEffect.title, milestoneEffect.body, milestoneEffect.color, milestoneEffect.duration, milestoneEffect.pulseCount)
+		showDialogue(player, speaker, milestoneLine, accent)
+	else
+		showEffect(player, errandKind == "restoration" and "restoration" or "warning", successTitle, string.format("%s · %s", rewardSummary, successBody), accent, 3.6, 1)
+		showDialogue(player, speaker, getNextAmbientLine(player, ambientLineKey, ambientLines), accent)
+	end
+
+	if rotatedToPoint then
+		showEffect(
+			player,
+			errandKind == "restoration" and "restoration" or "warning",
+			errandKind == "restoration" and "Shared Route Shifts" or "Road Count Shifts",
+			string.format("%s now points toward %s.", rotatedFromPoint and rotatedFromPoint.name or "The village", rotatedToPoint.name),
+			accent,
+			3.4,
+			1
+		)
+		showDialogue(player, speaker, {
+			string.format("This stop is settled for now. Take the next one to %s.", rotatedToPoint.name),
+			rotatedToPoint.hint,
+		}, accent)
+	end
+end
+
+restorationErrandPrompt.Triggered:Connect(function(player)
+	handleEndingSupportPrompt(
+		player,
+		"restoration",
+		"sharedBasket",
+		"Shared Basket",
+		Color3.fromRGB(142, 220, 116),
+		"Shared Harvest",
+		"A fresh gourd is left where the valley can reach it.",
+		{
+			{ "The basket grows warmer every time someone leaves a real harvest here.", "The village answers with small thanks, not demands." },
+			{ "Another fresh gourd for the shared table.", "Kindness feels more believable when it keeps costing something small and real." },
+			{ "Someone will come by the well and find this before dusk.", "That is what a restored valley is supposed to feel like." },
+		}
+	)
+end)
+
+restorationPantryPrompt.Triggered:Connect(function(player)
+	handleEndingSupportPrompt(
+		player,
+		"restoration",
+		"wellPantry",
+		"Well Pantry Drop",
+		Color3.fromRGB(142, 220, 116),
+		"Well Pantry Stocked",
+		"A fresh gourd is tucked by the village pantry where the center path can reach it.",
+		{
+			{ "The well pantry keeps the middle of the village from feeling forgotten.", "A shared harvest belongs in the places everyone passes." },
+			{ "Someone fetching water will see this before long.", "That is how relief starts looking ordinary instead of heroic." },
+			{ "The pantry takes the gourd without ceremony.", "The valley only needs a quiet place to keep feeding itself." },
+		}
+	)
+end)
+
+restorationReliefPrompt.Triggered:Connect(function(player)
+	handleEndingSupportPrompt(
+		player,
+		"restoration",
+		"yardRelief",
+		"Yard Relief Mat",
+		Color3.fromRGB(142, 220, 116),
+		"Relief Mat Filled",
+		"A fresh gourd is left beside Heungbu's repaired marker for the next family that needs it.",
+		{
+			{ "Heungbu's marker used to only defend one yard.", "Now even this corner can pass a harvest onward." },
+			{ "The mat makes the yard feel less private and more trusted.", "That is a better ending than any banner could manage." },
+			{ "A repaired landmark means more when it starts feeding someone besides its owner.", "The valley remembers that." },
+		}
+	)
 end)
 
 tributeErrandPrompt.Triggered:Connect(function(player)
-	local ok, message = completeEndingErrand(player, "tribute")
-	if not ok then
-		showDialogue(player, "Road Due", { message }, Color3.fromRGB(226, 117, 94))
-		return
-	end
-	showEffect(player, "warning", "Road Due Paid", "+3 coins · The tally stand swallows another counted harvest.", Color3.fromRGB(226, 117, 94), 3.6, 1)
-	showDialogue(player, "Road Due", getNextAmbientLine(player, "TributeErrand", {
-		{ "The stand takes its share and the road stays quiet for one more day.", "No one cheers. That is how you know it is working." },
-		{ "Counted. Accepted. The patrol route will sleep easier tonight.", "Tribute is not warmth, but it does keep arguments off the road." },
-		{ "Another due paid without complaint.", "Nolbu would call that peace. Heungbu would call it endurance." },
-	}), Color3.fromRGB(226, 117, 94))
+	handleEndingSupportPrompt(
+		player,
+		"tribute",
+		"roadStand",
+		"Road Due",
+		Color3.fromRGB(226, 117, 94),
+		"Road Due Paid",
+		"The tally stand swallows another counted harvest.",
+		{
+			{ "The stand takes its share and the road stays quiet for one more day.", "No one cheers. That is how you know it is working." },
+			{ "Counted. Accepted. The patrol route will sleep easier tonight.", "Tribute is not warmth, but it does keep arguments off the road." },
+			{ "Another due paid without complaint.", "Nolbu would call that peace. Heungbu would call it endurance." },
+		}
+	)
+end)
+
+tributeGatePrompt.Triggered:Connect(function(player)
+	handleEndingSupportPrompt(
+		player,
+		"tribute",
+		"gateTally",
+		"Gate Tally Point",
+		Color3.fromRGB(226, 117, 94),
+		"Gate Tally Marked",
+		"Another gourd is counted under Nolbu's gate before it ever reaches the road.",
+		{
+			{ "The gate clerk's table feels colder than the stand by the road.", "Everything here is measured before it is accepted." },
+			{ "A due paid at the gate saves the road a complaint later.", "Order likes to start as close to the house as possible." },
+			{ "The tally mark dries quickly in the shade of Nolbu's gate.", "Official routines always look most natural where they are least questioned." },
+		}
+	)
+end)
+
+tributeRoutePrompt.Triggered:Connect(function(player)
+	handleEndingSupportPrompt(
+		player,
+		"tribute",
+		"routeMarker",
+		"Route Marker Due",
+		Color3.fromRGB(226, 117, 94),
+		"Route Marker Claimed",
+		"The roadside marker quietly claims another harvest for the road's account.",
+		{
+			{ "The route marker does not need a basket to feel demanding.", "It only needs everyone to know what happens if they pass it empty-handed." },
+			{ "Another counted harvest disappears into the road's routine.", "Even the silence here feels supervised." },
+			{ "The marker keeps watch like a threat dressed up as administration.", "Tribute survives because places like this make surrender feel ordinary." },
+		}
+	)
 end)
 
 tributePrompt.Triggered:Connect(function(player)
