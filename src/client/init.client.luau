@@ -722,16 +722,36 @@ local function refreshHud()
 
 	useSeedButton.Active = seeds > 0
 	useSeedButton.AutoButtonColor = seeds > 0
-	useSeedButton.BackgroundColor3 = seeds > 0 and Color3.fromRGB(97, 162, 88) or Color3.fromRGB(88, 82, 78)
+
 	if seeds > 0 then
-		local secondLine
-		if ownedPumpkins > 0 then
-			secondLine = string.format("Break yours first, or plant again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
-		else
-			secondLine = string.format("Spend 1 seed and grow your own pumpkin (%d ready)", seeds)
+		local buttonTitle = "Plant Pumpkin [Q]"
+		local secondLine = string.format("Spend 1 seed and grow your own pumpkin (%d ready)", seeds)
+		local backgroundColor = Color3.fromRGB(97, 162, 88)
+		local strokeColor = Color3.fromRGB(235, 219, 177)
+		local textColor = Color3.fromRGB(252, 247, 239)
+
+		if isSlowed then
+			buttonTitle = "Plant After Recovery [Q]"
+			secondLine = string.format("You can plant now, but recovering first keeps the loop cleaner (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(128, 104, 78)
+			strokeColor = Color3.fromRGB(245, 188, 150)
+		elseif ownedPumpkins > 0 then
+			buttonTitle = "Plant Another Pumpkin [Q]"
+			secondLine = string.format("Break yours first for the clean cash-out, or spend another seed now (%d ready)", seeds)
+			backgroundColor = Color3.fromRGB(132, 110, 72)
+			strokeColor = Color3.fromRGB(240, 224, 163)
+		elseif #affordableUpgradeIds > 0 then
+			secondLine = string.format("Plant first to keep momentum, or swing by the plaza instead (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 		end
-		useSeedButton.Text = string.format("Plant Pumpkin [Q]\n%s", secondLine)
+
+		useSeedButton.BackgroundColor3 = backgroundColor
+		buttonStroke.Color = strokeColor
+		useSeedButton.TextColor3 = textColor
+		useSeedButton.Text = string.format("%s\n%s", buttonTitle, secondLine)
 	else
+		useSeedButton.BackgroundColor3 = Color3.fromRGB(88, 82, 78)
+		buttonStroke.Color = Color3.fromRGB(235, 219, 177)
+		useSeedButton.TextColor3 = Color3.fromRGB(252, 247, 239)
 		useSeedButton.Text = "Need Seeds\nHeal a swallow first"
 	end
 end
