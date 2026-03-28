@@ -211,6 +211,9 @@ local activeWorldPopupCounts = {}
 local activeWorldPopupState = {}
 local activeWorldPopupEntries = {}
 local recentLoopReset = nil
+local activePromptOwners = {}
+local promptOwnerGraceByKey = {}
+local promptOwnerGraceDuration = 0.24
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
 local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
@@ -418,6 +421,93 @@ local function formatUpgradeRow(upgradeId, money)
 		benefitText,
 		missing
 	), Color3.fromRGB(baseColor.R * 255 * 0.78, baseColor.G * 255 * 0.78, baseColor.B * 255 * 0.78)
+end
+
+local refreshHud
+
+local function getPromptOwnerKey(prompt)
+	if typeof(prompt) ~= "Instance" then
+		return nil
+	end
+
+	return prompt:GetDebugId()
+end
+
+local function getPromptOwnerState(prompt)
+	if typeof(prompt) ~= "Instance" or not prompt:IsA("ProximityPrompt") then
+		return nil
+	end
+
+	local parent = prompt.Parent
+	if not parent then
+		return nil
+	end
+
+	local kind = parent:GetAttribute(interactionAttributes.Kind)
+	local upgradeId = parent:GetAttribute(interactionAttributes.UpgradeId)
+	if kind == "Swallow" then
+		return {
+			kind = "Swallow",
+			priority = 2,
+			label = "Heal",
+		}
+	end
+
+	if upgradeId or prompt.ActionText == "Buy" then
+		return {
+			kind = "Upgrade",
+			priority = 3,
+			label = "Buy",
+		}
+	end
+
+	return nil
+end
+
+local function setPromptOwnerActive(prompt, isActive)
+	local key = getPromptOwnerKey(prompt)
+	if not key then
+		return
+	end
+
+	if isActive then
+		local state = getPromptOwnerState(prompt)
+		if state then
+			activePromptOwners[key] = state
+			promptOwnerGraceByKey[key] = nil
+		end
+		return
+	end
+
+	if activePromptOwners[key] then
+		promptOwnerGraceByKey[key] = {
+			expiresAt = os.clock() + promptOwnerGraceDuration,
+			owner = activePromptOwners[key],
+		}
+		activePromptOwners[key] = nil
+		task.delay(promptOwnerGraceDuration, refreshHud)
+	end
+end
+
+local function getActivePromptOwner()
+	local now = os.clock()
+	local bestOwner = nil
+
+	for key, graceState in pairs(promptOwnerGraceByKey) do
+		if now > graceState.expiresAt then
+			promptOwnerGraceByKey[key] = nil
+		elseif graceState.owner and (not bestOwner or graceState.owner.priority > bestOwner.priority) then
+			bestOwner = graceState.owner
+		end
+	end
+
+	for _, owner in pairs(activePromptOwners) do
+		if not bestOwner or owner.priority > bestOwner.priority then
+			bestOwner = owner
+		end
+	end
+
+	return bestOwner
 end
 
 local function getZoneState(rootPosition)
@@ -738,7 +828,7 @@ local function showWorldPopup(payload)
 	end)
 end
 
-local function refreshHud()
+function refreshHud()
 	local seeds = getAttribute(playerAttributes.Seeds) or 0
 	local money = getAttribute(playerAttributes.Money) or 0
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
@@ -747,6 +837,7 @@ local function refreshHud()
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local zoneState = getZoneState(root and root.Position or nil)
+	local activePromptOwner = getActivePromptOwner()
 	local playerState = {
 		seeds = seeds,
 		money = money,
@@ -754,6 +845,7 @@ local function refreshHud()
 		affordableUpgradeIds = affordableUpgradeIds,
 		ownedPumpkins = ownedPumpkins,
 		zoneState = zoneState,
+		activePromptOwner = activePromptOwner,
 		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and os.clock() <= recentLoopReset.expiresAt,
 	}
 	local recentReset = getRecentLoopReset(playerState)
@@ -831,6 +923,16 @@ local function refreshHud()
 			secondLine = string.format("Break yours first for the clean cash-out, or spend another seed now (%d ready)", seeds)
 			backgroundColor = Color3.fromRGB(132, 110, 72)
 			strokeColor = Color3.fromRGB(240, 224, 163)
+		elseif activePromptOwner and activePromptOwner.kind == "Upgrade" then
+			buttonTitle = "Plant After This Buy [Q]"
+			secondLine = string.format("A plaza pad owns this moment — step off it to make planting primary again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(118, 96, 74)
+			strokeColor = Color3.fromRGB(236, 190, 126)
+		elseif activePromptOwner and activePromptOwner.kind == "Swallow" then
+			buttonTitle = "Plant After This Heal [Q]"
+			secondLine = string.format("The village heal prompt is the local commitment here; planting stays ready after that (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(101, 122, 88)
+			strokeColor = Color3.fromRGB(206, 232, 190)
 		elseif #affordableUpgradeIds > 0 then
 			secondLine = string.format("Plant first to keep momentum, or swing by the plaza instead (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 		end
@@ -868,10 +970,22 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
+ProximityPromptService.PromptShown:Connect(function(prompt)
+	setPromptOwnerActive(prompt, true)
+	refreshHud()
+end)
+
+ProximityPromptService.PromptHidden:Connect(function(prompt)
+	setPromptOwnerActive(prompt, false)
+	refreshHud()
+end)
+
 ProximityPromptService.PromptTriggered:Connect(function(prompt, promptedPlayer)
 	if promptedPlayer ~= player then
 		return
 	end
+
+	setPromptOwnerActive(prompt, false)
 
 	local promptParent = prompt.Parent
 	if not promptParent then
