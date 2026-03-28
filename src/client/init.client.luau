@@ -665,6 +665,21 @@ local function getRecentLoopReset(playerState)
 	return nil
 end
 
+local function getDisplayPromptOwner(playerState)
+	local activePromptOwner = playerState.activePromptOwner
+	if not activePromptOwner then
+		return nil
+	end
+
+	if activePromptOwner.kind == "Upgrade" and playerState.recentRecovery then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge or not playerState.zoneState.inPlaza then
+			return nil
+		end
+	end
+
+	return activePromptOwner
+end
+
 local function getStatusSummary(playerState)
 	if playerState.isSlowed then
 		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
@@ -916,6 +931,7 @@ function refreshHud()
 		activePromptOwner = activePromptOwner,
 		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and os.clock() <= recentLoopReset.expiresAt,
 	}
+	local displayPromptOwner = getDisplayPromptOwner(playerState)
 	local recentReset = getRecentLoopReset(playerState)
 
 	resourcesLabel.Text = string.format("Seeds %d   |   Money %d", seeds, money)
@@ -986,7 +1002,7 @@ function refreshHud()
 			secondLine = string.format("You can plant now, but recovering first keeps the loop cleaner (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(128, 104, 78)
 			strokeColor = Color3.fromRGB(245, 188, 150)
-		elseif activePromptOwner and activePromptOwner.kind == "Pumpkin" then
+		elseif displayPromptOwner and displayPromptOwner.kind == "Pumpkin" then
 			buttonTitle = "Plant After This Break [Q]"
 			secondLine = string.format("Your pumpkin prompt owns this moment — cash out first, or step off to plant again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(132, 110, 72)
@@ -996,12 +1012,12 @@ function refreshHud()
 			secondLine = string.format("Break yours first for the clean cash-out, or spend another seed now (%d ready)", seeds)
 			backgroundColor = Color3.fromRGB(132, 110, 72)
 			strokeColor = Color3.fromRGB(240, 224, 163)
-		elseif activePromptOwner and activePromptOwner.kind == "Upgrade" then
+		elseif displayPromptOwner and displayPromptOwner.kind == "Upgrade" then
 			buttonTitle = "Plant After This Buy [Q]"
 			secondLine = string.format("A plaza pad owns this moment — step off it to make planting primary again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(118, 96, 74)
 			strokeColor = Color3.fromRGB(236, 190, 126)
-		elseif activePromptOwner and activePromptOwner.kind == "Swallow" then
+		elseif displayPromptOwner and displayPromptOwner.kind == "Swallow" then
 			buttonTitle = "Plant After This Heal [Q]"
 			secondLine = string.format("The village heal prompt is the local commitment here; planting stays ready after that (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(101, 122, 88)
