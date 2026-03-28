@@ -40,6 +40,7 @@ Roblox game project powered by Rojo.
 - Dialogue popups fire from server-side interactions so the story stays readable even with basic placeholder assets.
 - Story beat banners and flash feedback make the blessed seed payoff and retaliation more visible.
 - Village billboards update with delivery / tribute / magic totals to make the reward loop feel more explicit.
+- After the ending, Heungbu and Nolbu's own talk-node billboards also shift with the branch, village tier, and active support point so the aftermath reads before you even click them.
 - Runtime placement is organized through a small layout table so village tuning can happen in code without Studio-only setup.
 
 ## Design Agent Workflow

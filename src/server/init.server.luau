@@ -849,6 +849,88 @@ local function getVillageAmbientEndingChoice()
 	return AMBIENT_ENDING.NONE
 end
 
+local function getVillageBrotherSignBodies(mode)
+	if mode == AMBIENT_ENDING.RESTORATION then
+		local tier = getVillageEndingLandmarkTier("restoration")
+		local activePointId = getActiveVillageSupportPointId("restoration")
+		local heungbuBody
+		if activePointId == "yardRelief" then
+			heungbuBody = tier >= 2
+				and "Heungbu says the yard now sends relief back into the valley instead of only asking for help."
+				or "Heungbu is watching today's relief stop turn his yard into a place that can help someone else."
+		elseif activePointId == "wellPantry" then
+			heungbuBody = tier >= 2
+				and "Heungbu says the pantry now looks like tomorrow will arrive on purpose."
+				or "Heungbu says the well pantry is starting to make shared help feel dependable."
+		else
+			heungbuBody = tier >= 2
+				and "Heungbu says the valley now trusts shared harvests enough to plan around them."
+				or tier >= 1
+					and "Heungbu says kindness is settling into routine instead of fading after the ending."
+					or "Heungbu keeps thanking neighbors for proving the restored ending was more than one good day."
+		end
+
+		local nolbuBody
+		if activePointId == "wellPantry" then
+			nolbuBody = tier >= 2
+				and "Nolbu grumbles that the well pantry is becoming annoyingly practical to argue with."
+				or "Nolbu watches the pantry with obvious irritation as shared stores keep surviving."
+		elseif activePointId == "yardRelief" then
+			nolbuBody = tier >= 2
+				and "Nolbu dislikes how useful Heungbu's yard looks once relief starts leaving it."
+				or "Nolbu says the yard was easier to dismiss when it only symbolized need."
+		else
+			nolbuBody = tier >= 2
+				and "Nolbu admits the valley's generosity is becoming inconveniently organized."
+				or tier >= 1
+					and "Nolbu says restored habits are lasting longer than sentiment should allow."
+					or "Nolbu watches the shared route with the look of someone waiting for kindness to tire out."
+		end
+
+		return heungbuBody, nolbuBody
+	elseif mode == AMBIENT_ENDING.TRIBUTE then
+		local tier = getVillageEndingLandmarkTier("tribute")
+		local activePointId = getActiveVillageSupportPointId("tribute")
+		local heungbuBody
+		if activePointId == "gateTally" then
+			heungbuBody = tier >= 2
+				and "Heungbu says the gate now feels too practiced at counting what should have fed a home first."
+				or "Heungbu says today's gate tally makes the road feel colder than the harvest deserves."
+		elseif activePointId == "routeMarker" then
+			heungbuBody = tier >= 2
+				and "Heungbu says even the route markers now sound certain before a harvest reaches the village."
+				or "Heungbu watches the route marker and says caution is learning the road too quickly."
+		else
+			heungbuBody = tier >= 2
+				and "Heungbu says the road has grown so practiced at tribute that quiet no longer feels merciful."
+				or tier >= 1
+					and "Heungbu says people are bracing for the tally before anyone even asks."
+					or "Heungbu keeps working, but he says the road's quiet should not be mistaken for comfort."
+		end
+
+		local nolbuBody
+		if activePointId == "gateTally" then
+			nolbuBody = tier >= 2
+				and "Nolbu says the gate tally now does its work before complaints have time to form."
+				or "Nolbu looks pleased that today's due is being counted where everyone can feel the house behind it."
+		elseif activePointId == "routeMarker" then
+			nolbuBody = tier >= 2
+				and "Nolbu says the route markers are finally teaching compliance before the basket even appears."
+				or "Nolbu says the road grows calmer once even the markers know how to ask."
+		else
+			nolbuBody = tier >= 2
+				and "Nolbu says tribute has matured into the sort of routine a village ought to respect."
+				or tier >= 1
+					and "Nolbu says the tally rhythm is settling in exactly as a sensible road should."
+					or "Nolbu sounds satisfied that the road now shortens arguments by counting first."
+		end
+
+		return heungbuBody, nolbuBody
+	end
+
+	return string.format("Deliveries: %d · Swallows helped: %d · Magic opened: %d", villageState.heungbuDeliveries, villageState.swallowHelped, villageState.magicPayoffs), string.format("Tributes demanded: %d · Nolbu still watches for results, not excuses.", villageState.nolbuTributes)
+end
+
 local function getNextAmbientLine(player, key, lines)
 	local profile = getPlayerProfile(player)
 	profile.ambientDialogueCursor[key] = (profile.ambientDialogueCursor[key] or 0) + 1
@@ -2269,7 +2351,8 @@ end
 refreshVillageSigns = function()
 	local ambientMode = getVillageAmbientEndingChoice()
 	local retaliationMode = getRetaliationPressureMode()
-	setBillboardBody(heungbuSign, string.format("Deliveries: %d · Swallows helped: %d · Magic opened: %d", villageState.heungbuDeliveries, villageState.swallowHelped, villageState.magicPayoffs))
+	local heungbuSignBody, nolbuSignBody = getVillageBrotherSignBodies(ambientMode)
+	setBillboardBody(heungbuSign, heungbuSignBody)
 	if retaliationMode == "stabilize" then
 		setBillboardBody(heungbuPadSign, "The patch is open again, but the yard marker still needs steady hands.")
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Nolbu's envy reached farther than the vines.", #patrolANodes + #patrolBNodes))
@@ -2303,6 +2386,7 @@ refreshVillageSigns = function()
 		setBillboardBody(restorationErrandSign, "Leave a fresh gourd so the valley keeps eating together.")
 		setBillboardBody(tributeErrandSign, "One more gourd keeps Nolbu's road quiet for another day.")
 	end
+	setBillboardBody(nolbuSign, nolbuSignBody)
 	setBillboardBody(herbSign, string.format("Herb bundles picked: %d · The well garden smells sharp and clean.", villageState.herbBundlesPicked))
 	setBillboardBody(swallowSign, villageState.swallowHelped > 0 and "The swallow has been tended. It twitches with a little strength now." or "Something small is trembling by Nolbu's wall.")
 	setEndingAccentVisibility(ambientMode)
