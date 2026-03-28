@@ -178,6 +178,8 @@ local housePlacementSpecs = {
 		fallbackFootprint = Vector3.new(34, 18, 26),
 		narrativeRole = "humble",
 		frontOffset = Vector3.new(0, 0, 12),
+		talkOffset = Vector3.new(0, 5, 2.5),
+		yardMarkerOffset = Vector3.new(7, 0.8, -6),
 	},
 	NolbuHouse = {
 		padName = villageLayout.nolbu.yardPad.name,
@@ -190,6 +192,8 @@ local housePlacementSpecs = {
 		fallbackFootprint = Vector3.new(42, 22, 30),
 		narrativeRole = "imposing",
 		frontOffset = Vector3.new(0, 0, 16),
+		talkOffset = Vector3.new(0, 5, 2),
+		tributeOffset = Vector3.new(10, -1.6, 8),
 	},
 }
 
@@ -867,9 +871,25 @@ local function getHouseFacingYaw(name, fallbackYaw)
 	return fallbackYaw
 end
 
+local function toWorldOffset(origin, yaw, offset)
+	return origin + (CFrame.Angles(0, math.rad(yaw), 0):VectorToWorldSpace(offset))
+end
+
+local function getPlacementOffset(name, field, fallback)
+	local spec = housePlacementSpecs[name]
+	local value = spec and spec[field]
+	if typeof(value) == "Vector3" then
+		return value
+	end
+	return fallback
+end
+
 local heungbuFront = getHouseFrontPosition("HeungbuHouse", villageLayout.heungbu.talkPart.position)
 local nolbuFront = getHouseFrontPosition("NolbuHouse", villageLayout.nolbu.talkPart.position)
+local heungbuFacingYaw = getHouseFacingYaw("HeungbuHouse", villageLayout.heungbu.housePad.yaw)
 local nolbuFacingYaw = getHouseFacingYaw("NolbuHouse", villageLayout.nolbu.yardPad.yaw)
+local heungbuTalkPosition = toWorldOffset(heungbuFront, heungbuFacingYaw, getPlacementOffset("HeungbuHouse", "talkOffset", Vector3.new(0, 5, 0)))
+local nolbuTalkPosition = toWorldOffset(nolbuFront, nolbuFacingYaw, getPlacementOffset("NolbuHouse", "talkOffset", Vector3.new(0, 5, 0)))
 
 local heungbuPad = addPart(placedAssets, villageLayout.heungbu.housePad.name, villageLayout.heungbu.housePad.size, CFrame.new(villageLayout.heungbu.housePad.position) * CFrame.Angles(0, math.rad(villageLayout.heungbu.housePad.yaw), 0), Color3.fromRGB(133, 99, 63), Enum.Material.Ground)
 local nolbuPad = addPart(placedAssets, villageLayout.nolbu.yardPad.name, villageLayout.nolbu.yardPad.size, CFrame.new(villageLayout.nolbu.yardPad.position) * CFrame.Angles(0, math.rad(villageLayout.nolbu.yardPad.yaw), 0), Color3.fromRGB(142, 111, 77), Enum.Material.Ground)
@@ -877,7 +897,7 @@ local villageWell = addPart(placedAssets, villageLayout.village.well.name, villa
 local marketMat = addPart(placedAssets, villageLayout.village.seedMat.name, villageLayout.village.seedMat.size, CFrame.new(villageLayout.village.seedMat.position), Color3.fromRGB(156, 106, 64), Enum.Material.WoodPlanks)
 local gourdPatch = addPart(placedAssets, villageLayout.village.gourdPatch.name, villageLayout.village.gourdPatch.size, CFrame.new(villageLayout.village.gourdPatch.position), Color3.fromRGB(80, 55, 34), Enum.Material.Mud)
 local festivalStone = addPart(placedAssets, villageLayout.village.storyStone.name, villageLayout.village.storyStone.size, CFrame.new(villageLayout.village.storyStone.position), Color3.fromRGB(124, 118, 112), Enum.Material.Slate)
-local tributeBasketPosition = nolbuFront + (CFrame.Angles(0, math.rad(nolbuFacingYaw), 0):VectorToWorldSpace(Vector3.new(10, -1.6, 8)))
+local tributeBasketPosition = toWorldOffset(nolbuFront, nolbuFacingYaw, getPlacementOffset("NolbuHouse", "tributeOffset", Vector3.new(10, -1.6, 8)))
 local tributeBasket = addPart(placedAssets, "NolbuTributeBasket", Vector3.new(6, 2.2, 6), CFrame.new(tributeBasketPosition.X, 2.2, tributeBasketPosition.Z), Color3.fromRGB(101, 71, 43), Enum.Material.WoodPlanks)
 local herbPatch = addPart(placedAssets, villageLayout.village.herbPatch.name, villageLayout.village.herbPatch.size, CFrame.new(villageLayout.village.herbPatch.position), Color3.fromRGB(73, 107, 49), Enum.Material.Grass)
 local clotheslineBeam = addPart(placedAssets, villageLayout.village.clothesline.name, villageLayout.village.clothesline.size, CFrame.new(villageLayout.village.clothesline.position), Color3.fromRGB(104, 78, 58), Enum.Material.WoodPlanks)
@@ -920,7 +940,8 @@ local restorationErrandBasket = addPart(endingAccentFolder, "CommunityBasket", V
 local tributeErrandStand = addPart(endingAccentFolder, "RoadDueBasket", Vector3.new(4.4, 2.4, 4.4), CFrame.new(tributeBasketPosition + Vector3.new(9, 2, -5)), Color3.fromRGB(108, 80, 55), Enum.Material.WoodPlanks)
 local tributeBanner = addPart(endingAccentFolder, "TributeRoadMarker", Vector3.new(0.6, 6, 0.6), CFrame.new(nolbuFront + Vector3.new(-10, 3, 3)), Color3.fromRGB(86, 67, 55), Enum.Material.Wood)
 local tributeBannerCloth = addPart(endingAccentFolder, "TributeRoadCloth", Vector3.new(2.4, 3.2, 0.2), tributeBanner.CFrame * CFrame.new(1.3, 0.7, 0), Color3.fromRGB(123, 77, 69), Enum.Material.Fabric)
-local repairMarkerBase = addPart(placedAssets, "HeungbuYardMarkerBase", Vector3.new(3.2, 0.8, 3.2), CFrame.new(heungbuFront + Vector3.new(7, 0.8, -6)), Color3.fromRGB(104, 81, 57), Enum.Material.WoodPlanks)
+local repairMarkerBasePosition = toWorldOffset(heungbuFront, heungbuFacingYaw, getPlacementOffset("HeungbuHouse", "yardMarkerOffset", Vector3.new(7, 0.8, -6)))
+local repairMarkerBase = addPart(placedAssets, "HeungbuYardMarkerBase", Vector3.new(3.2, 0.8, 3.2), CFrame.new(repairMarkerBasePosition), Color3.fromRGB(104, 81, 57), Enum.Material.WoodPlanks)
 local repairMarkerPost = addPart(placedAssets, "HeungbuYardMarkerPost", Vector3.new(0.8, 4.8, 0.8), repairMarkerBase.CFrame * CFrame.new(0, 2.8, 0), Color3.fromRGB(122, 90, 62), Enum.Material.Wood)
 local repairMarkerCrossbeam = addPart(placedAssets, "HeungbuYardMarkerCrossbeam", Vector3.new(3, 0.5, 0.8), repairMarkerPost.CFrame * CFrame.new(0, 1.3, 0), Color3.fromRGB(131, 97, 68), Enum.Material.WoodPlanks)
 local repairMarkerCloth = addPart(placedAssets, "HeungbuYardMarkerCloth", Vector3.new(2.2, 2.6, 0.2), repairMarkerPost.CFrame * CFrame.new(0.9, 0.2, 0), Color3.fromRGB(162, 201, 115), Enum.Material.Fabric)
@@ -941,7 +962,6 @@ local patrolBNodes = buildWanderRing("NolbuPatrolB", Vector3.new(92, 2, 30), 14,
 if placedByName.NolbuPatrolA then startWanderNpc(placedByName.NolbuPatrolA, { walkSpeed = 8, nodes = patrolANodes }) end
 if placedByName.NolbuPatrolB then startWanderNpc(placedByName.NolbuPatrolB, { walkSpeed = 7, nodes = patrolBNodes }) end
 
-local heungbuTalkPosition = heungbuFront + Vector3.new(0, 5, 0)
 local heungbuTalkPart = ensureInteractionPart(villageLayout.heungbu.talkPart.name, heungbuTalkPosition, villageLayout.heungbu.talkPart.size)
 local heungbuPrompt = createPrompt(heungbuTalkPart, "Talk", "Heungbu", 0.2, 14)
 local heungbuSign = attachBillboard(heungbuTalkPart, "Heungbu", "He keeps smiling even when the house is quiet.", Color3.fromRGB(111, 224, 128))
@@ -950,7 +970,6 @@ local seedPrompt = createPrompt(seedPart, "Collect", "Seed Basket", 0.15, 12)
 local patchPart = ensureInteractionPart(villageLayout.heungbu.patchPart.name, villageLayout.heungbu.patchPart.position, villageLayout.heungbu.patchPart.size)
 local plantPrompt = createPrompt(patchPart, "Plant / Harvest", "Gourd Patch", 0.25, 14)
 local patchSign = attachBillboard(patchPart, "Gourd Patch", "Bring a seed, then return when the vine is ready.", Color3.fromRGB(120, 219, 95))
-local nolbuTalkPosition = nolbuFront + Vector3.new(0, 5, 0)
 local nolbuTalkPart = ensureInteractionPart(villageLayout.nolbu.talkPart.name, nolbuTalkPosition, villageLayout.nolbu.talkPart.size)
 local nolbuPrompt = createPrompt(nolbuTalkPart, "Listen", "Nolbu", 0.15, 12)
 local tributePosition = tributeBasketPosition + Vector3.new(0, 2, 0)
