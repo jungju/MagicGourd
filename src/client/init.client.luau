@@ -421,7 +421,7 @@ end
 
 local function getPrimaryGuidance(playerState)
 	if playerState.isSlowed then
-		return "Next: Recover from the goblin slow before pushing deeper.", Color3.fromRGB(245, 188, 150)
+		return "Next: Recover from the goblin slow.", Color3.fromRGB(245, 188, 150)
 	end
 
 	if playerState.ownedPumpkins > 0 then
@@ -429,18 +429,18 @@ local function getPrimaryGuidance(playerState)
 	end
 
 	if playerState.seeds > 0 then
-		return "Next: Plant a pumpkin nearby, then break it for money.", Color3.fromRGB(220, 235, 196)
+		return "Next: Plant a pumpkin nearby.", Color3.fromRGB(220, 235, 196)
 	end
 
 	if #playerState.affordableUpgradeIds > 0 then
-		return "Next: Return to Central Plaza - you can buy an upgrade.", Color3.fromRGB(240, 224, 163)
+		return "Next: Return to Central Plaza for an upgrade.", Color3.fromRGB(240, 224, 163)
 	end
 
 	if playerState.seeds <= 0 then
 		return "Next: Heal a swallow in Heungbu Village for seeds.", Color3.fromRGB(206, 232, 190)
 	end
 
-	return "Next: Keep the loop moving and buy when the pace boost matters.", Color3.fromRGB(240, 224, 163)
+	return "Next: Return to Heungbu Village for seeds.", Color3.fromRGB(206, 232, 190)
 end
 
 local function getRecentLoopReset(playerState)
@@ -482,11 +482,17 @@ end
 
 local function getSupportTip(playerState)
 	if playerState.isSlowed then
-		return "Loop paused: recover, then restart the chain."
+		if playerState.ownedPumpkins > 0 then
+			return "Recover first, then get back to your pumpkin cash-out."
+		end
+		if playerState.seeds > 0 then
+			return "Recover first, then plant once your pace is back."
+		end
+		return "Recover first, then rejoin the loop from the safe side."
 	end
 
 	if playerState.ownedPumpkins > 0 and #playerState.affordableUpgradeIds > 0 then
-		return "Cash out your pumpkin, then decide if this is the plaza trip."
+		return "Cash out your pumpkin first, then decide if this is the plaza trip."
 	end
 
 	if playerState.ownedPumpkins > 0 then
@@ -494,11 +500,11 @@ local function getSupportTip(playerState)
 	end
 
 	if #playerState.affordableUpgradeIds > 0 and playerState.seeds <= 0 then
-		return "Buy one upgrade, then return to Heungbu Village for fresh seeds."
+		return "Buy now, then return to Heungbu Village for fresh seeds."
 	end
 
 	if #playerState.affordableUpgradeIds > 0 then
-		return "Plant first if you want, or cash out now for a faster next run."
+		return "Plant first, or swing by the plaza if you want a stronger next route."
 	end
 
 	return "Loop: heal -> plant -> break -> buy."
