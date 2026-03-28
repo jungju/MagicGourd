@@ -3,6 +3,7 @@ print("MagicGourd arcade client started")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -419,8 +420,51 @@ local function formatUpgradeRow(upgradeId, money)
 	), Color3.fromRGB(baseColor.R * 255 * 0.78, baseColor.G * 255 * 0.78, baseColor.B * 255 * 0.78)
 end
 
+local function getZoneState(rootPosition)
+	local zones = ArcadeConfig.World and ArcadeConfig.World.Zones
+	if typeof(rootPosition) ~= "Vector3" or type(zones) ~= "table" then
+		return {
+			inDanger = false,
+			nearDangerEdge = false,
+			inPlaza = false,
+		}
+	end
+
+	local function isInsideZone(zone)
+		if type(zone) ~= "table" or typeof(zone.center) ~= "Vector3" or typeof(zone.size) ~= "Vector3" then
+			return false
+		end
+
+		local halfSize = zone.size * 0.5
+		local delta = rootPosition - zone.center
+		return math.abs(delta.X) <= halfSize.X and math.abs(delta.Z) <= halfSize.Z
+	end
+
+	local dangerZone = zones.NolbuDanger
+	local plazaZone = zones.CentralPlaza
+	local inDanger = isInsideZone(dangerZone)
+	local inPlaza = isInsideZone(plazaZone)
+	local nearDangerEdge = false
+
+	if type(dangerZone) == "table" and typeof(dangerZone.center) == "Vector3" and typeof(dangerZone.size) == "Vector3" then
+		local edgePadding = 16
+		local delta = rootPosition - dangerZone.center
+		local expandedHalfSize = dangerZone.size * 0.5 + Vector3.new(edgePadding, 0, edgePadding)
+		nearDangerEdge = math.abs(delta.X) <= expandedHalfSize.X and math.abs(delta.Z) <= expandedHalfSize.Z
+	end
+
+	return {
+		inDanger = inDanger,
+		nearDangerEdge = nearDangerEdge,
+		inPlaza = inPlaza,
+	}
+end
+
 local function getPrimaryGuidance(playerState)
 	if playerState.isSlowed then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
+			return "Next: Pull back toward Central Plaza.", Color3.fromRGB(245, 188, 150)
+		end
 		return "Next: Recover from the goblin slow.", Color3.fromRGB(245, 188, 150)
 	end
 
@@ -429,6 +473,9 @@ local function getPrimaryGuidance(playerState)
 	end
 
 	if playerState.seeds > 0 then
+		if playerState.recentRecovery and not playerState.zoneState.inDanger then
+			return "Next: Plant on the safe side.", Color3.fromRGB(220, 235, 196)
+		end
 		return "Next: Plant a pumpkin nearby.", Color3.fromRGB(220, 235, 196)
 	end
 
@@ -462,7 +509,14 @@ end
 
 local function getStatusSummary(playerState)
 	if playerState.isSlowed then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
+			return "Status: Under danger pressure", Color3.fromRGB(240, 149, 112)
+		end
 		return "Status: Goblin slow active", Color3.fromRGB(240, 149, 112)
+	end
+
+	if playerState.zoneState.inDanger then
+		return "Status: Inside slow zone", Color3.fromRGB(232, 170, 126)
 	end
 
 	if playerState.ownedPumpkins > 0 then
@@ -482,6 +536,15 @@ end
 
 local function getSupportTip(playerState)
 	if playerState.isSlowed then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
+			if playerState.ownedPumpkins > 0 then
+				return "Back toward the plaza lane first, then cash out your waiting pumpkin."
+			end
+			if playerState.seeds > 0 then
+				return "Retreat toward the plaza lane first, then plant once your pace is back."
+			end
+			return "Use the plaza-side lane to reset, then rejoin the loop."
+		end
 		if playerState.ownedPumpkins > 0 then
 			return "Recover first, then get back to your pumpkin cash-out."
 		end
@@ -489,6 +552,23 @@ local function getSupportTip(playerState)
 			return "Recover first, then plant once your pace is back."
 		end
 		return "Recover first, then rejoin the loop from the safe side."
+	end
+
+	if playerState.recentRecovery and not playerState.zoneState.inDanger then
+		if playerState.ownedPumpkins > 0 then
+			return "You made it out — cash in before another danger push."
+		end
+		if playerState.seeds > 0 then
+			return "You are clear again — plant nearby before risking another push."
+		end
+		if #playerState.affordableUpgradeIds > 0 then
+			return "The lane is clear again — buy now if you want a stronger re-entry."
+		end
+		return "You are back on the safe side — rebuild the loop from the village."
+	end
+
+	if playerState.zoneState.inDanger and playerState.seeds > 0 then
+		return "Danger is for pressure, not setup — step back before planting if the lane feels messy."
 	end
 
 	if playerState.ownedPumpkins > 0 and #playerState.affordableUpgradeIds > 0 then
@@ -664,12 +744,17 @@ local function refreshHud()
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
 	local affordableUpgradeIds = getAffordableUpgradeIds(money)
 	local ownedPumpkins = getOwnedPumpkinCount()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local zoneState = getZoneState(root and root.Position or nil)
 	local playerState = {
 		seeds = seeds,
 		money = money,
 		isSlowed = isSlowed,
 		affordableUpgradeIds = affordableUpgradeIds,
 		ownedPumpkins = ownedPumpkins,
+		zoneState = zoneState,
+		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and os.clock() <= recentLoopReset.expiresAt,
 	}
 	local recentReset = getRecentLoopReset(playerState)
 
@@ -902,12 +987,22 @@ end
 player:GetAttributeChangedSignal(playerAttributes.IsSlowed):Connect(function()
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
 	if wasSlowed and not isSlowed then
+		recentLoopReset = {
+			kind = "slowRecovery",
+			expiresAt = os.clock() + 1.8,
+		}
 		showFeedback({
 			text = "Slow faded.",
 			detail = "You are back to full pace.",
 			tone = "good",
 			intensity = "T1",
 		})
+		task.delay(1.8, function()
+			if recentLoopReset and recentLoopReset.kind == "slowRecovery" and os.clock() >= recentLoopReset.expiresAt then
+				recentLoopReset = nil
+				refreshHud()
+			end
+		end)
 	end
 	wasSlowed = isSlowed
 end)
@@ -934,6 +1029,24 @@ feedbackRemote.OnClientEvent:Connect(function(payload)
 	showFeedback(payload)
 	showWorldPopup(payload)
 	refreshHud()
+end)
+
+local lastHudPosition
+RunService.RenderStepped:Connect(function()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		if lastHudPosition ~= nil then
+			lastHudPosition = nil
+			refreshHud()
+		end
+		return
+	end
+
+	if not lastHudPosition or (root.Position - lastHudPosition).Magnitude >= 4 then
+		lastHudPosition = root.Position
+		refreshHud()
+	end
 end)
 
 refreshHud()

@@ -99,6 +99,13 @@ local config = {
 				title = "Slow Zone",
 				body = "Goblins punish greedy pushes. Back off and reset if tagged.",
 			},
+			{
+				name = "RetreatLaneSign",
+				position = Vector3.new(28, 1.8, 29),
+				color = Color3.fromRGB(237, 195, 123),
+				title = "Reset Lane",
+				body = "If you get clipped, peel back toward the plaza side before re-entering.",
+			},
 		},
 		WorkLanePosts = {
 			Vector3.new(-10, 0.5, 33),
@@ -143,10 +150,10 @@ local config = {
 			Vector3.new(80, 3.5, 40),
 		},
 		DangerRockPositions = {
-			Vector3.new(58, 0.5, 9),
-			Vector3.new(68, 0.5, 37),
-			Vector3.new(84, 0.5, 10),
-			Vector3.new(92, 0.5, 33),
+			Vector3.new(60, 0.5, 8),
+			Vector3.new(72, 0.5, 41),
+			Vector3.new(86, 0.5, 9),
+			Vector3.new(96, 0.5, 36),
 		},
 	},
 	Swallows = {
