@@ -966,16 +966,20 @@ local function stampHousePlacementAttributes(instance, placement, boxCf, boxSize
 	instance:SetAttribute("BoundsSizeX", boxSize.X)
 	instance:SetAttribute("BoundsSizeY", boxSize.Y)
 	instance:SetAttribute("BoundsSizeZ", boxSize.Z)
+	local bottomY = boxCf.Position.Y - (boxSize.Y / 2)
 	instance:SetAttribute("TopY", boxCf.Position.Y + (boxSize.Y / 2))
+	instance:SetAttribute("BottomY", bottomY)
 
 	local clearance = placement.frontClearance or 0
 	local frontDirection = CFrame.Angles(0, math.rad(placement.facingYaw or 0), 0).LookVector
 	local frontDistance = getDirectionalSupportDistance(instance, boxCf.Position, frontDirection)
 	local frontPosition = boxCf.Position + (frontDirection * (frontDistance + clearance))
+	local frontGroundY = ((placement.padPosition and placement.padPosition.Y) or bottomY) + (placement.groundOffset or 0)
 	instance:SetAttribute("FrontX", frontPosition.X)
-	instance:SetAttribute("FrontY", frontPosition.Y)
+	instance:SetAttribute("FrontY", frontGroundY)
 	instance:SetAttribute("FrontZ", frontPosition.Z)
 	instance:SetAttribute("FrontExtent", frontDistance)
+	instance:SetAttribute("FrontGroundY", frontGroundY)
 end
 
 local function createFallbackHouse(def)
@@ -1552,7 +1556,33 @@ local tributeLandmarkTierTwoParts = {
 	tributeRouteTierTwoStone,
 }
 
-for _, accentPart in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, restorationPantryCrate, restorationReliefMat, tributeLedger, tributeErrandStand, tributeGateTallyStand, tributeRouteMarker, tributeBanner, tributeBannerCloth, restorationBasketTierOneCrate, restorationBasketTierOneGourd, restorationPantryTierOneSack, restorationPantryTierOneGourd, restorationBasketTierTwoCrate, restorationBasketTierTwoCloth, restorationPantryTierTwoLantern, restorationReliefTierOneBundle, restorationReliefTierOneGourd, restorationReliefTierTwoTray, restorationReliefTierTwoSeedSack, tributeStandTierOneLedger, tributeStandTierOneStone, tributeGateTierOneLedger, tributeGateTierOneRope, tributeStandTierTwoLedger, tributeStandTierTwoStone, tributeGateTierTwoPost, tributeGateTierTwoCloth, tributeRouteTierOneLantern, tributeRouteTierOneLedger, tributeRouteTierTwoRope, tributeRouteTierTwoStone }) do
+local restorationRouteCueBasketCloth = addPart(endingAccentFolder, "RestorationRouteCueBasketCloth", Vector3.new(1.9, 0.18, 1.5), restorationErrandBasket.CFrame * CFrame.new(0, 0.5, 2.3), Color3.fromRGB(225, 217, 182), Enum.Material.Fabric)
+local restorationRouteCueBasketCrate = addPart(endingAccentFolder, "RestorationRouteCueBasketCrate", Vector3.new(1.8, 0.95, 1.4), restorationErrandBasket.CFrame * CFrame.new(0.2, -0.15, 3.1), Color3.fromRGB(165, 122, 80), Enum.Material.WoodPlanks)
+local restorationRouteCuePantryCloth = addPart(endingAccentFolder, "RestorationRouteCuePantryCloth", Vector3.new(2.1, 0.16, 1.6), restorationPantryCrate.CFrame * CFrame.new(-2.3, 0.42, 0.3), Color3.fromRGB(216, 205, 168), Enum.Material.Fabric)
+local restorationRouteCuePantrySack = addPart(endingAccentFolder, "RestorationRouteCuePantrySack", Vector3.new(1.15, 1.35, 1.15), restorationPantryCrate.CFrame * CFrame.new(-2.6, 1.0, 0.4), Color3.fromRGB(204, 193, 156), Enum.Material.Fabric)
+local restorationRouteCueReliefBundle = addPart(endingAccentFolder, "RestorationRouteCueReliefBundle", Vector3.new(1.5, 0.28, 1.2), restorationReliefMat.CFrame * CFrame.new(0, 0.38, 2.1), Color3.fromRGB(170, 128, 87), Enum.Material.WoodPlanks)
+local restorationRouteCueReliefGourd = addPart(endingAccentFolder, "RestorationRouteCueReliefGourd", Vector3.new(0.95, 0.95, 0.95), restorationReliefMat.CFrame * CFrame.new(0.1, 1.0, 2.05), Color3.fromRGB(193, 152, 92), Enum.Material.SmoothPlastic)
+local tributeRouteCueStandLedger = addPart(endingAccentFolder, "TributeRouteCueStandLedger", Vector3.new(1.6, 0.24, 1.1), tributeErrandStand.CFrame * CFrame.new(0, 0.7, 2.2), Color3.fromRGB(100, 74, 55), Enum.Material.WoodPlanks)
+local tributeRouteCueStandRope = addPart(endingAccentFolder, "TributeRouteCueStandRope", Vector3.new(2.2, 0.14, 0.14), tributeErrandStand.CFrame * CFrame.new(0.6, -1.15, 3.1) * CFrame.Angles(0, math.rad(14), 0), Color3.fromRGB(162, 134, 102), Enum.Material.Fabric)
+local tributeRouteCueGatePost = addPart(endingAccentFolder, "TributeRouteCueGatePost", Vector3.new(0.3, 2.0, 0.3), tributeGateTallyStand.CFrame * CFrame.new(0, 0.7, 2.0), Color3.fromRGB(89, 69, 51), Enum.Material.Wood)
+local tributeRouteCueGateCloth = addPart(endingAccentFolder, "TributeRouteCueGateCloth", Vector3.new(1.2, 1.4, 0.14), tributeRouteCueGatePost.CFrame * CFrame.new(0.65, 0.15, 0), Color3.fromRGB(130, 84, 76), Enum.Material.Fabric)
+local tributeRouteCueMarkerStone = addPart(endingAccentFolder, "TributeRouteCueMarkerStone", Vector3.new(0.9, 0.65, 0.9), tributeRouteMarker.CFrame * CFrame.new(0.7, -1.45, 2.1), Color3.fromRGB(120, 112, 104), Enum.Material.Slate)
+local tributeRouteCueMarkerRope = addPart(endingAccentFolder, "TributeRouteCueMarkerRope", Vector3.new(2.4, 0.15, 0.15), tributeRouteMarker.CFrame * CFrame.new(0.9, -0.75, 1.5) * CFrame.Angles(0, math.rad(28), 0), Color3.fromRGB(156, 131, 99), Enum.Material.Fabric)
+
+local ENDING_ROUTE_CUE_PARTS = {
+	restoration = {
+		sharedBasket = { restorationRouteCueBasketCloth, restorationRouteCueBasketCrate },
+		wellPantry = { restorationRouteCuePantryCloth, restorationRouteCuePantrySack },
+		yardRelief = { restorationRouteCueReliefBundle, restorationRouteCueReliefGourd },
+	},
+	tribute = {
+		roadStand = { tributeRouteCueStandLedger, tributeRouteCueStandRope },
+		gateTally = { tributeRouteCueGatePost, tributeRouteCueGateCloth },
+		routeMarker = { tributeRouteCueMarkerStone, tributeRouteCueMarkerRope },
+	},
+}
+
+for _, accentPart in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, restorationPantryCrate, restorationReliefMat, tributeLedger, tributeErrandStand, tributeGateTallyStand, tributeRouteMarker, tributeBanner, tributeBannerCloth, restorationBasketTierOneCrate, restorationBasketTierOneGourd, restorationPantryTierOneSack, restorationPantryTierOneGourd, restorationBasketTierTwoCrate, restorationBasketTierTwoCloth, restorationPantryTierTwoLantern, restorationReliefTierOneBundle, restorationReliefTierOneGourd, restorationReliefTierTwoTray, restorationReliefTierTwoSeedSack, tributeStandTierOneLedger, tributeStandTierOneStone, tributeGateTierOneLedger, tributeGateTierOneRope, tributeStandTierTwoLedger, tributeStandTierTwoStone, tributeGateTierTwoPost, tributeGateTierTwoCloth, tributeRouteTierOneLantern, tributeRouteTierOneLedger, tributeRouteTierTwoRope, tributeRouteTierTwoStone, restorationRouteCueBasketCloth, restorationRouteCueBasketCrate, restorationRouteCuePantryCloth, restorationRouteCuePantrySack, restorationRouteCueReliefBundle, restorationRouteCueReliefGourd, tributeRouteCueStandLedger, tributeRouteCueStandRope, tributeRouteCueGatePost, tributeRouteCueGateCloth, tributeRouteCueMarkerStone, tributeRouteCueMarkerRope }) do
 	accentPart.Transparency = 1
 	accentPart.CanCollide = false
 end
@@ -1690,6 +1720,41 @@ local function updateEndingLandmarkProps(mode)
 	restorationPantryTierTwoLanternGlow.Brightness = restorationTier >= 2 and 0.85 or 0
 end
 
+local function setRouteCueClusterVisible(cluster, visible)
+	if not cluster then
+		return
+	end
+	for _, part in ipairs(cluster) do
+		part.Transparency = visible and 0 or 1
+	end
+end
+
+local function updateEndingRouteCueProps(mode)
+	for _, branchClusters in pairs(ENDING_ROUTE_CUE_PARTS) do
+		for _, cluster in pairs(branchClusters) do
+			setRouteCueClusterVisible(cluster, false)
+		end
+	end
+
+	local branch = nil
+	if mode == AMBIENT_ENDING.RESTORATION then
+		branch = "restoration"
+	elseif mode == AMBIENT_ENDING.TRIBUTE then
+		branch = "tribute"
+	end
+
+	if not branch then
+		return
+	end
+
+	local activePointId = getActiveVillageSupportPointId(branch)
+	if not activePointId then
+		return
+	end
+
+	setRouteCueClusterVisible(ENDING_ROUTE_CUE_PARTS[branch][activePointId], true)
+end
+
 local function setEndingAccentVisibility(mode)
 	local restorationVisible = mode == AMBIENT_ENDING.RESTORATION
 	local tributeVisible = mode == AMBIENT_ENDING.TRIBUTE
@@ -1707,6 +1772,7 @@ local function setEndingAccentVisibility(mode)
 		prompt.Enabled = tributeVisible
 	end
 	updateEndingLandmarkProps(mode)
+	updateEndingRouteCueProps(mode)
 end
 
 local function applyAmbientPatchState(mode)

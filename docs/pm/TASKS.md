@@ -33,11 +33,12 @@
 |---|---|---|---|---|---|---|
 | MG-PM-101 | Nolbu wandering patrol NPCs | village runtime slice | done | 배회 NPC 2명/pathfinding 구현 보고됨 | 실제 체감만 계속 다듬기 | P1 |
 | MG-PM-102 | Heungbu interaction presence | village runtime slice | done | Heungbu 대화/보상 루프 존재 | 유지 | P1 |
-| MG-PM-103 | House placement/orientation final polish | house setup goal | rebuild | pad/yaw 기반 house placement contract, bottom anchoring, front-anchor metadata, and prompt/tribute alignment logic are now implemented in server code; final visual confirmation in Studio is still pending | Run one Studio visual pass, then close if imported houses read upright and grounded | P1 |
+| MG-PM-103 | House placement/orientation final polish | house setup goal | rebuild | pad/yaw 기반 house placement contract, bottom anchoring, grounded front-anchor metadata, and prompt/tribute alignment logic are now implemented in server code; final visual confirmation in Studio is still pending | Run one Studio visual pass, then close if imported houses read upright, grounded, and house-adjacent prompts no longer float/clash | P1 |
 | MG-PM-104 | World storytelling props | village decor slice | done | 울타리/나무/돌/등불 및 추가 마당 연출 반영 | 유지 | P2 |
 | MG-PM-105 | Swallow/nest scene staging | swallow healing slice | done | 담벼락 근처 제비/둥지 연출 추가됨 | 유지 | P2 |
 | MG-PM-106 | Post-ending ambient follow-through | 2026-03-28 post-ending ambient followthrough | done | `init.server.luau`에 ambient ending mode, 엔딩별 패치 무드/표지판 문구, Heungbu/Nolbu/tribute basket 분기 대사, restoration/tribute accent prop 가시성 제어가 구현됨 | 유지, Studio 체감만 추가 검증 | P2 |
 | MG-PM-107 | Post-ending village witness barks | 2026-03-28 post-ending village witness barks | done | `init.server.luau`에 restoration/tribute witness definition table, 4개 witness prompt/sign, branch+tier+active-point aware bark selection, village-level witness sign copy 갱신이 구현됨 | 유지, Studio에서 witness 위치/오인(새 퀘스트처럼 보이는지)만 최종 확인 | P2 |
+| MG-PM-108 | Post-ending route cue props | 2026-03-28 post-ending route cue props | done | `init.server.luau`에 restoration/tribute 3개 support point별 route-cue prop cluster와 active-point 기반 visibility 토글이 추가되어, `COMPLETE` 이후 현재 활성 지점을 월드 프롭으로 읽을 수 있게 됨 | 유지, Studio에서 landmark/witness와의 겹침·가독성만 최종 확인 | P2 |
 
 ## UX / Interface
 
@@ -75,4 +76,4 @@
 ### Next new work to prioritize
 1. one Studio/MCP validation pass across house placement, dialogue readability, ending aftermath feel, post-ending errand readability, support-point readability, and retaliation yard-marker readability
 2. one Studio/MCP validation pass for house placement, post-ending witness readability, support-point readability, and landmark tier sightlines
-3. broader post-ending replay extensions beyond witness barks (rare-event variants, extra branch flavor, optional route-cue polish)
+3. broader post-ending replay extensions beyond witness barks (rare-event variants, extra branch flavor)
