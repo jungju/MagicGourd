@@ -505,6 +505,14 @@ local function getPromptOwnerState(prompt)
 
 	local kind = parent:GetAttribute(interactionAttributes.Kind)
 	local upgradeId = parent:GetAttribute(interactionAttributes.UpgradeId)
+	if kind == "Pumpkin" then
+		return {
+			kind = "Pumpkin",
+			priority = 4,
+			label = "Break",
+		}
+	end
+
 	if kind == "Swallow" then
 		return {
 			kind = "Swallow",
@@ -978,6 +986,11 @@ function refreshHud()
 			secondLine = string.format("You can plant now, but recovering first keeps the loop cleaner (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(128, 104, 78)
 			strokeColor = Color3.fromRGB(245, 188, 150)
+		elseif activePromptOwner and activePromptOwner.kind == "Pumpkin" then
+			buttonTitle = "Plant After This Break [Q]"
+			secondLine = string.format("Your pumpkin prompt owns this moment — cash out first, or step off to plant again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(132, 110, 72)
+			strokeColor = Color3.fromRGB(240, 224, 163)
 		elseif ownedPumpkins > 0 then
 			buttonTitle = "Plant Another Pumpkin [Q]"
 			secondLine = string.format("Break yours first for the clean cash-out, or spend another seed now (%d ready)", seeds)
