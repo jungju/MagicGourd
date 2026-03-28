@@ -207,6 +207,10 @@ local feedbackColors = {
 
 local feedbackToken = 0
 local activeWorldPopupCounts = {}
+local feedbackConfig = ArcadeConfig.Feedback or {}
+local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
+local bannerDurationByIntensity = feedbackConfig.BannerDurationByIntensity or {}
+local worldPopupByIntensity = feedbackConfig.WorldPopupByIntensity or {}
 
 local function getWorldPopupBucketKey(worldPosition)
 	local bucketSize = 10
@@ -226,6 +230,31 @@ local function getFeedbackColors(tone)
 	return feedbackColors[tone] or feedbackColors.info
 end
 
+local function getFeedbackIntensity(payload)
+	if typeof(payload) == "table" and type(payload.intensity) == "string" then
+		return payload.intensity
+	end
+
+	return defaultIntensity
+end
+
+local function getBannerDuration(payload)
+	return bannerDurationByIntensity[getFeedbackIntensity(payload)] or 2.2
+end
+
+local function getWorldPopupProfile(payload, text)
+	local profile = worldPopupByIntensity[getFeedbackIntensity(payload)] or worldPopupByIntensity[defaultIntensity] or {}
+	local width = profile.size and profile.size.X or (string.len(text) > 12 and 210 or 170)
+	local height = profile.size and profile.size.Y or (string.len(text) > 12 and 54 or 46)
+
+	return {
+		duration = profile.duration or 0.9,
+		rise = profile.rise or 2.4,
+		maxDistance = profile.maxDistance or 110,
+		size = Vector2.new(width, height),
+	}
+end
+
 local function getAffordableUpgradeIds(money)
 	local affordable = {}
 
@@ -241,10 +270,26 @@ local function getAffordableUpgradeIds(money)
 	return affordable
 end
 
+local function findPumpkinFolder()
+	local mapFolder = Workspace:FindFirstChild("Map")
+	local runtimeFolder = mapFolder and mapFolder:FindFirstChild("Runtime")
+	if not runtimeFolder then
+		return nil
+	end
+
+	local arcadeLoopFolder = runtimeFolder:FindFirstChild("ArcadeLoop")
+	if arcadeLoopFolder then
+		local pumpkinsFolder = arcadeLoopFolder:FindFirstChild("Pumpkins")
+		if pumpkinsFolder then
+			return pumpkinsFolder
+		end
+	end
+
+	return runtimeFolder:FindFirstChild("Pumpkins")
+end
+
 local function getOwnedPumpkinCount()
-	local runtimeFolder = Workspace:FindFirstChild("Map")
-	and Workspace.Map:FindFirstChild("Runtime")
-	and Workspace.Map.Runtime:FindFirstChild("Pumpkins")
+	local runtimeFolder = findPumpkinFolder()
 
 	if not runtimeFolder then
 		return 0
@@ -388,7 +433,11 @@ local function getSupportTip(playerState)
 	return "Loop: heal -> plant -> break -> buy."
 end
 
-local function showFeedback(text, tone, detail)
+local function showFeedback(payload)
+	local text = payload and payload.text
+	local tone = payload and payload.tone
+	local detail = payload and payload.detail
+
 	feedbackToken += 1
 	local activeToken = feedbackToken
 	local colors = getFeedbackColors(tone)
@@ -407,7 +456,7 @@ local function showFeedback(text, tone, detail)
 		return
 	end
 
-	task.delay(2.2, function()
+	task.delay(getBannerDuration(payload), function()
 		if feedbackToken ~= activeToken then
 			return
 		end
@@ -419,12 +468,16 @@ end
 
 local wasSlowed = getAttribute(playerAttributes.IsSlowed) or false
 
-local function showWorldPopup(text, tone, worldPosition)
+local function showWorldPopup(payload)
+	local text = payload and (payload.worldText or payload.text)
+	local tone = payload and payload.tone
+	local worldPosition = payload and payload.worldPosition
 	if typeof(worldPosition) ~= "Vector3" or text == nil or text == "" then
 		return
 	end
 
 	local colors = getFeedbackColors(tone)
+	local profile = getWorldPopupProfile(payload, text)
 	local bucketKey = getWorldPopupBucketKey(worldPosition)
 	local activeCount = activeWorldPopupCounts[bucketKey] or 0
 	activeWorldPopupCounts[bucketKey] = activeCount + 1
@@ -444,10 +497,10 @@ local function showWorldPopup(text, tone, worldPosition)
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "ArcadeFeedbackBillboard"
-	billboard.Size = string.len(text) > 12 and UDim2.fromOffset(210, 54) or UDim2.fromOffset(170, 46)
+	billboard.Size = UDim2.fromOffset(profile.size.X, profile.size.Y)
 	billboard.StudsOffsetWorldSpace = Vector3.new(0, 0, 0)
 	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 110
+	billboard.MaxDistance = profile.maxDistance
 	billboard.Parent = popupPart
 
 	local label = Instance.new("TextLabel")
@@ -466,12 +519,12 @@ local function showWorldPopup(text, tone, worldPosition)
 
 	local riseTween = TweenService:Create(
 		popupPart,
-		TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ CFrame = popupPart.CFrame + Vector3.new(0, 2.4, 0) }
+		TweenInfo.new(profile.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ CFrame = popupPart.CFrame + Vector3.new(0, profile.rise, 0) }
 	)
 	local fadeTween = TweenService:Create(
 		label,
-		TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		TweenInfo.new(profile.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 		{ TextTransparency = 1, TextStrokeTransparency = 1 }
 	)
 
@@ -623,31 +676,56 @@ local function connectPumpkinFolder(folder)
 	end)
 end
 
-local mapFolder = Workspace:FindFirstChild("Map")
-if mapFolder then
-	local runtimeFolder = mapFolder:FindFirstChild("Runtime")
-	if runtimeFolder then
-		connectPumpkinFolder(runtimeFolder:FindFirstChild("Pumpkins"))
-		runtimeFolder.ChildAdded:Connect(function(child)
+local function connectRuntimeFolder(runtimeFolder)
+	if not runtimeFolder then
+		return
+	end
+
+	connectPumpkinFolder(findPumpkinFolder())
+
+	local function onRuntimeChildAdded(child)
+		if child.Name == "Pumpkins" then
+			connectPumpkinFolder(child)
+			refreshHud()
+			return
+		end
+
+		if child.Name == "ArcadeLoop" then
+			connectPumpkinFolder(child:FindFirstChild("Pumpkins"))
+			child.ChildAdded:Connect(function(grandChild)
+				if grandChild.Name == "Pumpkins" then
+					connectPumpkinFolder(grandChild)
+					refreshHud()
+				end
+			end)
+			refreshHud()
+		end
+	end
+
+	runtimeFolder.ChildAdded:Connect(onRuntimeChildAdded)
+
+	local arcadeLoopFolder = runtimeFolder:FindFirstChild("ArcadeLoop")
+	if arcadeLoopFolder then
+		connectPumpkinFolder(arcadeLoopFolder:FindFirstChild("Pumpkins"))
+		arcadeLoopFolder.ChildAdded:Connect(function(child)
 			if child.Name == "Pumpkins" then
 				connectPumpkinFolder(child)
 				refreshHud()
 			end
 		end)
 	end
+end
+
+local mapFolder = Workspace:FindFirstChild("Map")
+if mapFolder then
+	connectRuntimeFolder(mapFolder:FindFirstChild("Runtime"))
 
 	mapFolder.ChildAdded:Connect(function(child)
 		if child.Name ~= "Runtime" then
 			return
 		end
 
-		connectPumpkinFolder(child:FindFirstChild("Pumpkins"))
-		child.ChildAdded:Connect(function(grandChild)
-			if grandChild.Name == "Pumpkins" then
-				connectPumpkinFolder(grandChild)
-				refreshHud()
-			end
-		end)
+		connectRuntimeFolder(child)
 		refreshHud()
 	end)
 end
@@ -655,7 +733,12 @@ end
 player:GetAttributeChangedSignal(playerAttributes.IsSlowed):Connect(function()
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
 	if wasSlowed and not isSlowed then
-		showFeedback("Slow faded.", "good", "You are back to full pace.")
+		showFeedback({
+			text = "Slow faded.",
+			detail = "You are back to full pace.",
+			tone = "good",
+			intensity = "T1",
+		})
 	end
 	wasSlowed = isSlowed
 end)
@@ -665,8 +748,8 @@ feedbackRemote.OnClientEvent:Connect(function(payload)
 		return
 	end
 
-	showFeedback(payload.text, payload.tone, payload.detail)
-	showWorldPopup(payload.worldText or payload.text, payload.tone, payload.worldPosition)
+	showFeedback(payload)
+	showWorldPopup(payload)
 end)
 
 refreshHud()
