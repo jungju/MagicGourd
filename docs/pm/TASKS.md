@@ -27,6 +27,7 @@
 | MG-PM-011 | Post-ending support-point rotations | 2026-03-28 post-ending support rotations | done | `init.server.luau`에 restoration/tribute 3개 지점 프롬프트 연결, per-player active-point gating/redirect, rotation threshold advancement, QuestHint 활성 지점 반영, 그리고 `refreshVillageSigns()`에서 안전한 `updateEndingSupportSigns` 연결 + village-level active-point copy 갱신이 구현됨 | 유지, Studio에서 각 지점 동선/가독성만 최종 확인 | P2 |
 | MG-PM-012 | Post-ending landmark accrual tiers | 2026-03-28 post-ending landmark accrual | done | `init.server.luau`에 landmark tier helper(`getEndingLandmarkTier*`), village-global tier sign/hint copy, restoration/tribute Tier 1/2 prop visibility, 그리고 basket/pantry/relief + road/gate/route까지 3지점 전부의 landmark accrual 연출이 구현됨 | 유지, Studio에서 각 tier 가독성과 충돌만 최종 확인 | P2 |
 | MG-PM-013 | Post-ending rare event variants | 2026-03-28 post-ending rare event variants | done | `init.server.luau`에 branch별 희귀 이벤트 테이블과 `getEndingRareEvent`/`applyEndingRareEventRewards`가 추가되어, `COMPLETE` 이후 반복 심부름 4/7/10회차에 restoration/tribute 톤별 추가 dialogue/effect/소규모 보너스가 안전하게 발생함 | 유지, Studio에서 희귀 이벤트 빈도와 문구 체감만 최종 확인 | P2 |
+| MG-PM-014 | Post-ending Story Stone reflections | 2026-03-28 post-ending story-stone reflections | done | Story Stone 상호작용이 `COMPLETE` 이후 branch/tier/active support point/최근 희귀 이벤트 기억을 반영하는 동적 반응으로 확장되어, 마을 중앙의 핵심 서사 오브젝트가 후일담과 반복 루프의 톤을 직접 설명함 | 유지, Studio에서 주변 표지판 대비 가독성만 최종 확인 | P2 |
 
 ## NPC / World
 
@@ -77,4 +78,5 @@
 ### Next new work to prioritize
 1. one Studio/MCP validation pass across house placement, dialogue readability, ending aftermath feel, post-ending errand readability, support-point readability, and retaliation yard-marker readability
 2. one Studio/MCP validation pass for house placement, post-ending witness readability, support-point readability, and landmark tier sightlines
-3. broader post-ending replay extensions beyond witness barks (rare-event variants, extra branch flavor)
+3. broader post-ending replay extensions beyond witness barks (story-stone reflections, extra branch flavor)
+4. one Studio/MCP validation pass for the Story Stone's post-ending readability against nearby sign density

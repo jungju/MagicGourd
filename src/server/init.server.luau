@@ -518,6 +518,8 @@ local function getPlayerProfile(player)
 		restorationRotationStep = 0,
 		tributeRotationStep = 0,
 		endingErrandCooldownAt = 0,
+		lastEndingRareEventTitle = nil,
+		lastEndingRareEventBranch = nil,
 	}
 
 	playerData[player] = profile
@@ -627,6 +629,48 @@ local function getEndingHint(choice, profile)
 		return string.format("Ending: Tribute Road · The next road due is being counted nearby (%d dues). %s", dues, activeHint)
 	end
 	return "Watch the village signs for story changes."
+end
+
+local function getStoryStoneLines(player)
+	local profile = getPlayerProfile(player)
+	if profile.questStage < QUEST.COMPLETE or not profile.endingResolved then
+		return {
+			"In this valley, kindness grows quietly and greed makes a lot of noise.",
+			villageState.magicPayoffs > 0 and "A true magic gourd has already opened once here. Envy heard it from across the road." or "A single magic gourd can push their story forward, but even a swallow can change the ending.",
+			"Heungbu shares what little he has. Nolbu counts what everyone else owes.",
+		}
+	end
+
+	local branch = profile.endingChoice
+	local tier = getEndingLandmarkTier(profile, branch)
+	local activePoint = getActiveSupportPoint(profile, branch)
+	local lines = {}
+
+	if branch == AMBIENT_ENDING.RESTORATION then
+		table.insert(lines, tier >= 2 and "The stone now remembers a valley that expects shared harvests to return, not vanish." or tier >= 1 and "The stone now remembers a pantry learning how to stay stocked between gifts." or "The stone now remembers the day kindness chose to remain in the valley.")
+		table.insert(lines, activePoint and string.format("Today's shared help gathers at %s, so even the stone points people toward the living part of the story.", activePoint.name) or "The stone listens for where the next shared harvest gathers.")
+		if profile.lastEndingRareEventTitle and profile.lastEndingRareEventBranch == "restoration" then
+			table.insert(lines, string.format("People already retell %s as proof that a small kindness can multiply once the valley believes in it.", profile.lastEndingRareEventTitle))
+		else
+			table.insert(lines, "Heungbu's ending did not close the tale. It taught the village to keep feeding it.")
+		end
+	elseif branch == AMBIENT_ENDING.TRIBUTE then
+		table.insert(lines, tier >= 2 and "The stone now remembers a road so practiced at taking dues that it almost sounds ceremonial." or tier >= 1 and "The stone now remembers tally points settling into an order people obey before they speak." or "The stone now remembers a valley that chose steadiness by paying what the road asked.")
+		table.insert(lines, activePoint and string.format("Today's count settles at %s, and the story now travels by whoever is keeping the ledger closest.", activePoint.name) or "The stone listens for where the next road due is being counted.")
+		if profile.lastEndingRareEventTitle and profile.lastEndingRareEventBranch == "tribute" then
+			table.insert(lines, string.format("%s is already turning into road folklore: colder than gratitude, but just as memorable.", profile.lastEndingRareEventTitle))
+		else
+			table.insert(lines, "Nolbu's ending did not stop the village from growing. It taught the road how to count the growth first.")
+		end
+	else
+		return {
+			"In this valley, kindness grows quietly and greed makes a lot of noise.",
+			"A single magic gourd can push their story forward, but even a swallow can change the ending.",
+			"Heungbu shares what little he has. Nolbu counts what everyone else owes.",
+		}
+	end
+
+	return lines
 end
 
 local function syncPlayerAttributes(player)
@@ -914,6 +958,8 @@ local function completeEndingErrand(player, errandKind, pointId)
 	local rareEvent = getEndingRareEvent(profile, errandKind, activePoint)
 	local rareRewardSummary = nil
 	if rareEvent then
+		profile.lastEndingRareEventTitle = rareEvent.title
+		profile.lastEndingRareEventBranch = errandKind
 		applyEndingRareEventRewards(profile, rareEvent)
 		if rareEvent.rewards then
 			local bonusSummary = {}
@@ -3011,9 +3057,5 @@ end)
 storyPrompt.Triggered:Connect(function(player)
 	local profile = getPlayerProfile(player)
 	if profile.questStage == QUEST.INTRO then setQuestStage(player, QUEST.MEET_HEUNGBU) syncPlayerAttributes(player) end
-	showDialogue(player, "Story Stone", {
-		"In this valley, kindness grows quietly and greed makes a lot of noise.",
-		villageState.magicPayoffs > 0 and "A true magic gourd has already opened once here. Envy heard it from across the road." or "A single magic gourd can push their story forward, but even a swallow can change the ending.",
-		"Heungbu shares what little he has. Nolbu counts what everyone else owes.",
-	}, Color3.fromRGB(194, 162, 255))
+	showDialogue(player, "Story Stone", getStoryStoneLines(player), Color3.fromRGB(194, 162, 255))
 end)
