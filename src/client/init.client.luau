@@ -225,6 +225,8 @@ local activeWorldPopupCounts = {}
 local activeWorldPopupState = {}
 local activeWorldPopupEntries = {}
 local recentLoopReset = nil
+local recentAffordabilityUnlock = nil
+local lastAffordableUpgradeCount = 0
 local activePromptOwners = {}
 local promptOwnerGraceByKey = {}
 local promptOwnerGraceDuration = 0.24
@@ -452,33 +454,71 @@ local function getUpgradeBenefitText(upgradeId, currentLevel)
 	return tostring(nextValue)
 end
 
-local function formatUpgradeRow(upgradeId, money)
+local function getUpgradeRowState(upgradeId, money, thresholdState)
 	local definition = upgradeDefinitions[upgradeId]
 	local currentLevel = getAttribute(definition.AttributeName) or 0
+	local nextCost = upgradeCosts[currentLevel + 1]
+
+	if not nextCost then
+		return "Maxed", currentLevel, nil
+	end
+
+	if money >= nextCost then
+		return "ReadyNow", currentLevel, nextCost
+	end
+
+	if thresholdState and thresholdState.upgradeId == upgradeId then
+		return "LockedNear", currentLevel, nextCost
+	end
+
+	return "LockedFar", currentLevel, nextCost
+end
+
+local function formatUpgradeRow(upgradeId, money, thresholdState, readyHighlightActive)
+	local definition = upgradeDefinitions[upgradeId]
+	local rowState, currentLevel, nextCost = getUpgradeRowState(upgradeId, money, thresholdState)
 	local nextLevel = currentLevel + 1
-	local nextCost = upgradeCosts[nextLevel]
 	local baseColor = upgradeId == "MoveSpeed" and Color3.fromRGB(220, 233, 241)
 		or upgradeId == "AttackSpeed" and Color3.fromRGB(240, 222, 184)
 		or Color3.fromRGB(214, 244, 202)
 
-	if not nextCost then
+	if rowState == "Maxed" then
 		return string.format("%s Lv.%d | MAX", definition.DisplayName, currentLevel), Color3.fromRGB(171, 190, 160)
 	end
 
 	local benefitText = getUpgradeBenefitText(upgradeId, currentLevel)
-	if money >= nextCost then
-		return string.format("%s Lv.%d -> Lv.%d | %s | Buy now", definition.DisplayName, currentLevel, nextLevel, benefitText), baseColor
+	if rowState == "ReadyNow" then
+		local readyColor = readyHighlightActive and Color3.fromRGB(250, 236, 178) or baseColor
+		return string.format(
+			"%s Lv.%d -> Lv.%d | %s | Ready now (%d)",
+			definition.DisplayName,
+			currentLevel,
+			nextLevel,
+			benefitText,
+			nextCost
+		), readyColor
 	end
 
 	local missing = nextCost - money
+	if rowState == "LockedNear" then
+		return string.format(
+			"%s Lv.%d -> Lv.%d | %s | %d more",
+			definition.DisplayName,
+			currentLevel,
+			nextLevel,
+			benefitText,
+			missing
+		), baseColor
+	end
+
 	return string.format(
-		"%s Lv.%d -> Lv.%d | %s | Need %d more",
+		"%s Lv.%d -> Lv.%d | %s | Later (%d)",
 		definition.DisplayName,
 		currentLevel,
 		nextLevel,
 		benefitText,
-		missing
-	), Color3.fromRGB(baseColor.R * 255 * 0.78, baseColor.G * 255 * 0.78, baseColor.B * 255 * 0.78)
+		nextCost
+	), Color3.fromRGB(baseColor.R * 255 * 0.72, baseColor.G * 255 * 0.72, baseColor.B * 255 * 0.72)
 end
 
 local refreshHud
@@ -1044,6 +1084,17 @@ function refreshHud()
 	local money = getAttribute(playerAttributes.Money) or 0
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
 	local affordableUpgradeIds = getAffordableUpgradeIds(money)
+	local thresholdState = getThresholdState(money)
+	local now = os.clock()
+	if #affordableUpgradeIds > 0 and lastAffordableUpgradeCount <= 0 then
+		recentAffordabilityUnlock = {
+			expiresAt = now + 2.6,
+		}
+	elseif recentAffordabilityUnlock and now >= recentAffordabilityUnlock.expiresAt then
+		recentAffordabilityUnlock = nil
+	end
+	lastAffordableUpgradeCount = #affordableUpgradeIds
+
 	local ownedPumpkins = getOwnedPumpkinCount()
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -1057,8 +1108,8 @@ function refreshHud()
 		ownedPumpkins = ownedPumpkins,
 		zoneState = zoneState,
 		activePromptOwner = activePromptOwner,
-		thresholdState = getThresholdState(money),
-		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and os.clock() <= recentLoopReset.expiresAt,
+		thresholdState = thresholdState,
+		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and now <= recentLoopReset.expiresAt,
 	}
 	local displayPromptOwner = getDisplayPromptOwner(playerState)
 	local recentReset = getRecentLoopReset(playerState)
@@ -1090,15 +1141,17 @@ function refreshHud()
 	statusLabel.Text = statusText
 	statusLabel.TextColor3 = statusColor
 
-	local footworkText, footworkColor = formatUpgradeRow("MoveSpeed", money)
+	local readyHighlightActive = recentAffordabilityUnlock ~= nil and now < recentAffordabilityUnlock.expiresAt
+
+	local footworkText, footworkColor = formatUpgradeRow("MoveSpeed", money, thresholdState, readyHighlightActive)
 	footworkLabel.Text = footworkText
 	footworkLabel.TextColor3 = footworkColor
 
-	local handsText, handsColor = formatUpgradeRow("AttackSpeed", money)
+	local handsText, handsColor = formatUpgradeRow("AttackSpeed", money, thresholdState, readyHighlightActive)
 	handsLabel.Text = handsText
 	handsLabel.TextColor3 = handsColor
 
-	local blessingText, blessingColor = formatUpgradeRow("SeedMultiplier", money)
+	local blessingText, blessingColor = formatUpgradeRow("SeedMultiplier", money, thresholdState, readyHighlightActive)
 	blessingLabel.Text = blessingText
 	blessingLabel.TextColor3 = blessingColor
 
