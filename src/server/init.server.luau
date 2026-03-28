@@ -278,6 +278,129 @@ local ENDING_WITNESSES = {
 	},
 }
 
+local BROTHER_COMPLETE_DIALOGUE = {
+	Heungbu = {
+		restoration = {
+			base = {
+				{ "I thought the first shared baskets might be remembered only as a kind gesture.", "Now people are planning around them, and that still catches me off guard in the best way." },
+				{ "The yard used to ask for help.", "Lately it has started sending help back out, and that makes the whole ending feel real." },
+				{ "You chose warmth, and the valley keeps answering it in ordinary little ways.", "That is how trust starts looking sturdy." },
+			},
+			tier1 = {
+				{ "The shared route is staying dependable now.", "People no longer talk about it like a miracle. They talk about it like tomorrow." },
+				{ "When the pantry stays stocked between visits, it feels like hope has finally learned the road home.", "I do not have to imagine that feeling anymore." },
+			},
+			tier2 = {
+				{ "This valley is learning how to trust itself again.", "I hear it in the way people speak before supper, as if generosity might actually keep arriving." },
+				{ "The patch no longer feels like one family's fragile good fortune.", "It feels tied into the village now, and that steadies me more than I can say." },
+			},
+			point = {
+				sharedBasket = {
+					{ "When the shared basket is active, the center path feels gentler somehow.", "People can see kindness before they even ask for it." },
+				},
+				wellPantry = {
+					{ "The well pantry makes shared help feel dependable instead of ceremonial.", "That sort of ordinary care is what I always hoped this valley could keep." },
+				},
+				yardRelief = {
+					{ "The relief mat beside the yard still surprises me.", "For a long time this house only knew how to need help, not pass it onward." },
+				},
+			},
+			rare = {
+				{ "People are still talking about %s.", "I think they remember it because it sounded like the village quietly answering kindness with more kindness." },
+			},
+		},
+		tribute = {
+			base = {
+				{ "The road is quieter, but I do not mistake quiet for comfort.", "We still plant because living people have to, not because the count feels kind." },
+				{ "This patch survives under tribute because people keep working anyway.", "Sometimes endurance is the only tenderness left in a place." },
+				{ "You chose the colder peace, and I understand why.", "I only try not to call that understanding happiness." },
+			},
+			tier1 = {
+				{ "People have learned where to carry the due before anyone asks.", "That may be the saddest kind of efficiency." },
+				{ "The road's routine is settling into people's shoulders now.", "I can see it in how quickly they brace before they even reach the stands." },
+			},
+			tier2 = {
+				{ "Even a steady road can leave a house feeling smaller.", "Stability is not always the same thing as mercy." },
+				{ "Tribute has become so practiced that no one sounds surprised by it anymore.", "That worries me more than open cruelty ever did." },
+			},
+			point = {
+				roadStand = {
+					{ "When the road stand is active, the whole path seems to lower its voice.", "People start preparing themselves before they even arrive." },
+				},
+				gateTally = {
+					{ "A due counted at Nolbu's gate always feels personal first and public second.", "That is the sort of order I never learned to admire." },
+				},
+				routeMarker = {
+					{ "When the route marker takes the next due, even the road ahead looks claimed.", "It is unsettling how quickly a marker can teach people caution." },
+				},
+			},
+			rare = {
+				{ "%s is still being mentioned in careful little voices.", "That is how this road says it remembers something without ever calling it grief." },
+			},
+		},
+	},
+	Nolbu = {
+		restoration = {
+			base = {
+				{ "I expected generosity to tire itself out.", "Annoyingly, it appears to be learning discipline instead." },
+				{ "You chose Heungbu's warmth over my order.", "Now I get to watch the whole valley pretend that sharing and structure are somehow the same thing." },
+				{ "A village that keeps leaving food where others can reach it becomes harder to pressure cleanly.", "That does not make it wise. It just makes it stubborn." },
+			},
+			tier1 = {
+				{ "Do not mistake me for impressed.", "I only notice when a habit refuses to die after the ceremony is over." },
+				{ "The restored route keeps surviving beyond sentiment.", "That is inconveniently more durable than I expected." },
+			},
+			tier2 = {
+				{ "The village has organized itself without waiting for my gate to approve it.", "I dislike that almost as much as I respect the efficiency." },
+				{ "This much practiced generosity becomes difficult to interrupt.", "You have made kindness irritatingly well-defended." },
+			},
+			point = {
+				sharedBasket = {
+					{ "When the active drop sits at the shared basket, the whole center path starts acting self-assured.", "I preferred it when uncertainty did more of my work for me." },
+				},
+				wellPantry = {
+					{ "The well pantry is the worst version of generosity.", "Visible, practical, and difficult to mock once it keeps feeding people." },
+				},
+				yardRelief = {
+					{ "Heungbu's yard was tolerable when it only symbolized need.", "Now the relief mat makes it look useful, which is far more annoying." },
+				},
+			},
+			rare = {
+				{ "I have heard enough about %s already.", "The village repeats these little incidents until they start sounding like policy." },
+			},
+		},
+		tribute = {
+			base = {
+				{ "People complain less once the due learns where it belongs.", "Structure often looks cruel only until it becomes familiar." },
+				{ "A counted harvest is still a harvest.", "The road runs more smoothly when no one pretends abundance is purely private." },
+				{ "You chose the road that keeps arguments short.", "That may not be love, but it is a form of competence." },
+			},
+			tier1 = {
+				{ "Tribute is settling into a sensible norm now.", "Once people learn the rhythm, even resistance starts sounding inefficient." },
+				{ "The tally points are teaching the village to arrive prepared.", "That alone saves everyone a great deal of noise." },
+			},
+			tier2 = {
+				{ "The road no longer needs to explain itself.", "That is when an order becomes real." },
+				{ "Even the quiet sounds administrative now.", "Good. Villages do better when someone remembers to keep accounts." },
+			},
+			point = {
+				roadStand = {
+					{ "The road stand suits the tribute best.", "It lets everyone see the due before anyone wastes time denying it." },
+				},
+				gateTally = {
+					{ "When the gate tally is active, people remember very quickly whose road this is.", "Proximity improves discipline." },
+				},
+				routeMarker = {
+					{ "The route marker is efficient in a way I appreciate.", "It teaches compliance before the harvest even reaches a basket." },
+				},
+			},
+			rare = {
+				{ "%s is proof that the road has started producing its own little folklore.", "Order becomes much easier to maintain once people start retelling it for you." },
+			},
+		},
+	},
+}
+
 local ENDING_RARE_EVENTS = {
 	restoration = {
 		[4] = {
@@ -511,6 +634,8 @@ local function getPlayerProfile(player)
 		presentationBusy = false,
 		ambientDialogueCursor = {},
 		witnessDialogueCursor = {},
+		completeDialogueCursor = {},
+		completeRareEventEchoConsumed = {},
 		sharedHarvestDrops = 0,
 		tributeDuesPaid = 0,
 		restorationSupportPointIndex = 1,
@@ -748,6 +873,96 @@ local function getWitnessContext(player, witnessId)
 		questStage = profile.questStage,
 		endingChoice = profile.endingChoice,
 	}, profile
+end
+
+local function getBrotherCompleteContext(player, brotherId)
+	local profile = getPlayerProfile(player)
+	local branch = profile.endingChoice
+	if profile.questStage < QUEST.COMPLETE or not profile.endingResolved then
+		return {
+			questStage = profile.questStage,
+			endingResolved = profile.endingResolved,
+			branch = branch,
+			tier = 0,
+			activePointId = nil,
+			rareEventTitle = nil,
+			rareEventBranch = nil,
+		}, profile
+	end
+
+	local activePoint = getActiveSupportPoint(profile, branch)
+	return {
+		questStage = profile.questStage,
+		endingResolved = profile.endingResolved,
+		branch = branch,
+		tier = getEndingLandmarkTier(profile, branch),
+		activePointId = activePoint and activePoint.id or nil,
+		rareEventTitle = profile.lastEndingRareEventTitle,
+		rareEventBranch = profile.lastEndingRareEventBranch,
+		brotherId = brotherId,
+	}, profile
+end
+
+local function getNextCompleteDialogue(profile, key, lines)
+	if #lines == 0 then
+		return { "The village keeps moving." }
+	end
+	profile.completeDialogueCursor[key] = (profile.completeDialogueCursor[key] or 0) + 1
+	local index = ((profile.completeDialogueCursor[key] - 1) % #lines) + 1
+	return lines[index]
+end
+
+local function getBrotherCompleteLineSet(player, brotherId)
+	local context, profile = getBrotherCompleteContext(player, brotherId)
+	if context.questStage < QUEST.COMPLETE or not context.endingResolved then
+		return nil
+	end
+
+	local brotherPools = BROTHER_COMPLETE_DIALOGUE[brotherId]
+	local branchPools = brotherPools and brotherPools[context.branch]
+	if not branchPools then
+		return nil
+	end
+
+	local merged = {}
+	if branchPools.point and context.activePointId and branchPools.point[context.activePointId] then
+		for _, lines in ipairs(branchPools.point[context.activePointId]) do
+			table.insert(merged, lines)
+		end
+	end
+	local rareEchoKey = string.format("%s:%s:%s", brotherId, context.branch or "none", context.rareEventTitle or "")
+	local rareConsumed = profile.completeRareEventEchoConsumed and profile.completeRareEventEchoConsumed[rareEchoKey]
+	if branchPools.rare and context.rareEventTitle and context.rareEventBranch == context.branch and not rareConsumed then
+		for _, template in ipairs(branchPools.rare) do
+			local lines = {}
+			for _, line in ipairs(template) do
+				table.insert(lines, string.format(line, context.rareEventTitle))
+			end
+			table.insert(merged, lines)
+		end
+		profile.completeRareEventEchoConsumed[rareEchoKey] = true
+	end
+	if context.tier >= 2 and branchPools.tier2 then
+		for _, lines in ipairs(branchPools.tier2) do
+			table.insert(merged, lines)
+		end
+	end
+	if context.tier >= 1 and branchPools.tier1 then
+		for _, lines in ipairs(branchPools.tier1) do
+			table.insert(merged, lines)
+		end
+	end
+	if branchPools.base then
+		for _, lines in ipairs(branchPools.base) do
+			table.insert(merged, lines)
+		end
+	end
+
+	if #merged == 0 then
+		return nil
+	end
+
+	return getNextCompleteDialogue(profile, string.format("%s:%s", brotherId, context.branch), merged)
 end
 
 local function getWitnessLineSet(player, witnessId)
@@ -2535,20 +2750,8 @@ heungbuPrompt.Triggered:Connect(function(player)
 			return
 		end
 		if profile.questStage >= QUEST.COMPLETE then
-			local lines
-			if profile.endingChoice == AMBIENT_ENDING.RESTORATION then
-				lines = getNextAmbientLine(player, "HeungbuCompleteRestoration", {
-					{ "The yard sounds different now. People stop here because they expect sharing, not fear.", "Keep the patch alive and the restored valley will keep feeling true." },
-					{ "You chose warmth, so even small harvests feel bigger here.", "Plant what you can. The point is that no one reaches this patch alone anymore." },
-					{ "The brambles never really won, did they?", "Every gourd you grow now reminds the valley what kindness protected." },
-				})
-			elseif profile.endingChoice == AMBIENT_ENDING.TRIBUTE then
-				lines = getNextAmbientLine(player, "HeungbuCompleteTribute", {
-					{ "We still plant, even under another man's count.", "If you keep growing, perhaps one day the valley can ask for more than peace." },
-					{ "This patch survives because people keep working, even when the road asks for too much.", "Bring harvest if you can. Endurance is its own kind of courage." },
-					{ "The valley is quieter now, but not empty.", "Every seed we keep alive is proof that tribute did not take everything." },
-				})
-			else
+			local lines = getBrotherCompleteLineSet(player, "Heungbu")
+			if not lines then
 				lines = { "The patch is breathing again.", "If you keep planting, the story can stay alive a while longer." }
 			end
 			showDialogue(player, "Heungbu", lines, Color3.fromRGB(111, 224, 128))
@@ -2641,20 +2844,8 @@ nolbuPrompt.Triggered:Connect(function(player)
 		return
 	end
 	if profile.questStage >= QUEST.COMPLETE then
-		local lines
-		if profile.endingChoice == AMBIENT_ENDING.TRIBUTE then
-			lines = getNextAmbientLine(player, "NolbuCompleteTribute", {
-				{ "You chose the road that keeps the loudest quarrels quiet.", "Keep the tribute moving and even this valley can look orderly." },
-				{ "People complain about the tally board until the road stays open because of it.", "That is the difference between warmth and management." },
-				{ "A counted harvest is still a harvest.", "Remember that the next time Heungbu mistakes relief for leadership." },
-			})
-		elseif profile.endingChoice == AMBIENT_ENDING.RESTORATION then
-			lines = getNextAmbientLine(player, "NolbuCompleteRestoration", {
-				{ "You chose Heungbu's warmth over my order.", "Do not act surprised if a generous valley still needs defending." },
-				{ "The whole road feels softer now, and somehow more inconvenient.", "If the patch stays open, someone still has to keep score when kindness gets sloppy." },
-				{ "Even restored valleys need strong gates.", "You may call it resentment. I call it being the only one still watching the road." },
-			})
-		else
+		local lines = getBrotherCompleteLineSet(player, "Nolbu")
+		if not lines then
 			lines = { "The village keeps moving, with or without a proper accountant." }
 		end
 		showDialogue(player, "Nolbu", lines, Color3.fromRGB(226, 117, 94))
