@@ -232,6 +232,8 @@ local trackedPumpkinPromptConnections = {}
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
 local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
+local maxWorldPopupsPerBucket = feedbackConfig.MaxWorldPopupsPerBucket or 2
+local crowdedBucketSuppressionPriority = feedbackConfig.CrowdedBucketSuppressionPriority or 2
 local bannerDurationByIntensity = feedbackConfig.BannerDurationByIntensity or {}
 local worldPopupByIntensity = feedbackConfig.WorldPopupByIntensity or {}
 local worldPopupPriorityByIntensity = feedbackConfig.WorldPopupPriorityByIntensity or {}
@@ -837,6 +839,31 @@ local function showWorldPopup(payload)
 				removeWorldPopupEntry(bucketKey, entry)
 			end
 		end
+	end
+
+	existingEntries = activeWorldPopupEntries[bucketKey]
+	local survivingEntries = existingEntries and #existingEntries or 0
+	if survivingEntries >= maxWorldPopupsPerBucket and priority <= crowdedBucketSuppressionPriority then
+		return
+	end
+
+	while existingEntries and #existingEntries >= maxWorldPopupsPerBucket do
+		local weakestEntry = existingEntries[1]
+		for index = 2, #existingEntries do
+			local candidate = existingEntries[index]
+			if candidate and weakestEntry and candidate.priority < weakestEntry.priority then
+				weakestIndex = index
+				weakestEntry = candidate
+			end
+		end
+
+		if not weakestEntry or priority < weakestEntry.priority then
+			return
+		end
+
+		dismissWorldPopupEntry(weakestEntry, bucketKey)
+		removeWorldPopupEntry(bucketKey, weakestEntry)
+		existingEntries = activeWorldPopupEntries[bucketKey]
 	end
 
 	local colors = getFeedbackColors(tone)
