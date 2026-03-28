@@ -35,6 +35,21 @@ Roblox game project powered by Rojo.
 - Village billboards update with delivery / tribute totals to make the reward loop feel more explicit.
 - Runtime placement is organized through a small layout table so village tuning can happen in code without Studio-only setup.
 
+## Design Agent Workflow
+
+- Project-level design workflow is defined in `DESIGN_AGENT.md`.
+- Feature designs should be recorded under `docs/design/YYYY-MM-DD-<slug>/`.
+- Default stages:
+  1. propose
+  2. candidates
+  3. analyze
+  4. adopt
+  5. design spec
+  6. final verification
+- Templates live in `docs/design/TEMPLATES.md`.
+
+This is intended to make MagicGourd's future features more deliberate, better justified, and easier to validate before implementation.
+
 ## Run
 
 ```bash
