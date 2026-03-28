@@ -37,43 +37,46 @@ end
 
 local BILLBOARD_PRESETS = {
 	Loop = {
-		size = Vector2.new(232, 86),
-		offset = Vector3.new(0, 5.4, 0),
+		size = Vector2.new(236, 86),
+		offset = Vector3.new(0, 5.5, 0),
 		alwaysOnTop = true,
-		backgroundTransparency = 0.18,
-		strokeThickness = 2.25,
+		backgroundTransparency = 0.16,
+		strokeThickness = 2.4,
 		titleHeight = 24,
 		titleSize = 20,
+		titleTransparency = 0,
 		bodyY = 34,
-		bodyTextSize = 15,
+		bodyTextSize = 14,
 		bodyColor = Color3.fromRGB(234, 228, 216),
-		bodyTransparency = 0,
+		bodyTransparency = 0.02,
 	},
 	Zone = {
-		size = Vector2.new(214, 78),
+		size = Vector2.new(208, 74),
 		offset = Vector3.new(0, 5, 0),
 		alwaysOnTop = true,
-		backgroundTransparency = 0.26,
-		strokeThickness = 2,
-		titleHeight = 22,
+		backgroundTransparency = 0.28,
+		strokeThickness = 1.9,
+		titleHeight = 21,
 		titleSize = 17,
-		bodyY = 31,
-		bodyTextSize = 13,
+		titleTransparency = 0.02,
+		bodyY = 30,
+		bodyTextSize = 12,
 		bodyColor = Color3.fromRGB(223, 217, 204),
-		bodyTransparency = 0.06,
+		bodyTransparency = 0.12,
 	},
 	Plaza = {
-		size = Vector2.new(192, 68),
-		offset = Vector3.new(0, 4.7, 0),
-		alwaysOnTop = true,
-		backgroundTransparency = 0.34,
-		strokeThickness = 1.75,
-		titleHeight = 20,
-		titleSize = 15,
-		bodyY = 29,
-		bodyTextSize = 11,
-		bodyColor = Color3.fromRGB(214, 208, 198),
-		bodyTransparency = 0.14,
+		size = Vector2.new(176, 58),
+		offset = Vector3.new(0, 4.45, 0),
+		alwaysOnTop = false,
+		backgroundTransparency = 0.46,
+		strokeThickness = 1.35,
+		titleHeight = 18,
+		titleSize = 14,
+		titleTransparency = 0.08,
+		bodyY = 26,
+		bodyTextSize = 10,
+		bodyColor = Color3.fromRGB(210, 205, 196),
+		bodyTransparency = 0.28,
 	},
 }
 
@@ -95,6 +98,13 @@ local function attachBillboard(part, title, body, color, presetName)
 	frame.BorderSizePixel = 0
 	frame.Parent = billboard
 
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, 6)
+	padding.PaddingBottom = UDim.new(0, 8)
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.Parent = frame
+
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 12)
 	corner.Parent = frame
@@ -102,35 +112,38 @@ local function attachBillboard(part, title, body, color, presetName)
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = color
 	stroke.Thickness = preset.strokeThickness
-	stroke.Transparency = presetName == "Plaza" and 0.18 or 0
+	stroke.Transparency = presetName == "Plaza" and 0.3 or 0.05
 	stroke.Parent = frame
 
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Position = UDim2.fromOffset(10, 8)
-	titleLabel.Size = UDim2.new(1, -20, 0, preset.titleHeight)
+	titleLabel.Position = UDim2.fromOffset(0, 0)
+	titleLabel.Size = UDim2.new(1, 0, 0, preset.titleHeight)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = title
 	titleLabel.TextColor3 = Color3.fromRGB(248, 240, 218)
 	titleLabel.TextSize = preset.titleSize
+	titleLabel.TextTransparency = preset.titleTransparency or 0
 	titleLabel.TextWrapped = false
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 	titleLabel.Parent = frame
 
-	local bodyLabel = Instance.new("TextLabel")
-	bodyLabel.BackgroundTransparency = 1
-	bodyLabel.Position = UDim2.fromOffset(10, preset.bodyY)
-	bodyLabel.Size = UDim2.new(1, -20, 1, -(preset.bodyY + 8))
-	bodyLabel.Font = Enum.Font.Gotham
-	bodyLabel.Text = body
-	bodyLabel.TextWrapped = true
-	bodyLabel.TextColor3 = preset.bodyColor
-	bodyLabel.TextSize = preset.bodyTextSize
-	bodyLabel.TextTransparency = preset.bodyTransparency
-	bodyLabel.TextXAlignment = Enum.TextXAlignment.Center
-	bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
-	bodyLabel.Parent = frame
+	if body and body ~= "" then
+		local bodyLabel = Instance.new("TextLabel")
+		bodyLabel.BackgroundTransparency = 1
+		bodyLabel.Position = UDim2.fromOffset(0, preset.bodyY - 6)
+		bodyLabel.Size = UDim2.new(1, 0, 1, -(preset.bodyY - 2))
+		bodyLabel.Font = Enum.Font.Gotham
+		bodyLabel.Text = body
+		bodyLabel.TextWrapped = true
+		bodyLabel.TextColor3 = preset.bodyColor
+		bodyLabel.TextSize = preset.bodyTextSize
+		bodyLabel.TextTransparency = preset.bodyTransparency
+		bodyLabel.TextXAlignment = Enum.TextXAlignment.Center
+		bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
+		bodyLabel.Parent = frame
+	end
 end
 
 local function createLantern(parent, name, position, color)

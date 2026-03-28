@@ -38,7 +38,7 @@ local config = {
 				color = Color3.fromRGB(167, 147, 109),
 				material = Enum.Material.Slate,
 				title = "Central Plaza",
-				body = "Buy upgrades, then reset for the next run.",
+				body = "Buy upgrades for the next run.",
 			},
 			HeungbuVillage = {
 				center = Vector3.new(-72, 0.5, 24),
@@ -46,7 +46,7 @@ local config = {
 				color = Color3.fromRGB(111, 145, 88),
 				material = Enum.Material.Grass,
 				title = "Heungbu Village",
-				body = "Heal swallows here for seeds.",
+				body = "Heal swallows for seeds.",
 			},
 			NolbuDanger = {
 				center = Vector3.new(72, 0.5, 24),
@@ -90,7 +90,7 @@ local config = {
 				position = Vector3.new(0, 1.8, 33),
 				color = Color3.fromRGB(222, 170, 92),
 				title = "Work Lane",
-				body = "Plant and break here for money.",
+				body = "Plant and break for money.",
 			},
 			{
 				name = "DangerGateSign",
@@ -126,7 +126,7 @@ local config = {
 			},
 			SeedMultiplier = {
 				displayName = "Blessing",
-				body = "Gain more seeds from each heal.",
+				body = "More seeds per heal.",
 				position = Vector3.new(13, 1.3, 18),
 				color = Color3.fromRGB(121, 201, 127),
 			},
