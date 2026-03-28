@@ -1,6 +1,12 @@
 local UpgradeService = {}
 UpgradeService.__index = UpgradeService
 
+local PURCHASE_DETAILS = {
+	MoveSpeed = "Your next route should feel lighter immediately.",
+	AttackSpeed = "Your next pumpkin should cash out faster.",
+	SeedMultiplier = "Your next swallow heal should feed a bigger loop.",
+}
+
 function UpgradeService.new(config, world, playerState)
 	local self = setmetatable({}, UpgradeService)
 	self.config = config
@@ -19,13 +25,15 @@ function UpgradeService:start(remotes)
 				return
 			end
 
-			local displayName = self.config.Upgrades.Definitions[upgradeId].DisplayName
+			local definition = self.config.Upgrades.Definitions[upgradeId]
+			local displayName = definition.DisplayName
+			local purchaseDetail = PURCHASE_DETAILS[upgradeId] or "Your next loop should feel better right away."
 			local promptParent = prompt.Parent
 			local promptPosition = promptParent and promptParent:IsA("BasePart") and promptParent.Position or nil
 			if success then
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("Bought %s Lv.%d (-%d money)", displayName, newLevel, cost),
-					detail = "Your next loop should feel faster right away.",
+					detail = purchaseDetail,
 					worldText = string.format("%s Up", displayName),
 					worldPosition = promptPosition,
 					tone = "good",

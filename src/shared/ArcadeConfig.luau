@@ -80,19 +80,19 @@ local config = {
 		UpgradePads = {
 			MoveSpeed = {
 				displayName = "Footwork",
-				body = "Run faster between loop steps.",
+				body = "Move between loop steps faster.",
 				position = Vector3.new(-13, 1.3, 18),
 				color = Color3.fromRGB(93, 174, 214),
 			},
 			AttackSpeed = {
 				displayName = "Quick Hands",
-				body = "Break pumpkins faster.",
+				body = "Break pumpkins in less time.",
 				position = Vector3.new(0, 1.3, 18),
 				color = Color3.fromRGB(223, 171, 88),
 			},
 			SeedMultiplier = {
 				displayName = "Blessing",
-				body = "Gain more seeds per swallow.",
+				body = "Gain more seeds from each heal.",
 				position = Vector3.new(13, 1.3, 18),
 				color = Color3.fromRGB(121, 201, 127),
 			},
