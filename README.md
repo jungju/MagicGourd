@@ -30,9 +30,15 @@ Roblox game project powered by Rojo.
   6. return for bonus seeds and story progression
   7. hear Nolbu's demand
   8. grow a tribute gourd for Nolbu's basket
-- A lightweight client HUD shows the current quest title, objective, and seed/gourd/coin counts.
+  9. inspect the injured swallow and gather healing herbs
+  10. receive Heungbu's blessed seed
+  11. grow and harvest the true magic gourd
+  12. trigger Heungbu's magic payoff
+  13. hear Nolbu's retaliation and clear brambles from the patch
+- A lightweight client HUD shows the current quest title, objective, and normal/blessed crop counts.
 - Dialogue popups fire from server-side interactions so the story stays readable even with basic placeholder assets.
-- Village billboards update with delivery / tribute totals to make the reward loop feel more explicit.
+- Story beat banners and flash feedback make the blessed seed payoff and retaliation more visible.
+- Village billboards update with delivery / tribute / magic totals to make the reward loop feel more explicit.
 - Runtime placement is organized through a small layout table so village tuning can happen in code without Studio-only setup.
 
 ## Design Agent Workflow
@@ -49,6 +55,31 @@ Roblox game project powered by Rojo.
 - Templates live in `docs/design/TEMPLATES.md`.
 
 This is intended to make MagicGourd's future features more deliberate, better justified, and easier to validate before implementation.
+
+## PM Agent Workflow
+
+- PM review workflow is defined in `PM_AGENT.md`.
+- Task tracking lives in `docs/pm/TASKS.md`.
+- PM Agent compares adopted design vs current code and classifies work as:
+  - `done`
+  - `rebuild`
+  - `new`
+  - `blocked`
+
+This is intended to keep the project honest about what is actually finished, what needs rework, and what should be built next.
+
+## Developer Agent Workflow
+
+- Developer workflow is defined in `DEV_AGENT.md`.
+- Developer Agent reads `docs/pm/TASKS.md`, selects a high-priority build/rebuild item, and implements it.
+- Developer Agent should consult design docs before larger feature work.
+- Developer Agent is responsible for actual delivery while preserving playability.
+
+## Loop Agent Workflow
+
+- Long-running orchestration is defined in `LOOP_AGENT.md`.
+- Loop Agent rotates through Design -> PM -> Dev -> Review.
+- This is the repo's default autonomous continuation mode when ongoing progress is desired.
 
 ## Run
 
