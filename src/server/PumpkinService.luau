@@ -139,6 +139,7 @@ function PumpkinService:_useSeed(player)
 	if self.feedbackRemote then
 		self.feedbackRemote:FireClient(player, {
 			text = string.format("Seed planted. Pumpkin ready for %d hits.", self.config.Pumpkins.Health),
+			detail = "Stay close and mash the prompt to cash it out.",
 			tone = "info",
 		})
 	end
@@ -179,6 +180,7 @@ function PumpkinService:_hitPumpkin(player, pumpkinId)
 		if self.feedbackRemote then
 			self.feedbackRemote:FireClient(player, {
 				text = string.format("Pumpkin broken! +%d money", self.config.Pumpkins.Reward),
+				detail = "Bring your money back to the plaza for upgrades.",
 				tone = "good",
 			})
 		end
@@ -189,6 +191,7 @@ function PumpkinService:_hitPumpkin(player, pumpkinId)
 	if self.feedbackRemote then
 		self.feedbackRemote:FireClient(player, {
 			text = string.format("Pumpkin cracked. %d hit%s left.", currentHealth, currentHealth == 1 and "" or "s"),
+			detail = currentHealth == 1 and "One more hit for the money payout." or "Keep hitting to turn the seed into cash.",
 			tone = "info",
 		})
 	end

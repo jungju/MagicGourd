@@ -104,19 +104,28 @@ blessingLabel.Parent = upgradesFrame
 
 local statusLabel = Instance.new("TextLabel")
 statusLabel.BackgroundTransparency = 1
-statusLabel.Position = UDim2.fromOffset(14, 188)
+statusLabel.Position = UDim2.fromOffset(14, 184)
 statusLabel.Size = UDim2.new(1, -28, 0, 18)
 statusLabel.Font = Enum.Font.GothamBold
 statusLabel.TextColor3 = Color3.fromRGB(245, 215, 152)
 statusLabel.TextScaled = true
 statusLabel.Parent = rootFrame
 
+local objectiveLabel = Instance.new("TextLabel")
+objectiveLabel.BackgroundTransparency = 1
+objectiveLabel.Position = UDim2.fromOffset(14, 204)
+objectiveLabel.Size = UDim2.new(1, -28, 0, 18)
+objectiveLabel.Font = Enum.Font.GothamBold
+objectiveLabel.TextColor3 = Color3.fromRGB(206, 232, 190)
+objectiveLabel.TextScaled = true
+objectiveLabel.Parent = rootFrame
+
 local tipLabel = Instance.new("TextLabel")
 tipLabel.BackgroundTransparency = 1
-tipLabel.Position = UDim2.fromOffset(14, 208)
-tipLabel.Size = UDim2.new(1, -28, 0, 28)
+tipLabel.Position = UDim2.fromOffset(14, 222)
+tipLabel.Size = UDim2.new(1, -28, 0, 16)
 tipLabel.Font = Enum.Font.Gotham
-tipLabel.Text = "Village: heal swallows. Anywhere: use seeds. Danger: avoid goblin touches."
+tipLabel.Text = "Village: heal swallows. Anywhere: use seeds. Plaza: buy upgrades."
 tipLabel.TextColor3 = Color3.fromRGB(214, 206, 190)
 tipLabel.TextWrapped = true
 tipLabel.TextScaled = true
@@ -195,12 +204,16 @@ local function getAttribute(name)
 	return player:GetAttribute(name)
 end
 
-local function showFeedback(text, tone)
+local function showFeedback(text, tone, detail)
 	feedbackToken += 1
 	local activeToken = feedbackToken
 	local colors = feedbackColors[tone] or feedbackColors.info
 
-	feedbackLabel.Text = text or ""
+	if detail and detail ~= "" then
+		feedbackLabel.Text = string.format("%s\n%s", text or "", detail)
+	else
+		feedbackLabel.Text = text or ""
+	end
 	feedbackLabel.BackgroundColor3 = colors.background
 	feedbackLabel.TextColor3 = colors.text
 	feedbackStroke.Color = colors.stroke
@@ -210,7 +223,7 @@ local function showFeedback(text, tone)
 		return
 	end
 
-	task.delay(1.8, function()
+	task.delay(2.2, function()
 		if feedbackToken ~= activeToken then
 			return
 		end
@@ -234,6 +247,20 @@ local function refreshHud()
 	blessingLabel.Text = string.format("Blessing Lv.%d   More seeds per heal", blessingLevel)
 	statusLabel.Text = isSlowed and "Status: Goblin slow active" or "Status: Clear"
 	statusLabel.TextColor3 = isSlowed and Color3.fromRGB(240, 149, 112) or Color3.fromRGB(245, 215, 152)
+
+	if isSlowed then
+		objectiveLabel.Text = "Objective: Shake the goblin slow, then get back to the loop."
+		objectiveLabel.TextColor3 = Color3.fromRGB(245, 188, 150)
+	elseif seeds <= 0 then
+		objectiveLabel.Text = "Objective: Head left to Heungbu Village and heal a swallow."
+		objectiveLabel.TextColor3 = Color3.fromRGB(206, 232, 190)
+	elseif money >= 20 then
+		objectiveLabel.Text = "Objective: Cash in at the plaza or keep farming for a bigger buy."
+		objectiveLabel.TextColor3 = Color3.fromRGB(240, 224, 163)
+	else
+		objectiveLabel.Text = "Objective: Plant seeds nearby and crack pumpkins for money."
+		objectiveLabel.TextColor3 = Color3.fromRGB(220, 235, 196)
+	end
 
 	useSeedButton.Active = seeds > 0
 	useSeedButton.AutoButtonColor = seeds > 0
@@ -301,7 +328,7 @@ feedbackRemote.OnClientEvent:Connect(function(payload)
 		return
 	end
 
-	showFeedback(payload.text, payload.tone)
+	showFeedback(payload.text, payload.tone, payload.detail)
 end)
 
 refreshHud()
