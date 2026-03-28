@@ -23,6 +23,8 @@
 | MG-PM-007 | Ending / branching outcome structure | 2026-03-28 branching ending structure | done | `FINAL_AUDIENCE -> CHOOSE_ENDING -> ENDING_RESTORATION/ENDING_TRIBUTE -> COMPLETE` 흐름, 선택 UI RemoteEvent, ending 결과/HUD 힌트/간판 반영 구현됨 | 유지, Studio 체감만 추가 검증 | P1 |
 | MG-PM-008 | Retaliation pressure expansion | 2026-03-28 retaliation pressure pass | done | retaliation 이후 `CLEAR_BRAMBLES -> STABILIZE_VALLEY -> FINAL_AUDIENCE` 분기, Heungbu yard marker 파손/수리 연출, 표지판/패치 카피 갱신, 복구 프롬프트 및 보상 흐름이 `init.server.luau`에 구현됨 | 유지, Studio에서 yard marker 가시성/동선만 최종 확인 | P1 |
 | MG-PM-009 | Post-ending replay variations | 2026-03-28 post-ending replay variations | done | `COMPLETE` 이후 restoration용 shared basket, tribute용 road-due stand, 1-gourd hand-in, modest coin 보상, 분기 대사/간판/카운터가 `init.server.luau`에 구현됨 | 유지, Studio에서 위치/가독성만 최종 확인 | P1 |
+| MG-PM-010 | Post-ending errand escalation | 2026-03-28 post-ending errand escalation | done | 반복 심부름 3회 단위 milestone 보상(복원: 씨앗 반환 / 공물: inspection coin), 분기별 QuestHint/간판 문구 상승, milestone 전용 effect/dialogue가 `init.server.luau`와 신규 설계 문서에 반영됨 | 유지, Studio에서 sign 가독성과 보상 체감만 최종 확인 | P2 |
+| MG-PM-011 | Post-ending support-point rotations | 2026-03-28 post-ending support rotations | done | `init.server.luau`에 restoration/tribute 3개 지점 프롬프트 연결, per-player active-point gating/redirect, rotation threshold advancement, QuestHint 활성 지점 반영, 그리고 `refreshVillageSigns()`에서 안전한 `updateEndingSupportSigns` 연결 + village-level active-point copy 갱신이 구현됨 | 유지, Studio에서 각 지점 동선/가독성만 최종 확인 | P2 |
 
 ## NPC / World
 
@@ -69,6 +71,6 @@
 - 실제 집 배치/방향/크기 최종 튜닝
 
 ### Next new work to prioritize
-1. one Studio/MCP validation pass across house placement, dialogue readability, ending aftermath feel, post-ending errand readability, and retaliation yard-marker readability
-2. optional retaliation replay variation (rotate support-point landmark choices) if the current marker pass feels solid in Studio
-3. richer post-ending replay extensions beyond the current single shared-basket / road-due loop (location rotation, rare seed return, branch-specific flavor escalation)
+1. one Studio/MCP validation pass across house placement, dialogue readability, ending aftermath feel, post-ending errand readability, support-point readability, and retaliation yard-marker readability
+2. broader post-ending replay extensions beyond errand escalation + point rotation (rare-event variants, extra branch flavor, optional landmark polish)
+3. landmark-accrual follow-on that turns repeated post-ending errands into visible restoration/tribute landmark tiers

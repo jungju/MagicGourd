@@ -377,6 +377,7 @@ local function getNextAmbientLine(player, key, lines)
 end
 
 local refreshVillageSigns
+local updateEndingSupportSigns
 
 local function advanceEndingSupportPoint(profile, errandKind)
 	local points = getSupportPointList(errandKind)
@@ -1286,27 +1287,41 @@ refreshVillageSigns = function()
 	applyAmbientPatchState(ambientMode)
 end
 
-local function updateEndingSupportSigns()
+updateEndingSupportSigns = function()
 	local ambientMode = getVillageAmbientEndingChoice()
 
 	if ambientMode == AMBIENT_ENDING.RESTORATION then
-		setBillboardBody(restorationPantrySign, villageState.sharedHarvestDrops >= 2
-			and string.format("The well pantry is taking turns with the basket. Shared drops so far: %d", villageState.sharedHarvestDrops)
-			or "The well pantry waits nearby in case the next shared harvest shifts toward the village center.")
-		setBillboardBody(restorationReliefSign, villageState.sharedHarvestDrops >= 4
-			and "Heungbu's repaired yard marker now looks ready to carry the next relief drop."
-			or "The relief mat waits by Heungbu's marker for when the valley needs one more shared stop.")
+		local activeRestorationId = ENDING_SUPPORT_POINTS.restoration[((villageState.sharedHarvestDrops // ENDING_SUPPORT_ROTATION_THRESHOLD) % #ENDING_SUPPORT_POINTS.restoration) + 1].id
+		local pantryBody = activeRestorationId == "wellPantry"
+			and string.format("Shared harvests are currently being gathered here by the well. Village-wide drops: %d", villageState.sharedHarvestDrops)
+			or villageState.sharedHarvestDrops >= 2
+				and string.format("The well pantry is taking turns with the basket. Shared drops so far: %d", villageState.sharedHarvestDrops)
+				or "The well pantry waits nearby in case the next shared harvest shifts toward the village center."
+		local reliefBody = activeRestorationId == "yardRelief"
+			and "The active shared drop has shifted to Heungbu's yard marker. Leave the next relief harvest here if your own route points this way."
+			or villageState.sharedHarvestDrops >= 4
+				and "Heungbu's repaired yard marker now looks ready to carry the next relief drop."
+				or "The relief mat waits by Heungbu's marker for when the valley needs one more shared stop."
+		setBillboardBody(restorationPantrySign, pantryBody)
+		setBillboardBody(restorationReliefSign, reliefBody)
 		setBillboardBody(tributeGateSign, "Nolbu's tally post is no longer the valley's rule; it stands here as a colder reminder.")
 		setBillboardBody(tributeRouteSign, "The route marker still watches the road, but restored harvests are being claimed elsewhere.")
 	elseif ambientMode == AMBIENT_ENDING.TRIBUTE then
+		local activeTributeId = ENDING_SUPPORT_POINTS.tribute[((villageState.tributeDuesPaid // ENDING_SUPPORT_ROTATION_THRESHOLD) % #ENDING_SUPPORT_POINTS.tribute) + 1].id
+		local gateBody = activeTributeId == "gateTally"
+			and string.format("Today's counted road due is being marked at Nolbu's gate. Village-wide dues: %d", villageState.tributeDuesPaid)
+			or villageState.tributeDuesPaid >= 2
+				and string.format("Nolbu's gate keeps a stricter count now. Counted dues so far: %d", villageState.tributeDuesPaid)
+				or "Nolbu's gate keeps a stricter count when tribute shifts away from the main road stand."
+		local routeBody = activeTributeId == "routeMarker"
+			and "The active road due has shifted to the route marker. Surrender the next counted harvest here if your own tally points this way."
+			or villageState.tributeDuesPaid >= 4
+				and "The roadside route marker looks ready to claim the next due before it ever reaches the basket."
+				or "The roadside marker waits for the road's claim whenever the tally shifts off the main stand."
 		setBillboardBody(restorationPantrySign, "The pantry still stands, but the road's count now reaches farther than the shared table.")
 		setBillboardBody(restorationReliefSign, "Heungbu's marker stays standing, though tribute leaves little room for open relief.")
-		setBillboardBody(tributeGateSign, villageState.tributeDuesPaid >= 2
-			and string.format("Nolbu's gate keeps a stricter count now. Counted dues so far: %d", villageState.tributeDuesPaid)
-			or "Nolbu's gate keeps a stricter count when tribute shifts away from the main road stand.")
-		setBillboardBody(tributeRouteSign, villageState.tributeDuesPaid >= 4
-			and "The roadside route marker looks ready to claim the next due before it ever reaches the basket."
-			or "The roadside marker waits for the road's claim whenever the tally shifts off the main stand.")
+		setBillboardBody(tributeGateSign, gateBody)
+		setBillboardBody(tributeRouteSign, routeBody)
 	else
 		setBillboardBody(restorationPantrySign, "The village pantry by the well stays ready for the next shared harvest.")
 		setBillboardBody(restorationReliefSign, "The repaired yard marker can steady one more family when the valley shares.")
