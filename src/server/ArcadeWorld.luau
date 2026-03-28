@@ -95,6 +95,16 @@ local function createLantern(parent, name, position, color)
 	pointLight.Parent = lightPart
 end
 
+local function createSignPost(parent, name, position, title, body, color)
+	local post = createPart(parent, name .. "Post", Vector3.new(0.5, 4.2, 0.5), CFrame.new(position + Vector3.new(0, 2.1, 0)), Color3.fromRGB(82, 62, 44), Enum.Material.Wood)
+	post.CanCollide = false
+
+	local sign = createPart(parent, name .. "Board", Vector3.new(6.5, 3.2, 0.4), CFrame.new(position + Vector3.new(0, 4.4, 0)), Color3.fromRGB(54, 40, 31), Enum.Material.WoodPlanks)
+	sign.CanCollide = false
+	attachBillboard(sign, title, body, color)
+	return sign
+end
+
 function ArcadeWorld.build(config)
 	local map = Workspace:FindFirstChild("Map")
 	if not map then
@@ -132,6 +142,14 @@ function ArcadeWorld.build(config)
 
 	for _, path in ipairs(config.World.Paths) do
 		createPart(staticFolder, path.name, path.size, path.cframe, path.color, Enum.Material.Cobblestone)
+	end
+
+	for index, position in ipairs(config.World.WorkLanePosts or {}) do
+		createLantern(staticFolder, string.format("WorkLaneLantern%d", index), position, Color3.fromRGB(234, 183, 96))
+	end
+
+	for _, landmark in ipairs(config.World.LaneLandmarks or {}) do
+		createSignPost(staticFolder, landmark.name, landmark.position, landmark.title, landmark.body, landmark.color)
 	end
 
 	local spawn = Instance.new("SpawnLocation")

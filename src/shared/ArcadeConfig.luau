@@ -77,6 +77,33 @@ local config = {
 				color = Color3.fromRGB(129, 104, 80),
 			},
 		},
+		LaneLandmarks = {
+			{
+				name = "VillageStartSign",
+				position = Vector3.new(-24, 1.8, 20),
+				color = Color3.fromRGB(214, 196, 124),
+				title = "Village First",
+				body = "Start left: heal swallows for seeds.",
+			},
+			{
+				name = "WorkLaneSign",
+				position = Vector3.new(0, 1.8, 33),
+				color = Color3.fromRGB(222, 170, 92),
+				title = "Work Lane",
+				body = "Plant here, then break your pumpkin for money.",
+			},
+			{
+				name = "DangerGateSign",
+				position = Vector3.new(40, 1.8, 20),
+				color = Color3.fromRGB(226, 135, 102),
+				title = "Slow Zone",
+				body = "Goblins punish greedy pushes. Back off and reset if tagged.",
+			},
+		},
+		WorkLanePosts = {
+			Vector3.new(-10, 0.5, 33),
+			Vector3.new(10, 0.5, 33),
+		},
 		UpgradePads = {
 			MoveSpeed = {
 				displayName = "Footwork",

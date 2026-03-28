@@ -28,6 +28,7 @@ The live PM checklist is now aligned to the shared Heungbu arcade loop in `docs/
 | MG-PM-412 | Plaza prompt reach follow-through for spatial readability budget | 2026-03-28 spatial readability budget pass | done | `ArcadeConfig.luau` now defines a dedicated `config.Upgrades.PromptDistance = 9`, and `ArcadeWorld.luau` passes that value into plaza `Buy` prompts instead of reusing the shared 12-stud default used by swallow/pumpkin interactions | Maintain the tighter plaza commitment distance and only revisit spacing if live Studio validation still shows multi-pad ambiguity | P2 |
 | MG-PM-413 | Feedback cadence / intensity budget for fast loop readability | 2026-03-28 feedback cadence budget pass | done | `ArcadeConfig.luau` now defines per-intensity banner/world-popup timing profiles, `init.client.luau` consumes those intensity tiers for banner linger and popup size/rise/duration, and `PumpkinService.luau` / `UpgradeService.luau` assign lighter setup-bookkeeping beats (`T1`), medium crack beats (`T2`), and stronger payout / buy beats (`T3`) while slow recovery stays a short banner-only `T1` event | Maintain the current cadence ladder and only retune if Studio shows payout/buy/danger still blending together under fast repeated play | P2 |
 | MG-PM-414 | Plaza choice role clarity follow-through | 2026-03-28 plaza choice role clarity pass | done | `ArcadeWorld.luau` keeps the three plaza roles distinct, HUD rows preserve role-defining units, and `UpgradeService.luau` now maps Footwork / Quick Hands / Blessing purchases to upgrade-specific next-run promise detail lines instead of a shared generic banner | Maintain the current role-specific promise copy unless live testing shows one upgrade still reads ambiguously | P2 |
+| MG-PM-415 | Lane landmark consistency follow-through | 2026-03-28 lane landmark consistency pass | done | `ArcadeConfig.luau` now defines dedicated lane landmarks plus center work-lane lantern anchors, and `ArcadeWorld.luau` instantiates short village-first / work-lane / slow-zone signposts so spawn, center, and danger route intent read more clearly without new UI | Maintain the one-beat landmark grammar and only retune positions/copy if Studio validation still shows lane ownership ambiguity | P2 |
 
 ## Next PM Recommendation
 
@@ -40,6 +41,7 @@ The live PM checklist is now aligned to the shared Heungbu arcade loop in `docs/
 - player-facing verb consistency across button, prompts, and feedback
 - event feedback anchor consistency for heals, planting, break progress, payouts, upgrades, and goblin slow
 - tighter plaza `Buy` prompt reach so Central Plaza requires deliberate pad commitment instead of broadcasting at the same 12-stud range as swallow/pumpkin prompts
+- lane landmark grammar follow-through so village-first, center work-lane, and danger-entry intent are reinforced by short world signposts instead of extra HUD load
 
 ### Rebuild next
 - none inside the current non-Studio code path; the highest-value follow-through remains live readability validation rather than another wording pass
