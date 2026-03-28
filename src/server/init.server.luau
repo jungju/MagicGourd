@@ -159,6 +159,125 @@ local ENDING_SUPPORT_POINTS = {
 	},
 }
 
+local ENDING_WITNESSES = {
+	wellNeighbor = {
+		branch = "restoration",
+		speaker = "Well Neighbor",
+		title = "Well Neighbor",
+		prompt = "Check In",
+		color = Color3.fromRGB(142, 220, 116),
+		generic = {
+			"The well mostly trades little rumors and water still.",
+			"If the valley changes again, people here will notice before the signs do.",
+		},
+		base = {
+			{ "Someone left another gourd by the well. Feels like the village has started trusting tomorrow again.", "Shared food looks small until the day someone actually needs it." },
+			{ "The well pantry makes kindness look ordinary.", "That is how a restored valley starts feeling real instead of ceremonial." },
+			{ "People come here for water and leave talking about supper.", "That is a better story than fear ever managed." },
+		},
+		tier1 = {
+			{ "The pantry is staying stocked between drops now.", "You can hear it in the way people stop worrying out loud." },
+			{ "Relief is turning into routine by the well.", "That makes the whole village breathe easier." },
+		},
+		tier2 = {
+			{ "The well has started looking like a place that expects abundance to return.", "Even the quiet here sounds more confident." },
+			{ "These stores are not for show anymore.", "The village trusts the next shared harvest will actually arrive." },
+		},
+		pointLines = {
+			wellPantry = {
+				{ "The pantry is taking the next drop itself today.", "That keeps the middle path feeling cared for." },
+			},
+		},
+	},
+	yardHelper = {
+		branch = "restoration",
+		speaker = "Yard Helper",
+		title = "Yard Helper",
+		prompt = "Listen",
+		color = Color3.fromRGB(142, 220, 116),
+		generic = {
+			"Heungbu's yard is quiet, but never empty for long.",
+			"People keep an eye on this corner whenever the valley grows hopeful.",
+		},
+		base = {
+			{ "Heungbu's yard used to just endure. Now even this corner passes food onward.", "A repaired marker means more when it helps more than one family." },
+			{ "The mat makes this yard feel less private and more trusted.", "That is the kind of change people remember." },
+			{ "It is easier to believe in the patch when the yard shares with it.", "Kindness looks sturdier when it leaves supplies behind." },
+		},
+		tier1 = {
+			{ "There are small relief bundles here now, not just good intentions.", "That is when recovery starts feeling dependable." },
+		},
+		tier2 = {
+			{ "This marker used to point at one house. Now it feels like it points at the whole valley.", "That is what restored trust looks like." },
+			{ "The yard has become the sort of place neighbors expect to help from.", "That is bigger than any single harvest." },
+		},
+		pointLines = {
+			yardRelief = {
+				{ "The active drop shifted to the yard today.", "People will notice before sunset that this house keeps passing relief onward." },
+			},
+		},
+	},
+	roadClerk = {
+		branch = "tribute",
+		speaker = "Road Clerk",
+		title = "Road Clerk",
+		prompt = "Check Count",
+		color = Color3.fromRGB(226, 117, 94),
+		generic = {
+			"The road stays quiet when no one gives it a reason not to.",
+			"People read the tally points before they read each other these days.",
+		},
+		base = {
+			{ "The due moved to the road again. Best not arrive empty-handed when the count is this close.", "No one argues much once the stand is already waiting." },
+			{ "Funny how fast a road starts feeling official once every marker learns to ask.", "Order travels faster than comfort." },
+			{ "Counted harvests keep the patrols calm.", "That is not warmth, but it is the arrangement people understand." },
+		},
+		tier1 = {
+			{ "The tally routine is settling in now.", "People speak about the road due like weather—annoying, familiar, and hard to refuse." },
+		},
+		tier2 = {
+			{ "The road does not even need to raise its voice anymore.", "Tribute has started sounding like habit." },
+			{ "You can tell the order has sunk in when the stand looks almost ordinary.", "That is how supervision wins." },
+		},
+		pointLines = {
+			roadStand = {
+				{ "Today's count is anchored right here by the road stand.", "The closer the due stays to the road, the faster everyone falls in line." },
+			},
+		},
+	},
+	gateWatcher = {
+		branch = "tribute",
+		speaker = "Gate Watcher",
+		title = "Gate Watcher",
+		prompt = "Listen",
+		color = Color3.fromRGB(226, 117, 94),
+		generic = {
+			"Nolbu's gate never forgets to look official.",
+			"Even on quiet days, the road learns its manners here.",
+		},
+		base = {
+			{ "No one argues when the tally is already waiting for them at the gate.", "That is the sort of order Nolbu likes best." },
+			{ "The gate makes every harvest feel inspected before it even arrives.", "People stand straighter here without meaning to." },
+			{ "A due counted at the gate sounds final in a different way.", "The road starts at the house, and so does the pressure." },
+		},
+		tier1 = {
+			{ "The gate tally is becoming part of the village routine.", "Cold habits are still habits once enough people obey them." },
+		},
+		tier2 = {
+			{ "The gate looks less like a checkpoint now and more like a permanent office.", "That is not a comforting improvement." },
+			{ "Even silence feels supervised when the tally post settles in this deeply.", "Tribute has learned to decorate itself." },
+		},
+		pointLines = {
+			gateTally = {
+				{ "The active due shifted to Nolbu's gate today.", "That makes the count feel personal before it feels public." },
+			},
+			routeMarker = {
+				{ "The route marker is claiming the next due, but the gate still makes everyone think twice.", "Once a tally culture settles in, every stop starts helping the others." },
+			},
+		},
+	},
+}
+
 local playerData = {}
 
 local villageLayout = {
@@ -243,6 +362,7 @@ local function getPlayerProfile(player)
 		activePresentationToken = 0,
 		presentationBusy = false,
 		ambientDialogueCursor = {},
+		witnessDialogueCursor = {},
 		sharedHarvestDrops = 0,
 		tributeDuesPaid = 0,
 		restorationSupportPointIndex = 1,
@@ -419,8 +539,80 @@ local function getNextAmbientLine(player, key, lines)
 	return lines[index]
 end
 
+local function getWitnessContext(player, witnessId)
+	local profile = getPlayerProfile(player)
+	local witness = ENDING_WITNESSES[witnessId]
+	if not witness then
+		return nil, profile
+	end
+
+	local tier = getEndingLandmarkTier(profile, witness.branch)
+	local activePoint = getActiveSupportPoint(profile, witness.branch)
+	return {
+		branch = witness.branch,
+		tier = tier,
+		activePointId = activePoint and activePoint.id or nil,
+		endingResolved = profile.endingResolved,
+		questStage = profile.questStage,
+		endingChoice = profile.endingChoice,
+	}, profile
+end
+
+local function getWitnessLineSet(player, witnessId)
+	local witness = ENDING_WITNESSES[witnessId]
+	if not witness then
+		return { "The village has nothing clear to say here yet." }
+	end
+
+	local context, profile = getWitnessContext(player, witnessId)
+	if not context then
+		return witness.generic
+	end
+
+	if context.questStage < QUEST.COMPLETE or not context.endingResolved or context.endingChoice ~= witness.branch then
+		return witness.generic
+	end
+
+	local pools = {}
+	if witness.pointLines and context.activePointId and witness.pointLines[context.activePointId] then
+		table.insert(pools, witness.pointLines[context.activePointId])
+	end
+	if context.tier >= 2 and witness.tier2 then
+		table.insert(pools, witness.tier2)
+	end
+	if context.tier >= 1 and witness.tier1 then
+		table.insert(pools, witness.tier1)
+	end
+	if witness.base then
+		table.insert(pools, witness.base)
+	end
+
+	local merged = {}
+	for _, pool in ipairs(pools) do
+		for _, lines in ipairs(pool) do
+			table.insert(merged, lines)
+		end
+	end
+	if #merged == 0 then
+		return witness.generic
+	end
+
+	profile.witnessDialogueCursor[witnessId] = (profile.witnessDialogueCursor[witnessId] or 0) + 1
+	local index = ((profile.witnessDialogueCursor[witnessId] - 1) % #merged) + 1
+	return merged[index]
+end
+
+local function playWitnessBark(player, witnessId)
+	local witness = ENDING_WITNESSES[witnessId]
+	if not witness then
+		return
+	end
+	showDialogue(player, witness.speaker, getWitnessLineSet(player, witnessId), witness.color)
+end
+
 local refreshVillageSigns
 local updateEndingSupportSigns
+local updateEndingWitnessSigns
 
 local function advanceEndingSupportPoint(profile, errandKind)
 	local points = getSupportPointList(errandKind)
@@ -1246,6 +1438,18 @@ local tributeGateSign = attachBillboard(tributeGatePromptPart, "Gate Tally Point
 local tributeRoutePromptPart = ensureInteractionPart("RouteMarkerDuePrompt", tributeRouteMarker.Position + Vector3.new(0, 2.8, 0), Vector3.new(7, 6, 7))
 local tributeRoutePrompt = createPrompt(tributeRoutePromptPart, "Surrender", "Route Marker", 0.2, 12)
 local tributeRouteSign = attachBillboard(tributeRoutePromptPart, "Route Marker Due", "The roadside marker watches for whichever harvest the road claims next.", Color3.fromRGB(226, 117, 94))
+local wellWitnessPart = ensureInteractionPart("WellNeighborPrompt", restorationPantryCrate.Position + Vector3.new(-4, 2.3, 4), Vector3.new(6, 5, 6))
+local wellWitnessPrompt = createPrompt(wellWitnessPart, "Check In", "Well Neighbor", 0.1, 12)
+local wellWitnessSign = attachBillboard(wellWitnessPart, "Well Neighbor", "Someone by the well keeps track of what shared harvests mean to the village.", Color3.fromRGB(142, 220, 116))
+local yardWitnessPart = ensureInteractionPart("YardHelperPrompt", restorationReliefMat.Position + Vector3.new(4, 2.2, -2), Vector3.new(6, 5, 6))
+local yardWitnessPrompt = createPrompt(yardWitnessPart, "Listen", "Yard Helper", 0.1, 12)
+local yardWitnessSign = attachBillboard(yardWitnessPart, "Yard Helper", "A nearby helper watches how Heungbu's yard changes after the ending.", Color3.fromRGB(142, 220, 116))
+local roadWitnessPart = ensureInteractionPart("RoadClerkPrompt", tributeErrandStand.Position + Vector3.new(-4, 2.4, 5), Vector3.new(6, 5, 6))
+local roadWitnessPrompt = createPrompt(roadWitnessPart, "Check Count", "Road Clerk", 0.1, 12)
+local roadWitnessSign = attachBillboard(roadWitnessPart, "Road Clerk", "Someone by the road stand notices how quickly tribute becomes routine.", Color3.fromRGB(226, 117, 94))
+local gateWitnessPart = ensureInteractionPart("GateWatcherPrompt", tributeGateTallyStand.Position + Vector3.new(4, 2.1, -2), Vector3.new(6, 5, 6))
+local gateWitnessPrompt = createPrompt(gateWitnessPart, "Listen", "Gate Watcher", 0.1, 12)
+local gateWitnessSign = attachBillboard(gateWitnessPart, "Gate Watcher", "A watcher near Nolbu's gate has opinions about counted harvests.", Color3.fromRGB(226, 117, 94))
 
 local currentCrop = { state = "empty", owner = nil, readyAt = 0, cropType = "normal" }
 local bramblesActive = false
@@ -1409,6 +1613,7 @@ refreshVillageSigns = function()
 	setBillboardBody(swallowSign, villageState.swallowHelped > 0 and "The swallow has been tended. It twitches with a little strength now." or "Something small is trembling by Nolbu's wall.")
 	setEndingAccentVisibility(ambientMode)
 	updateEndingSupportSigns()
+	updateEndingWitnessSigns()
 	applyAmbientPatchState(ambientMode)
 end
 
@@ -1478,6 +1683,46 @@ updateEndingSupportSigns = function()
 		setBillboardBody(restorationReliefSign, "The repaired yard marker can steady one more family when the valley shares.")
 		setBillboardBody(tributeGateSign, "Nolbu's gate keeps a stricter count when tribute is due.")
 		setBillboardBody(tributeRouteSign, "The roadside marker watches for whichever harvest the road claims next.")
+	end
+end
+
+updateEndingWitnessSigns = function()
+	local ambientMode = getVillageAmbientEndingChoice()
+	if ambientMode == AMBIENT_ENDING.RESTORATION then
+		local restorationTier = getVillageEndingLandmarkTier("restoration")
+		local activeRestorationId = getActiveVillageSupportPointId("restoration")
+		setBillboardBody(wellWitnessSign, activeRestorationId == "wellPantry"
+			and "The well neighbor is already talking about today's active pantry drop."
+			or restorationTier >= 2 and "The well neighbor says the village now expects the pantry to stay stocked."
+			or restorationTier >= 1 and "The well neighbor says shared drops are starting to feel ordinary here."
+			or "The well neighbor watches for the next shared harvest to pass through the center path.")
+		setBillboardBody(yardWitnessSign, activeRestorationId == "yardRelief"
+			and "The yard helper is watching today's active relief stop by Heungbu's marker."
+			or restorationTier >= 2 and "The yard helper says this corner now helps the whole valley, not just one house."
+			or restorationTier >= 1 and "The yard helper says small relief bundles are becoming a regular sight here."
+			or "The yard helper keeps noticing how differently Heungbu's yard feels after the ending.")
+		setBillboardBody(roadWitnessSign, "The road clerk has less to say when the restored valley keeps choosing shared harvests.")
+		setBillboardBody(gateWitnessSign, "The gate watcher still keeps score in his head, even if the valley chose warmth.")
+	elseif ambientMode == AMBIENT_ENDING.TRIBUTE then
+		local tributeTier = getVillageEndingLandmarkTier("tribute")
+		local activeTributeId = getActiveVillageSupportPointId("tribute")
+		setBillboardBody(roadWitnessSign, activeTributeId == "roadStand"
+			and "The road clerk is following today's active due at the stand."
+			or tributeTier >= 2 and "The road clerk says tribute now reads like a standing habit."
+			or tributeTier >= 1 and "The road clerk says the tally routine is settling into the village."
+			or "The road clerk notices whichever stop is currently taking the next counted due.")
+		setBillboardBody(gateWitnessSign, activeTributeId == "gateTally"
+			and "The gate watcher is already studying today's active tally at Nolbu's gate."
+			or tributeTier >= 2 and "The gate watcher says supervision now feels built into the road itself."
+			or tributeTier >= 1 and "The gate watcher says the tally post is becoming part of everyday routine."
+			or "The gate watcher notices how quickly counted harvests change the mood near the house.")
+		setBillboardBody(wellWitnessSign, "The well neighbor lowers his voice; the road count reaches farther than the pantry now.")
+		setBillboardBody(yardWitnessSign, "The yard helper says even repaired corners feel cautious when tribute leads the valley.")
+	else
+		setBillboardBody(wellWitnessSign, "Someone by the well keeps track of what shared harvests mean to the village.")
+		setBillboardBody(yardWitnessSign, "A nearby helper watches how Heungbu's yard changes after the ending.")
+		setBillboardBody(roadWitnessSign, "Someone by the road stand notices how quickly tribute becomes routine.")
+		setBillboardBody(gateWitnessSign, "A watcher near Nolbu's gate has opinions about counted harvests.")
 	end
 end
 
@@ -2071,6 +2316,22 @@ tributeRoutePrompt.Triggered:Connect(function(player)
 			{ "The marker keeps watch like a threat dressed up as administration.", "Tribute survives because places like this make surrender feel ordinary." },
 		}
 	)
+end)
+
+wellWitnessPrompt.Triggered:Connect(function(player)
+	playWitnessBark(player, "wellNeighbor")
+end)
+
+yardWitnessPrompt.Triggered:Connect(function(player)
+	playWitnessBark(player, "yardHelper")
+end)
+
+roadWitnessPrompt.Triggered:Connect(function(player)
+	playWitnessBark(player, "roadClerk")
+end)
+
+gateWitnessPrompt.Triggered:Connect(function(player)
+	playWitnessBark(player, "gateWatcher")
 end)
 
 tributePrompt.Triggered:Connect(function(player)
