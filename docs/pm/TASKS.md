@@ -20,7 +20,7 @@
 | MG-PM-004 | Swallow injury / herb healing slice | swallow healing story slice | done | 퀘스트 단계와 약초 인벤토리, 제비 단계 추가됨 | 유지 | P1 |
 | MG-PM-005 | Blessed seed / true magic gourd payoff | 2026-03-28 blessed seed payoff design | done | 설계 문서와 함께 blessed seed, golden vine, true magic gourd harvest, Heungbu payoff, HUD/effect 반영 구현됨 | 유지, Studio 체감만 추가 검증 | P1 |
 | MG-PM-006 | Nolbu retaliation after magic payoff | 2026-03-28 blessed seed payoff design | done | Nolbu jealousy 대화, patch bramble sabotage, clear-brambles recovery 단계가 구현됨 | 유지, 후속 retaliation 확장만 검토 | P1 |
-| MG-PM-007 | Ending / branching outcome structure | long-term story arc | new | 현재 자유 반복 이후 명시 엔딩 없음 | 중기 설계 필요 | P2 |
+| MG-PM-007 | Ending / branching outcome structure | 2026-03-28 branching ending structure | done | `FINAL_AUDIENCE -> CHOOSE_ENDING -> ENDING_RESTORATION/ENDING_TRIBUTE -> COMPLETE` 흐름, 선택 UI RemoteEvent, ending 결과/HUD 힌트/간판 반영 구현됨 | 유지, Studio 체감만 추가 검증 | P1 |
 
 ## NPC / World
 
@@ -67,7 +67,7 @@
 - 대화창 실제 화면 가독성 조정
 
 ### Next new work to prioritize
-1. ending / branching structure
-2. house placement/orientation final polish
-3. dialogue readability / sizing polish
-4. retaliation expansion beyond the current sabotage beat
+1. house placement/orientation final polish
+2. dialogue readability / sizing polish
+3. retaliation expansion beyond the current sabotage beat
+4. richer post-ending ambient follow-through / replay variations

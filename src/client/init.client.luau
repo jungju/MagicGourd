@@ -9,6 +9,8 @@ local playerGui = player:WaitForChild("PlayerGui")
 local shared = ReplicatedStorage:WaitForChild("Shared")
 local dialogueEvent = shared:WaitForChild("DialogueEvent")
 local effectEvent = shared:WaitForChild("StoryEffectEvent")
+local endingChoiceEvent = shared:WaitForChild("EndingChoiceEvent")
+local endingChoiceResponseEvent = shared:WaitForChild("EndingChoiceResponseEvent")
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MagicGourdHUD"
@@ -78,6 +80,118 @@ hintLabel.TextColor3 = Color3.fromRGB(180, 168, 148)
 hintLabel.TextScaled = true
 hintLabel.Text = "Watch the village signs for story changes."
 hintLabel.Parent = questFrame
+
+local endingFrame = Instance.new("Frame")
+endingFrame.Name = "EndingChoicePanel"
+endingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+endingFrame.Position = UDim2.fromScale(0.5, 0.53)
+endingFrame.Size = UDim2.fromOffset(560, 310)
+endingFrame.BackgroundColor3 = Color3.fromRGB(28, 18, 12)
+endingFrame.BackgroundTransparency = 0.08
+endingFrame.BorderSizePixel = 0
+endingFrame.Visible = false
+endingFrame.ZIndex = 10
+endingFrame.Parent = screenGui
+
+local endingCorner = Instance.new("UICorner")
+endingCorner.CornerRadius = UDim.new(0, 18)
+endingCorner.Parent = endingFrame
+
+local endingStroke = Instance.new("UIStroke")
+endingStroke.Color = Color3.fromRGB(227, 188, 96)
+endingStroke.Thickness = 2
+endingStroke.Parent = endingFrame
+
+local endingTitle = Instance.new("TextLabel")
+endingTitle.BackgroundTransparency = 1
+endingTitle.Position = UDim2.fromOffset(20, 18)
+endingTitle.Size = UDim2.new(1, -40, 0, 34)
+endingTitle.Font = Enum.Font.GothamBold
+endingTitle.TextColor3 = Color3.fromRGB(255, 239, 204)
+endingTitle.TextScaled = true
+endingTitle.Text = "The Valley Waits"
+endingTitle.ZIndex = 11
+endingTitle.Parent = endingFrame
+
+local endingBody = Instance.new("TextLabel")
+endingBody.BackgroundTransparency = 1
+endingBody.Position = UDim2.fromOffset(20, 58)
+endingBody.Size = UDim2.new(1, -40, 0, 58)
+endingBody.Font = Enum.Font.Gotham
+endingBody.TextColor3 = Color3.fromRGB(235, 226, 210)
+endingBody.TextWrapped = true
+endingBody.TextYAlignment = Enum.TextYAlignment.Top
+endingBody.TextScaled = true
+endingBody.Text = "Choose what kind of harvest the valley should protect."
+endingBody.ZIndex = 11
+endingBody.Parent = endingFrame
+
+local endingStatus = Instance.new("TextLabel")
+endingStatus.BackgroundTransparency = 1
+endingStatus.Position = UDim2.fromOffset(20, 118)
+endingStatus.Size = UDim2.new(1, -40, 0, 18)
+endingStatus.Font = Enum.Font.GothamMedium
+endingStatus.TextColor3 = Color3.fromRGB(194, 180, 158)
+endingStatus.TextScaled = true
+endingStatus.Text = "Choose once. Your ending will shape the village mood."
+endingStatus.ZIndex = 11
+endingStatus.Parent = endingFrame
+
+local choiceButtons = {}
+
+local function createChoiceButton(name, position, strokeColor)
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.Position = position
+	button.Size = UDim2.fromOffset(244, 128)
+	button.AutoButtonColor = true
+	button.BackgroundColor3 = Color3.fromRGB(46, 30, 22)
+	button.BorderSizePixel = 0
+	button.Text = ""
+	button.ZIndex = 11
+	button.Parent = endingFrame
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 14)
+	corner.Parent = button
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = strokeColor
+	stroke.Thickness = 2
+	stroke.Parent = button
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.fromOffset(14, 12)
+	title.Size = UDim2.new(1, -28, 0, 30)
+	title.Font = Enum.Font.GothamBold
+	title.TextColor3 = Color3.fromRGB(255, 239, 204)
+	title.TextWrapped = true
+	title.TextScaled = true
+	title.ZIndex = 12
+	title.Parent = button
+
+	local body = Instance.new("TextLabel")
+	body.Name = "Body"
+	body.BackgroundTransparency = 1
+	body.Position = UDim2.fromOffset(14, 46)
+	body.Size = UDim2.new(1, -28, 1, -58)
+	body.Font = Enum.Font.Gotham
+	body.TextColor3 = Color3.fromRGB(231, 222, 208)
+	body.TextWrapped = true
+	body.TextYAlignment = Enum.TextYAlignment.Top
+	body.TextScaled = true
+	body.ZIndex = 12
+	body.Parent = button
+
+	button:SetAttribute("ChoiceId", name:lower())
+	choiceButtons[#choiceButtons + 1] = button
+	return button
+end
+
+local restorationButton = createChoiceButton("Restoration", UDim2.fromOffset(20, 148), Color3.fromRGB(142, 220, 116))
+local tributeButton = createChoiceButton("Tribute", UDim2.fromOffset(296, 148), Color3.fromRGB(226, 117, 94))
 
 local dialogueFrame = Instance.new("Frame")
 dialogueFrame.Name = "DialogueBox"
@@ -174,6 +288,8 @@ flash.Parent = screenGui
 local activeDialogueToken = 0
 local activeBannerToken = 0
 local activeBannerPulseToken = 0
+local endingChoiceOpen = false
+local endingChoiceLocked = false
 
 local kindStyles = {
 	banner = {
@@ -231,7 +347,46 @@ end
 local function refreshQuest()
 	questTitle.Text = player:GetAttribute("QuestTitle") or "Village Rumor"
 	questBody.Text = player:GetAttribute("QuestObjective") or "Help the village."
+	hintLabel.Text = player:GetAttribute("QuestHint") or "Watch the village signs for story changes."
 	formatStats()
+end
+
+local function setChoiceButtonState(button, enabled)
+	button.Active = enabled
+	button.AutoButtonColor = enabled
+	button.BackgroundTransparency = enabled and 0 or 0.25
+end
+
+local function closeEndingChoice()
+	endingChoiceOpen = false
+	endingChoiceLocked = false
+	endingFrame.Visible = false
+	for _, button in ipairs(choiceButtons) do
+		setChoiceButtonState(button, true)
+	end
+	endingStatus.Text = "Choose once. Your ending will shape the village mood."
+end
+
+local function openEndingChoice(payload)
+	endingChoiceOpen = true
+	endingChoiceLocked = false
+	endingFrame.Visible = true
+	endingTitle.Text = payload.title or "The Valley Waits"
+	endingBody.Text = payload.body or "Choose what kind of harvest the valley should protect."
+	endingStatus.Text = "Choose once. Your ending will shape the village mood."
+
+	local choices = payload.choices or {}
+	local mappedButtons = { restorationButton, tributeButton }
+	for index, button in ipairs(mappedButtons) do
+		local choice = choices[index]
+		button.Visible = choice ~= nil
+		if choice then
+			button:SetAttribute("ChoiceId", choice.id)
+			button.Title.Text = choice.title or "Choice"
+			button.Body.Text = choice.body or ""
+			setChoiceButtonState(button, true)
+		end
+	end
 end
 
 local function showDialogue(payload)
@@ -301,9 +456,34 @@ local function pulseFlash(payload)
 	end)
 end
 
-for _, attributeName in ipairs({ "QuestTitle", "QuestObjective", "Seeds", "Gourds", "Herbs", "Coins", "BlessedSeeds", "BlessedGourds" }) do
+for _, button in ipairs(choiceButtons) do
+	button.MouseButton1Click:Connect(function()
+		if not endingChoiceOpen or endingChoiceLocked then
+			return
+		end
+		endingChoiceLocked = true
+		for _, otherButton in ipairs(choiceButtons) do
+			setChoiceButtonState(otherButton, false)
+		end
+		endingStatus.Text = "The valley is listening..."
+		endingChoiceResponseEvent:FireServer(button:GetAttribute("ChoiceId"))
+		task.delay(0.45, function()
+			if endingChoiceOpen then
+				endingFrame.Visible = false
+			end
+		end)
+	end)
+end
+
+for _, attributeName in ipairs({ "QuestTitle", "QuestObjective", "QuestHint", "Seeds", "Gourds", "Herbs", "Coins", "BlessedSeeds", "BlessedGourds" }) do
 	player:GetAttributeChangedSignal(attributeName):Connect(refreshQuest)
 end
+
+player:GetAttributeChangedSignal("EndingName"):Connect(function()
+	if (player:GetAttribute("EndingName") or "Unwritten") ~= "Unwritten" then
+		closeEndingChoice()
+	end
+end)
 
 refreshQuest()
 dialogueEvent.OnClientEvent:Connect(showDialogue)
@@ -311,3 +491,4 @@ effectEvent.OnClientEvent:Connect(function(payload)
 	showBanner(payload)
 	pulseFlash(payload)
 end)
+endingChoiceEvent.OnClientEvent:Connect(openEndingChoice)

@@ -32,6 +32,14 @@ local effectEvent = sharedFolder:FindFirstChild("StoryEffectEvent") or Instance.
 effectEvent.Name = "StoryEffectEvent"
 effectEvent.Parent = sharedFolder
 
+local endingChoiceEvent = sharedFolder:FindFirstChild("EndingChoiceEvent") or Instance.new("RemoteEvent")
+endingChoiceEvent.Name = "EndingChoiceEvent"
+endingChoiceEvent.Parent = sharedFolder
+
+local endingChoiceResponseEvent = sharedFolder:FindFirstChild("EndingChoiceResponseEvent") or Instance.new("RemoteEvent")
+endingChoiceResponseEvent.Name = "EndingChoiceResponseEvent"
+endingChoiceResponseEvent.Parent = sharedFolder
+
 local QUEST = {
 	INTRO = 0,
 	MEET_HEUNGBU = 1,
@@ -50,7 +58,11 @@ local QUEST = {
 	MAGIC_PAYOFF = 14,
 	NOLBU_RETALIATION = 15,
 	CLEAR_BRAMBLES = 16,
-	COMPLETE = 17,
+	FINAL_AUDIENCE = 17,
+	CHOOSE_ENDING = 18,
+	ENDING_RESTORATION = 19,
+	ENDING_TRIBUTE = 20,
+	COMPLETE = 21,
 }
 
 local QUEST_TITLES = {
@@ -71,7 +83,11 @@ local QUEST_TITLES = {
 	[QUEST.MAGIC_PAYOFF] = "Heungbu's Reward",
 	[QUEST.NOLBU_RETALIATION] = "A Jealous Brother",
 	[QUEST.CLEAR_BRAMBLES] = "Clear the Brambles",
-	[QUEST.COMPLETE] = "Valley of Kindness",
+	[QUEST.FINAL_AUDIENCE] = "Final Audience",
+	[QUEST.CHOOSE_ENDING] = "Choose the Valley's Path",
+	[QUEST.ENDING_RESTORATION] = "Ending: Restored Valley",
+	[QUEST.ENDING_TRIBUTE] = "Ending: Tribute Road",
+	[QUEST.COMPLETE] = "Village Aftermath",
 }
 
 local QUEST_OBJECTIVES = {
@@ -92,7 +108,11 @@ local QUEST_OBJECTIVES = {
 	[QUEST.MAGIC_PAYOFF] = "Bring the true magic gourd to Heungbu.",
 	[QUEST.NOLBU_RETALIATION] = "Go hear Nolbu's reaction at the estate gate.",
 	[QUEST.CLEAR_BRAMBLES] = "Clear the brambles from Heungbu's patch.",
-	[QUEST.COMPLETE] = "The patch is safe again. Keep growing gourds for coins.",
+	[QUEST.FINAL_AUDIENCE] = "Return to Heungbu's yard and decide what kind of harvest the valley should protect.",
+	[QUEST.CHOOSE_ENDING] = "Choose between Heungbu's shared harvest and Nolbu's tribute road.",
+	[QUEST.ENDING_RESTORATION] = "You stood with Heungbu. Let the valley breathe and keep growing.",
+	[QUEST.ENDING_TRIBUTE] = "You appeased Nolbu. Keep the harvest coming under tribute.",
+	[QUEST.COMPLETE] = "Your ending is set. Keep growing gourds for coins and see the village live with it.",
 }
 
 local villageState = {
@@ -103,6 +123,8 @@ local villageState = {
 	swallowHelped = 0,
 	magicPayoffs = 0,
 	retaliations = 0,
+	restorationEndings = 0,
+	tributeEndings = 0,
 }
 
 local playerData = {}
@@ -151,6 +173,9 @@ local function getPlayerProfile(player)
 		magicPayoffDone = false,
 		retaliationTriggered = false,
 		bramblesCleared = false,
+		endingChoice = "none",
+		endingResolved = false,
+		endingSelectionOpen = false,
 		activePresentationToken = 0,
 		presentationBusy = false,
 	}
@@ -165,6 +190,24 @@ local function setQuestStage(player, stage)
 	end
 end
 
+local function getEndingName(choice)
+	if choice == "restoration" then
+		return "Restored Valley"
+	elseif choice == "tribute" then
+		return "Tribute Road"
+	end
+	return "Unwritten"
+end
+
+local function getEndingHint(choice)
+	if choice == "restoration" then
+		return "Ending: Restored Valley · The village protects shared harvests."
+	elseif choice == "tribute" then
+		return "Ending: Tribute Road · The harvest still grows under Nolbu's shadow."
+	end
+	return "Watch the village signs for story changes."
+end
+
 local function syncPlayerAttributes(player)
 	local profile = getPlayerProfile(player)
 	player:SetAttribute("Seeds", profile.seeds)
@@ -176,9 +219,12 @@ local function syncPlayerAttributes(player)
 	player:SetAttribute("QuestStage", profile.questStage)
 	player:SetAttribute("QuestTitle", QUEST_TITLES[profile.questStage] or "Village Tale")
 	player:SetAttribute("QuestObjective", QUEST_OBJECTIVES[profile.questStage] or "Help the village.")
+	player:SetAttribute("QuestHint", getEndingHint(profile.endingChoice))
 	player:SetAttribute("HeungbuDeliveries", profile.heungbuDeliveries)
 	player:SetAttribute("NolbuTributes", profile.nolbuTributes)
+	player:SetAttribute("EndingName", getEndingName(profile.endingChoice))
 end
+
 
 local function showDialogue(player, speaker, lines, accent)
 	dialogueEvent:FireClient(player, { speaker = speaker, lines = lines, accent = accent })
@@ -691,12 +737,111 @@ end
 
 local function refreshVillageSigns()
 	setBillboardBody(heungbuSign, string.format("Deliveries: %d · Swallows helped: %d · Magic opened: %d", villageState.heungbuDeliveries, villageState.swallowHelped, villageState.magicPayoffs))
-	setBillboardBody(heungbuPadSign, villageState.magicPayoffs > 0 and string.format("The yard glows a little brighter. Retaliations weathered: %d", villageState.retaliations) or string.format("Harvests gathered: %d · Kindness still lives here.", villageState.gourdsHarvested))
-	setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes))
-	setBillboardBody(tributeSign, string.format("Tributes paid: %d · Nolbu still wants more.", villageState.nolbuTributes))
+	if villageState.restorationEndings > 0 then
+		setBillboardBody(heungbuPadSign, string.format("The yard stays open to all. Restoration endings: %d · Retaliations weathered: %d", villageState.restorationEndings, villageState.retaliations))
+	elseif villageState.tributeEndings > 0 then
+		setBillboardBody(heungbuPadSign, string.format("Hope survives, but the harvest now walks a tribute road. Tribute endings: %d", villageState.tributeEndings))
+	else
+		setBillboardBody(heungbuPadSign, villageState.magicPayoffs > 0 and string.format("The yard glows a little brighter. Retaliations weathered: %d", villageState.retaliations) or string.format("Harvests gathered: %d · Kindness still lives here.", villageState.gourdsHarvested))
+	end
+	if villageState.tributeEndings > 0 then
+		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d · Tribute endings claimed: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes, villageState.tributeEndings))
+	elseif villageState.restorationEndings > 0 then
+		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · The gate resents the restored valley.", #patrolANodes + #patrolBNodes))
+	else
+		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes))
+	end
+	setBillboardBody(tributeSign, villageState.tributeEndings > 0 and string.format("Tributes paid: %d · Nolbu calls this order.", villageState.nolbuTributes) or string.format("Tributes paid: %d · Nolbu still wants more.", villageState.nolbuTributes))
 	setBillboardBody(herbSign, string.format("Herb bundles picked: %d · The well garden smells sharp and clean.", villageState.herbBundlesPicked))
 	setBillboardBody(swallowSign, villageState.swallowHelped > 0 and "The swallow has been tended. It twitches with a little strength now." or "Something small is trembling by Nolbu's wall.")
 end
+
+local function resolveEndingChoice(player, choice)
+	local profile = getPlayerProfile(player)
+	if profile.endingResolved or not profile.endingSelectionOpen or profile.questStage < QUEST.CHOOSE_ENDING then
+		return false
+	end
+	if choice ~= "restoration" and choice ~= "tribute" then
+		return false
+	end
+
+	profile.endingSelectionOpen = false
+	profile.endingResolved = true
+	profile.endingChoice = choice
+
+	if choice == "restoration" then
+		profile.seeds += 2
+		profile.coins += 6
+		villageState.restorationEndings += 1
+		setQuestStage(player, QUEST.ENDING_RESTORATION)
+	else
+		profile.coins += 14
+		villageState.tributeEndings += 1
+		setQuestStage(player, QUEST.ENDING_TRIBUTE)
+	end
+
+	syncPlayerAttributes(player)
+	refreshVillageSigns()
+
+	playPresentationSequence(player, {
+		choice == "restoration" and {
+			onStart = function()
+				setPatchMood("idle")
+				setPatchText("The patch is protected for everyone who still believes in shared harvests.")
+			end,
+			effect = {
+				kind = "restoration",
+				title = "Ending: Restored Valley",
+				body = "You stand with Heungbu and protect the harvest for the whole valley.",
+				color = Color3.fromRGB(142, 220, 116),
+				duration = 5.2,
+				pulseCount = 2,
+			},
+			dialogue = {
+				speaker = "Heungbu",
+				lines = {
+					"Then let this patch stay open, and let the next harvest feed more than fear.",
+					"Take these seeds. We will keep the valley warm together.",
+				},
+				accent = Color3.fromRGB(111, 224, 128),
+			},
+			delay = 0.6,
+		} or {
+			onStart = function()
+				setPatchMood("idle")
+				setPatchText("The patch survives, but everyone now counts what must be paid forward.")
+			end,
+			effect = {
+				kind = "warning",
+				title = "Ending: Tribute Road",
+				body = "You accept Nolbu's order and keep the valley safe through tribute.",
+				color = Color3.fromRGB(226, 117, 94),
+				duration = 5.2,
+				pulseCount = 2,
+			},
+			dialogue = {
+				speaker = "Nolbu",
+				lines = {
+					"At last, someone here understands order. Let the harvest come through my gate first.",
+					"Take your coin. Peace is expensive, but cheaper than chaos.",
+				},
+				accent = Color3.fromRGB(226, 117, 94),
+			},
+			delay = 0.6,
+		},
+	}, function()
+		setQuestStage(player, QUEST.COMPLETE)
+		syncPlayerAttributes(player)
+		refreshVillageSigns()
+	end)
+
+	return true
+end
+
+endingChoiceResponseEvent.OnServerEvent:Connect(function(player, choice)
+	resolveEndingChoice(player, choice)
+end)
+
 refreshVillageSigns()
 
 seedPrompt.Triggered:Connect(function(player)
@@ -911,6 +1056,37 @@ heungbuPrompt.Triggered:Connect(function(player)
 			showDialogue(player, "Heungbu", { "The yard is brighter now, but Nolbu's envy will not stay quiet.", "See what he has done, then help me keep the patch alive." }, Color3.fromRGB(111, 224, 128))
 			return
 		end
+		if profile.questStage == QUEST.FINAL_AUDIENCE then
+			setQuestStage(player, QUEST.CHOOSE_ENDING)
+			profile.endingSelectionOpen = true
+			syncPlayerAttributes(player)
+			endingChoiceEvent:FireClient(player, {
+				title = "The Valley Waits",
+				body = "Heungbu asks what kind of harvest should guide the valley now that the brambles are gone.",
+				choices = {
+					{ id = "restoration", title = "Stand with Heungbu", body = "Protect the patch and share future harvest hope." },
+					{ id = "tribute", title = "Appease Nolbu", body = "Offer future harvest tribute to keep a colder peace." },
+				},
+			})
+			showDialogue(player, "Heungbu", { "The thorns are gone, but the valley will remember what comes next.", "Choose what kind of harvest this place should protect." }, Color3.fromRGB(111, 224, 128))
+			return
+		end
+		if profile.questStage == QUEST.CHOOSE_ENDING and not profile.endingResolved then
+			showDialogue(player, "Heungbu", { "The valley is still waiting on your answer.", "If you want to protect the shared harvest, choose my path from the final audience panel." }, Color3.fromRGB(111, 224, 128))
+			endingChoiceEvent:FireClient(player, {
+				title = "Choose the Valley's Path",
+				body = "The choice is still open.",
+				choices = {
+					{ id = "restoration", title = "Stand with Heungbu", body = "Protect the patch and share future harvest hope." },
+					{ id = "tribute", title = "Appease Nolbu", body = "Offer future harvest tribute to keep a colder peace." },
+				},
+			})
+			return
+		end
+		if profile.questStage >= QUEST.COMPLETE then
+			showDialogue(player, "Heungbu", profile.endingChoice == "restoration" and { "The valley still feels lighter after your choice.", "Keep the patch alive, and the ending will keep meaning something." } or profile.endingChoice == "tribute" and { "We still plant, even under another man's count.", "If you keep growing, perhaps one day the valley can ask for more than peace." } or { "The patch is breathing again.", "If you keep planting, the story can stay alive a while longer." }, Color3.fromRGB(111, 224, 128))
+			return
+		end
 		showDialogue(player, "Heungbu", { "I can wait, but the house is still hungry for good news.", "Bring a ripe gourd when you have one." }, Color3.fromRGB(111, 224, 128))
 		return
 	end
@@ -971,6 +1147,40 @@ nolbuPrompt.Triggered:Connect(function(player)
 				delay = 0.25,
 			},
 		}, nil)
+		return
+	end
+	if profile.questStage == QUEST.FINAL_AUDIENCE then
+		showDialogue(player, "Nolbu", {
+			"So the patch survived. Fine. Survival still needs someone willing to count the cost.",
+			"Hear Heungbu out if you must, but do not pretend kindness is the only way to keep a valley standing.",
+		}, Color3.fromRGB(226, 117, 94))
+		return
+	end
+	if profile.questStage == QUEST.CHOOSE_ENDING and not profile.endingResolved then
+		endingChoiceEvent:FireClient(player, {
+			title = "Choose the Valley's Path",
+			body = "Nolbu presses for tribute. Heungbu asks you to protect a shared harvest.",
+			choices = {
+				{ id = "restoration", title = "Stand with Heungbu", body = "Protect the patch and share future harvest hope." },
+				{ id = "tribute", title = "Appease Nolbu", body = "Offer future harvest tribute to keep a colder peace." },
+			},
+		})
+		showDialogue(player, "Nolbu", {
+			"If you want peace, choose the road that pays for it.",
+			"Heungbu calls it cold. I call it stable.",
+		}, Color3.fromRGB(226, 117, 94))
+		return
+	end
+	if profile.questStage >= QUEST.COMPLETE then
+		showDialogue(player, "Nolbu", profile.endingChoice == "tribute" and {
+			"You chose the road that keeps the loudest quarrels quiet.",
+			"Keep the tribute moving and even this valley can look orderly.",
+		} or profile.endingChoice == "restoration" and {
+			"You chose Heungbu's warmth over my order.",
+			"Do not act surprised if a generous valley still needs defending.",
+		} or {
+			"The village keeps moving, with or without a proper accountant.",
+		}, Color3.fromRGB(226, 117, 94))
 		return
 	end
 	showDialogue(player, "Nolbu", { string.format("My estate still has %d patrol steps and %d reasons to stay impressed.", #patrolANodes + #patrolBNodes, villageState.nolbuTributes), profile.retaliationTriggered and "If Heungbu cannot keep brambles out, perhaps he does not deserve a harvest." or "If you have a spare gourd, the basket is right there." }, Color3.fromRGB(226, 117, 94))
@@ -1052,7 +1262,7 @@ bramblePrompt.Triggered:Connect(function(player)
 	profile.bramblesCleared = true
 	profile.seeds += 1
 	profile.coins += 4
-	setQuestStage(player, QUEST.COMPLETE)
+	profile.endingSelectionOpen = false
 	setBramblesVisible(false)
 	syncPlayerAttributes(player)
 	refreshVillageSigns()
@@ -1081,7 +1291,13 @@ bramblePrompt.Triggered:Connect(function(player)
 			delay = 0.2,
 		},
 	}, function()
-		setPatchText("Bring a seed, then return when the vine is ready.")
+		setQuestStage(player, QUEST.FINAL_AUDIENCE)
+		syncPlayerAttributes(player)
+		setPatchText("The patch is breathing again. Return to Heungbu and decide what kind of harvest the valley will protect.")
+		showDialogue(player, "Village", {
+			"The brambles are gone, but the story has not settled yet.",
+			"Return to Heungbu's yard for the valley's final audience.",
+		}, Color3.fromRGB(194, 162, 255))
 	end)
 end)
 
