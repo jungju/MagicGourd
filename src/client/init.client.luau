@@ -208,6 +208,7 @@ local feedbackColors = {
 local feedbackToken = 0
 local activeWorldPopupCounts = {}
 local activeWorldPopupState = {}
+local activeWorldPopupEntries = {}
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
 local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
@@ -261,6 +262,50 @@ local function getWorldPopupProfile(payload, text)
 		maxDistance = profile.maxDistance or 110,
 		size = Vector2.new(width, height),
 	}
+end
+
+local function dismissWorldPopupEntry(entry, bucketKey)
+	if not entry or entry.dismissed then
+		return
+	end
+
+	entry.dismissed = true
+	if entry.fadeTween then
+		entry.fadeTween:Cancel()
+	end
+	if entry.riseTween then
+		entry.riseTween:Cancel()
+	end
+	if entry.label and entry.label.Parent then
+		entry.label.TextTransparency = 1
+		entry.label.TextStrokeTransparency = 1
+	end
+	if entry.part and entry.part.Parent then
+		entry.part:Destroy()
+	end
+
+	activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
+	if activeWorldPopupCounts[bucketKey] == 0 then
+		activeWorldPopupCounts[bucketKey] = nil
+	end
+end
+
+local function removeWorldPopupEntry(bucketKey, entry)
+	local entries = activeWorldPopupEntries[bucketKey]
+	if not entries then
+		return
+	end
+
+	for index = #entries, 1, -1 do
+		if entries[index] == entry then
+			table.remove(entries, index)
+			break
+		end
+	end
+
+	if #entries == 0 then
+		activeWorldPopupEntries[bucketKey] = nil
+	end
 end
 
 local function getAffordableUpgradeIds(money)
@@ -492,6 +537,17 @@ local function showWorldPopup(payload)
 		return
 	end
 
+	local existingEntries = activeWorldPopupEntries[bucketKey]
+	if existingEntries and now - (bucketState and bucketState.lastShownAt or 0) <= popupYieldWindow then
+		for index = #existingEntries, 1, -1 do
+			local entry = existingEntries[index]
+			if entry and priority >= entry.priority then
+				dismissWorldPopupEntry(entry, bucketKey)
+				removeWorldPopupEntry(bucketKey, entry)
+			end
+		end
+	end
+
 	local colors = getFeedbackColors(tone)
 	local profile = getWorldPopupProfile(payload, text)
 	local activeCount = activeWorldPopupCounts[bucketKey] or 0
@@ -546,18 +602,35 @@ local function showWorldPopup(payload)
 		TweenInfo.new(profile.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 		{ TextTransparency = 1, TextStrokeTransparency = 1 }
 	)
+	local entry = {
+		priority = priority,
+		createdAt = now,
+		part = popupPart,
+		label = label,
+		riseTween = riseTween,
+		fadeTween = fadeTween,
+		dismissed = false,
+	}
+	activeWorldPopupEntries[bucketKey] = activeWorldPopupEntries[bucketKey] or {}
+	table.insert(activeWorldPopupEntries[bucketKey], entry)
 
 	riseTween:Play()
 	fadeTween:Play()
 	fadeTween.Completed:Connect(function()
-		activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
-		if activeWorldPopupCounts[bucketKey] == 0 then
-			activeWorldPopupCounts[bucketKey] = nil
+		local didFinishNaturally = not entry.dismissed
+		removeWorldPopupEntry(bucketKey, entry)
+		if didFinishNaturally then
+			activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
+			if activeWorldPopupCounts[bucketKey] == 0 then
+				activeWorldPopupCounts[bucketKey] = nil
+			end
+			if popupPart.Parent then
+				popupPart:Destroy()
+			end
 		end
 		if activeWorldPopupState[bucketKey] and activeWorldPopupState[bucketKey].lastShownAt == now then
 			activeWorldPopupState[bucketKey] = nil
 		end
-		popupPart:Destroy()
 	end)
 end
 
