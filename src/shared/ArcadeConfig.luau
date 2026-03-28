@@ -38,7 +38,7 @@ local config = {
 				color = Color3.fromRGB(167, 147, 109),
 				material = Enum.Material.Slate,
 				title = "Central Plaza",
-				body = "Spawn, reset, and buy fast upgrades here.",
+				body = "Buy upgrades here. Reset your pace before the next run.",
 			},
 			HeungbuVillage = {
 				center = Vector3.new(-72, 0.5, 24),
@@ -46,7 +46,7 @@ local config = {
 				color = Color3.fromRGB(111, 145, 88),
 				material = Enum.Material.Grass,
 				title = "Heungbu Village",
-				body = "Heal swallows and chain seed rewards.",
+				body = "Heal injured swallows here to earn seeds.",
 			},
 			NolbuDanger = {
 				center = Vector3.new(72, 0.5, 24),
@@ -54,7 +54,7 @@ local config = {
 				color = Color3.fromRGB(82, 72, 76),
 				material = Enum.Material.Slate,
 				title = "Nolbu Area",
-				body = "Goblins roam here and slow careless players.",
+				body = "Goblins slow careless players. Enter for risk, not safety.",
 			},
 		},
 		Paths = {
@@ -80,19 +80,19 @@ local config = {
 		UpgradePads = {
 			MoveSpeed = {
 				displayName = "Footwork",
-				body = "20 / 40 / 80\nRun faster between loops.",
+				body = "Run faster between loop steps.",
 				position = Vector3.new(-13, 1.3, 18),
 				color = Color3.fromRGB(93, 174, 214),
 			},
 			AttackSpeed = {
 				displayName = "Quick Hands",
-				body = "20 / 40 / 80\nBreak pumpkins faster.",
+				body = "Break pumpkins faster.",
 				position = Vector3.new(0, 1.3, 18),
 				color = Color3.fromRGB(223, 171, 88),
 			},
 			SeedMultiplier = {
 				displayName = "Blessing",
-				body = "20 / 40 / 80\nMore seeds per swallow.",
+				body = "Gain more seeds per swallow.",
 				position = Vector3.new(13, 1.3, 18),
 				color = Color3.fromRGB(121, 201, 127),
 			},

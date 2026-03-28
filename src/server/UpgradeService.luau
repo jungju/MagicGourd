@@ -22,17 +22,20 @@ function UpgradeService:start(remotes)
 			local displayName = self.config.Upgrades.Definitions[upgradeId].DisplayName
 			if success then
 				self.feedbackRemote:FireClient(player, {
-					text = string.format("%s upgraded to Lv.%d (-%d money)", displayName, newLevel, cost),
+					text = string.format("Bought %s Lv.%d (-%d money)", displayName, newLevel, cost),
+					detail = "Your next loop should feel faster right away.",
 					tone = "good",
 				})
 			elseif reason == "money" then
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("Need %d money for %s", cost, displayName),
+					detail = "Break another pumpkin or two, then come back to the plaza.",
 					tone = "warn",
 				})
 			elseif reason == "max" then
 				self.feedbackRemote:FireClient(player, {
-					text = string.format("%s is already maxed", displayName),
+					text = string.format("%s is maxed", displayName),
+					detail = "Buy a different upgrade or keep the loop moving.",
 					tone = "warn",
 				})
 			end

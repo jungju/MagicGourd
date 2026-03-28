@@ -26,7 +26,7 @@ local rootFrame = Instance.new("Frame")
 rootFrame.Name = "HUD"
 rootFrame.AnchorPoint = Vector2.new(0, 0)
 rootFrame.Position = UDim2.fromOffset(18, 18)
-rootFrame.Size = UDim2.fromOffset(340, 250)
+rootFrame.Size = UDim2.fromOffset(360, 280)
 rootFrame.BackgroundColor3 = Color3.fromRGB(26, 20, 15)
 rootFrame.BackgroundTransparency = 0.18
 rootFrame.BorderSizePixel = 0
@@ -54,17 +54,38 @@ titleLabel.Parent = rootFrame
 local resourcesLabel = Instance.new("TextLabel")
 resourcesLabel.BackgroundTransparency = 1
 resourcesLabel.Position = UDim2.fromOffset(14, 46)
-resourcesLabel.Size = UDim2.new(1, -28, 0, 48)
+resourcesLabel.Size = UDim2.new(1, -28, 0, 24)
 resourcesLabel.Font = Enum.Font.GothamBold
 resourcesLabel.TextColor3 = Color3.fromRGB(242, 232, 213)
 resourcesLabel.TextWrapped = true
 resourcesLabel.TextScaled = true
 resourcesLabel.Parent = rootFrame
 
+local nextLabel = Instance.new("TextLabel")
+nextLabel.BackgroundTransparency = 1
+nextLabel.Position = UDim2.fromOffset(14, 74)
+nextLabel.Size = UDim2.new(1, -28, 0, 42)
+nextLabel.Font = Enum.Font.GothamBold
+nextLabel.TextColor3 = Color3.fromRGB(212, 234, 192)
+nextLabel.TextWrapped = true
+nextLabel.TextXAlignment = Enum.TextXAlignment.Left
+nextLabel.TextYAlignment = Enum.TextYAlignment.Top
+nextLabel.TextScaled = true
+nextLabel.Parent = rootFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.BackgroundTransparency = 1
+statusLabel.Position = UDim2.fromOffset(14, 118)
+statusLabel.Size = UDim2.new(1, -28, 0, 18)
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextColor3 = Color3.fromRGB(245, 215, 152)
+statusLabel.TextScaled = true
+statusLabel.Parent = rootFrame
+
 local upgradesFrame = Instance.new("Frame")
 upgradesFrame.BackgroundTransparency = 1
-upgradesFrame.Position = UDim2.fromOffset(14, 96)
-upgradesFrame.Size = UDim2.new(1, -28, 0, 88)
+upgradesFrame.Position = UDim2.fromOffset(14, 144)
+upgradesFrame.Size = UDim2.new(1, -28, 0, 94)
 upgradesFrame.Parent = rootFrame
 
 local upgradesTitle = Instance.new("TextLabel")
@@ -79,8 +100,8 @@ upgradesTitle.Parent = upgradesFrame
 
 local footworkLabel = Instance.new("TextLabel")
 footworkLabel.BackgroundTransparency = 1
-footworkLabel.Position = UDim2.fromOffset(0, 22)
-footworkLabel.Size = UDim2.new(1, 0, 0, 18)
+footworkLabel.Position = UDim2.fromOffset(0, 24)
+footworkLabel.Size = UDim2.new(1, 0, 0, 20)
 footworkLabel.Font = Enum.Font.Gotham
 footworkLabel.TextColor3 = Color3.fromRGB(220, 233, 241)
 footworkLabel.TextScaled = true
@@ -88,8 +109,8 @@ footworkLabel.Parent = upgradesFrame
 
 local handsLabel = Instance.new("TextLabel")
 handsLabel.BackgroundTransparency = 1
-handsLabel.Position = UDim2.fromOffset(0, 42)
-handsLabel.Size = UDim2.new(1, 0, 0, 18)
+handsLabel.Position = UDim2.fromOffset(0, 46)
+handsLabel.Size = UDim2.new(1, 0, 0, 20)
 handsLabel.Font = Enum.Font.Gotham
 handsLabel.TextColor3 = Color3.fromRGB(240, 222, 184)
 handsLabel.TextScaled = true
@@ -97,37 +118,19 @@ handsLabel.Parent = upgradesFrame
 
 local blessingLabel = Instance.new("TextLabel")
 blessingLabel.BackgroundTransparency = 1
-blessingLabel.Position = UDim2.fromOffset(0, 62)
-blessingLabel.Size = UDim2.new(1, 0, 0, 18)
+blessingLabel.Position = UDim2.fromOffset(0, 68)
+blessingLabel.Size = UDim2.new(1, 0, 0, 20)
 blessingLabel.Font = Enum.Font.Gotham
 blessingLabel.TextColor3 = Color3.fromRGB(214, 244, 202)
 blessingLabel.TextScaled = true
 blessingLabel.Parent = upgradesFrame
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.BackgroundTransparency = 1
-statusLabel.Position = UDim2.fromOffset(14, 184)
-statusLabel.Size = UDim2.new(1, -28, 0, 18)
-statusLabel.Font = Enum.Font.GothamBold
-statusLabel.TextColor3 = Color3.fromRGB(245, 215, 152)
-statusLabel.TextScaled = true
-statusLabel.Parent = rootFrame
-
-local objectiveLabel = Instance.new("TextLabel")
-objectiveLabel.BackgroundTransparency = 1
-objectiveLabel.Position = UDim2.fromOffset(14, 204)
-objectiveLabel.Size = UDim2.new(1, -28, 0, 18)
-objectiveLabel.Font = Enum.Font.GothamBold
-objectiveLabel.TextColor3 = Color3.fromRGB(206, 232, 190)
-objectiveLabel.TextScaled = true
-objectiveLabel.Parent = rootFrame
-
 local tipLabel = Instance.new("TextLabel")
 tipLabel.BackgroundTransparency = 1
-tipLabel.Position = UDim2.fromOffset(14, 222)
-tipLabel.Size = UDim2.new(1, -28, 0, 16)
+tipLabel.Position = UDim2.fromOffset(14, 244)
+tipLabel.Size = UDim2.new(1, -28, 0, 24)
 tipLabel.Font = Enum.Font.Gotham
-tipLabel.Text = "Village: heal swallows. Anywhere: use seeds. Plaza: buy upgrades."
+tipLabel.Text = "Loop: heal -> plant -> break -> buy."
 tipLabel.TextColor3 = Color3.fromRGB(214, 206, 190)
 tipLabel.TextWrapped = true
 tipLabel.TextScaled = true
@@ -181,6 +184,8 @@ buttonStroke.Parent = useSeedButton
 
 local playerAttributes = ArcadeConfig.Attributes.Player
 local interactionAttributes = ArcadeConfig.Attributes.Interaction
+local upgradeDefinitions = ArcadeConfig.Upgrades.Definitions
+local upgradeCosts = ArcadeConfig.Upgrades.Costs
 
 local feedbackColors = {
 	good = {
@@ -208,6 +213,129 @@ end
 
 local function getFeedbackColors(tone)
 	return feedbackColors[tone] or feedbackColors.info
+end
+
+local function getAffordableUpgradeIds(money)
+	local affordable = {}
+
+	for _, upgradeId in ipairs(ArcadeConfig.Upgrades.Order) do
+		local definition = upgradeDefinitions[upgradeId]
+		local currentLevel = getAttribute(definition.AttributeName) or 0
+		local nextCost = upgradeCosts[currentLevel + 1]
+		if nextCost and money >= nextCost then
+			table.insert(affordable, upgradeId)
+		end
+	end
+
+	return affordable
+end
+
+local function formatDelta(value)
+	if math.abs(value - math.floor(value)) < 0.001 then
+		return tostring(math.floor(value))
+	end
+
+	return string.format("%.2f", value)
+end
+
+local function getUpgradeBenefitText(upgradeId, currentLevel)
+	local values = upgradeDefinitions[upgradeId].Values
+	local currentValue = values[currentLevel + 1]
+	local nextValue = values[currentLevel + 2]
+	if not nextValue then
+		return "MAX"
+	end
+
+	if upgradeId == "MoveSpeed" then
+		return string.format("%s -> %s speed", formatDelta(currentValue), formatDelta(nextValue))
+	elseif upgradeId == "AttackSpeed" then
+		return string.format("%ss -> %ss hit gap", formatDelta(currentValue), formatDelta(nextValue))
+	elseif upgradeId == "SeedMultiplier" then
+		return string.format("%s -> %s seeds/heal", formatDelta(currentValue), formatDelta(nextValue))
+	end
+
+	return tostring(nextValue)
+end
+
+local function formatUpgradeRow(upgradeId, money)
+	local definition = upgradeDefinitions[upgradeId]
+	local currentLevel = getAttribute(definition.AttributeName) or 0
+	local nextLevel = currentLevel + 1
+	local nextCost = upgradeCosts[nextLevel]
+	local baseColor = upgradeId == "MoveSpeed" and Color3.fromRGB(220, 233, 241)
+		or upgradeId == "AttackSpeed" and Color3.fromRGB(240, 222, 184)
+		or Color3.fromRGB(214, 244, 202)
+
+	if not nextCost then
+		return string.format("%s Lv.%d | MAX", definition.DisplayName, currentLevel), Color3.fromRGB(171, 190, 160)
+	end
+
+	local benefitText = getUpgradeBenefitText(upgradeId, currentLevel)
+	if money >= nextCost then
+		return string.format("%s Lv.%d -> Lv.%d | %s | Buy now", definition.DisplayName, currentLevel, nextLevel, benefitText), baseColor
+	end
+
+	local missing = nextCost - money
+	return string.format(
+		"%s Lv.%d -> Lv.%d | %s | Need %d more",
+		definition.DisplayName,
+		currentLevel,
+		nextLevel,
+		benefitText,
+		missing
+	), Color3.fromRGB(baseColor.R * 255 * 0.78, baseColor.G * 255 * 0.78, baseColor.B * 255 * 0.78)
+end
+
+local function getPrimaryGuidance(playerState)
+	if playerState.isSlowed then
+		return "Next: Recover from the goblin slow before pushing deeper.", Color3.fromRGB(245, 188, 150)
+	end
+
+	if playerState.seeds > 0 then
+		return "Next: Plant a pumpkin nearby, then break it for money.", Color3.fromRGB(220, 235, 196)
+	end
+
+	if #playerState.affordableUpgradeIds > 0 then
+		return "Next: Return to Central Plaza - you can buy an upgrade.", Color3.fromRGB(240, 224, 163)
+	end
+
+	if playerState.seeds <= 0 then
+		return "Next: Heal a swallow in Heungbu Village for seeds.", Color3.fromRGB(206, 232, 190)
+	end
+
+	return "Next: Keep the loop moving and buy when the pace boost matters.", Color3.fromRGB(240, 224, 163)
+end
+
+local function getStatusSummary(playerState)
+	if playerState.isSlowed then
+		return "Status: Goblin slow active", Color3.fromRGB(240, 149, 112)
+	end
+
+	if playerState.seeds > 0 then
+		return "Status: Seed-ready", Color3.fromRGB(196, 233, 170)
+	end
+
+	if #playerState.affordableUpgradeIds > 0 then
+		return "Status: Upgrade available", Color3.fromRGB(245, 215, 152)
+	end
+
+	return "Status: Safe to farm", Color3.fromRGB(245, 215, 152)
+end
+
+local function getSupportTip(playerState)
+	if playerState.isSlowed then
+		return "Loop paused: recover, then restart the chain."
+	end
+
+	if #playerState.affordableUpgradeIds > 0 and playerState.seeds <= 0 then
+		return "Buy one upgrade, then return to Heungbu Village for fresh seeds."
+	end
+
+	if #playerState.affordableUpgradeIds > 0 then
+		return "Plant first if you want, or cash out now for a faster next run."
+	end
+
+	return "Loop: heal -> plant -> break -> buy."
 end
 
 local function showFeedback(text, tone, detail)
@@ -238,6 +366,8 @@ local function showFeedback(text, tone, detail)
 		feedbackLabel.Text = ""
 	end)
 end
+
+local wasSlowed = getAttribute(playerAttributes.IsSlowed) or false
 
 local function showWorldPopup(text, tone, worldPosition)
 	if typeof(worldPosition) ~= "Vector3" or text == nil or text == "" then
@@ -298,36 +428,44 @@ end
 local function refreshHud()
 	local seeds = getAttribute(playerAttributes.Seeds) or 0
 	local money = getAttribute(playerAttributes.Money) or 0
-	local footworkLevel = getAttribute(playerAttributes.MoveSpeedLevel) or 0
-	local handsLevel = getAttribute(playerAttributes.AttackSpeedLevel) or 0
-	local blessingLevel = getAttribute(playerAttributes.SeedMultiplierLevel) or 0
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
+	local affordableUpgradeIds = getAffordableUpgradeIds(money)
+	local playerState = {
+		seeds = seeds,
+		money = money,
+		isSlowed = isSlowed,
+		affordableUpgradeIds = affordableUpgradeIds,
+	}
 
 	resourcesLabel.Text = string.format("Seeds %d   |   Money %d", seeds, money)
-	footworkLabel.Text = string.format("Footwork Lv.%d   Cost path: 20 / 40 / 80", footworkLevel)
-	handsLabel.Text = string.format("Quick Hands Lv.%d   Faster pumpkin hits", handsLevel)
-	blessingLabel.Text = string.format("Blessing Lv.%d   More seeds per heal", blessingLevel)
-	statusLabel.Text = isSlowed and "Status: Goblin slow active" or "Status: Clear"
-	statusLabel.TextColor3 = isSlowed and Color3.fromRGB(240, 149, 112) or Color3.fromRGB(245, 215, 152)
 
-	if isSlowed then
-		objectiveLabel.Text = "Objective: Shake the goblin slow, then get back to the loop."
-		objectiveLabel.TextColor3 = Color3.fromRGB(245, 188, 150)
-	elseif seeds <= 0 then
-		objectiveLabel.Text = "Objective: Head left to Heungbu Village and heal a swallow."
-		objectiveLabel.TextColor3 = Color3.fromRGB(206, 232, 190)
-	elseif money >= 20 then
-		objectiveLabel.Text = "Objective: Cash in at the plaza or keep farming for a bigger buy."
-		objectiveLabel.TextColor3 = Color3.fromRGB(240, 224, 163)
-	else
-		objectiveLabel.Text = "Objective: Plant seeds nearby and crack pumpkins for money."
-		objectiveLabel.TextColor3 = Color3.fromRGB(220, 235, 196)
-	end
+	local nextText, nextColor = getPrimaryGuidance(playerState)
+	nextLabel.Text = nextText
+	nextLabel.TextColor3 = nextColor
+
+	local statusText, statusColor = getStatusSummary(playerState)
+	statusLabel.Text = statusText
+	statusLabel.TextColor3 = statusColor
+
+	local footworkText, footworkColor = formatUpgradeRow("MoveSpeed", money)
+	footworkLabel.Text = footworkText
+	footworkLabel.TextColor3 = footworkColor
+
+	local handsText, handsColor = formatUpgradeRow("AttackSpeed", money)
+	handsLabel.Text = handsText
+	handsLabel.TextColor3 = handsColor
+
+	local blessingText, blessingColor = formatUpgradeRow("SeedMultiplier", money)
+	blessingLabel.Text = blessingText
+	blessingLabel.TextColor3 = blessingColor
+
+	tipLabel.Text = getSupportTip(playerState)
 
 	useSeedButton.Active = seeds > 0
 	useSeedButton.AutoButtonColor = seeds > 0
 	useSeedButton.BackgroundColor3 = seeds > 0 and Color3.fromRGB(97, 162, 88) or Color3.fromRGB(88, 82, 78)
-	useSeedButton.Text = seeds > 0 and string.format("Use Seed [Q]\nSpawn an owned pumpkin near you (%d ready)", seeds) or "Need a Seed\nHeal an injured swallow first"
+	useSeedButton.Text = seeds > 0 and string.format("Plant Pumpkin [Q]\nSpend 1 seed and grow your own pumpkin (%d ready)", seeds)
+		or "Need Seeds\nHeal a swallow first"
 end
 
 local function useSeed()
@@ -384,6 +522,14 @@ for _, attributeName in ipairs({
 }) do
 	player:GetAttributeChangedSignal(attributeName):Connect(refreshHud)
 end
+
+player:GetAttributeChangedSignal(playerAttributes.IsSlowed):Connect(function()
+	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
+	if wasSlowed and not isSlowed then
+		showFeedback("Slow faded.", "good", "You are back to full pace.")
+	end
+	wasSlowed = isSlowed
+end)
 
 feedbackRemote.OnClientEvent:Connect(function(payload)
 	if typeof(payload) ~= "table" then

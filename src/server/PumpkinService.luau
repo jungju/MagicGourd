@@ -124,7 +124,7 @@ function PumpkinService:_useSeed(player)
 	rootPart:SetAttribute(self.config.Attributes.Pumpkin.ExpiresAt, expiresAt)
 	rootPart:SetAttribute(self.config.Attributes.Interaction.Kind, "Pumpkin")
 	rootPart:SetAttribute(self.config.Attributes.Interaction.EntityId, pumpkinId)
-	createPrompt(rootPart, "Hit", "Owned Pumpkin", self.config.Pumpkins.PromptDistance)
+	createPrompt(rootPart, "Break", "Owned Pumpkin", self.config.Pumpkins.PromptDistance)
 
 	self.pumpkins[pumpkinId] = {
 		id = pumpkinId,
@@ -138,9 +138,9 @@ function PumpkinService:_useSeed(player)
 
 	if self.feedbackRemote then
 		self.feedbackRemote:FireClient(player, {
-			text = string.format("Seed planted. Pumpkin ready for %d hits.", self.config.Pumpkins.Health),
-			detail = "Stay close and mash the prompt to cash it out.",
-			worldText = "Pumpkin Sprouted",
+			text = "Pumpkin planted.",
+			detail = string.format("Break it in %d hits before it fades for a money payout.", self.config.Pumpkins.Health),
+			worldText = "Planted",
 			worldPosition = rootPart.Position,
 			tone = "info",
 		})
@@ -182,7 +182,7 @@ function PumpkinService:_hitPumpkin(player, pumpkinId)
 		if self.feedbackRemote then
 			self.feedbackRemote:FireClient(player, {
 				text = string.format("Pumpkin broken! +%d money", self.config.Pumpkins.Reward),
-				detail = "Bring your money back to the plaza for upgrades.",
+				detail = "Bring your money back to the plaza for upgrades, or plant again right away.",
 				worldText = string.format("+%d Money", self.config.Pumpkins.Reward),
 				worldPosition = root.Position,
 				tone = "good",
@@ -194,8 +194,8 @@ function PumpkinService:_hitPumpkin(player, pumpkinId)
 
 	if self.feedbackRemote then
 		self.feedbackRemote:FireClient(player, {
-			text = string.format("Pumpkin cracked. %d hit%s left.", currentHealth, currentHealth == 1 and "" or "s"),
-			detail = currentHealth == 1 and "One more hit for the money payout." or "Keep hitting to turn the seed into cash.",
+			text = currentHealth == 1 and "Pumpkin cracked. One hit left." or string.format("Pumpkin cracked. %d hits left.", currentHealth),
+			detail = currentHealth == 1 and "One more break for the money payout." or "Keep breaking to turn this planting into money.",
 			worldText = currentHealth == 1 and "Final Hit" or string.format("%d Left", currentHealth),
 			worldPosition = root.Position,
 			tone = "info",
