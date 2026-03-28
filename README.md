@@ -15,14 +15,25 @@ Roblox game project powered by Rojo.
 - `Workspace/Map/JoseonBase` is the Rojo-managed base map for the project.
 - Other `Workspace/Map` children can stay Studio-managed as long as they do not reuse the `JoseonBase` name.
 - The live-synced base terrain is built from parts and models instead of Roblox Terrain voxels.
-- Runtime-spawned houses/NPCs now live under `Workspace/Map/Runtime` so the village loop can survive flaky InsertService loads without fighting Rojo.
+- Runtime-spawned houses, prompts, patrol nodes, and fallback props live under `Workspace/Map/Runtime` so the village slice survives flaky InsertService loads without fighting Rojo.
 
 ## Current Gameplay Slice
 
 - Heungbu house and Nolbu house attempt to load from asset ids, but fall back to simple local builds if loading fails.
-- Two Nolbu patrol NPCs wander around the estate using pathfinding.
-- Players can collect seeds, grow a gourd, harvest it, and deliver it to Heungbu for coins.
-- Village prompt markers and lightweight decor are present even without Studio-only setup.
+- Two Nolbu patrol NPCs wander around the estate using pathfinding with slightly sturdier collision/network setup.
+- Players now get a clearer quest chain:
+  1. read the Story Stone / meet Heungbu
+  2. collect a seed
+  3. plant and wait for the vine
+  4. harvest a gourd
+  5. deliver the first gourd to Heungbu
+  6. return for bonus seeds and story progression
+  7. hear Nolbu's demand
+  8. grow a tribute gourd for Nolbu's basket
+- A lightweight client HUD shows the current quest title, objective, and seed/gourd/coin counts.
+- Dialogue popups fire from server-side interactions so the story stays readable even with basic placeholder assets.
+- Village billboards update with delivery / tribute totals to make the reward loop feel more explicit.
+- Runtime placement is organized through a small layout table so village tuning can happen in code without Studio-only setup.
 
 ## Run
 

@@ -3,6 +3,7 @@ print("MagicGourd server started")
 local InsertService = game:GetService("InsertService")
 local PathfindingService = game:GetService("PathfindingService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local map = Workspace:WaitForChild("Map")
@@ -34,11 +35,76 @@ if not wanderFolder then
 	wanderFolder.Parent = runtimeFolder
 end
 
+local sharedFolder = ReplicatedStorage:FindFirstChild("Shared") or ReplicatedStorage
+local dialogueEvent = sharedFolder:FindFirstChild("DialogueEvent")
+if not dialogueEvent then
+	dialogueEvent = Instance.new("RemoteEvent")
+	dialogueEvent.Name = "DialogueEvent"
+	dialogueEvent.Parent = sharedFolder
+end
+
+local QUEST = {
+	INTRO = 0,
+	MEET_HEUNGBU = 1,
+	PLANT_FIRST = 2,
+	HARVEST_FIRST = 3,
+	DELIVER_FIRST = 4,
+	CLAIM_HELP = 5,
+	HEAR_NOLBU = 6,
+	DELIVER_TRIBUTE = 7,
+	COMPLETE = 8,
+}
+
+local QUEST_TITLES = {
+	[QUEST.INTRO] = "Village Rumor",
+	[QUEST.MEET_HEUNGBU] = "A Kind Request",
+	[QUEST.PLANT_FIRST] = "Plant Hope",
+	[QUEST.HARVEST_FIRST] = "Harvest Time",
+	[QUEST.DELIVER_FIRST] = "Bring the Gourd",
+	[QUEST.CLAIM_HELP] = "Heungbu's Thanks",
+	[QUEST.HEAR_NOLBU] = "Nolbu's Demand",
+	[QUEST.DELIVER_TRIBUTE] = "One More Delivery",
+	[QUEST.COMPLETE] = "Village Friend",
+}
+
+local QUEST_OBJECTIVES = {
+	[QUEST.INTRO] = "Read the Story Stone or speak with Heungbu.",
+	[QUEST.MEET_HEUNGBU] = "Collect a seed from the village basket.",
+	[QUEST.PLANT_FIRST] = "Plant the seed in Heungbu's patch.",
+	[QUEST.HARVEST_FIRST] = "Wait for the vine, then harvest the ripe gourd.",
+	[QUEST.DELIVER_FIRST] = "Deliver the gourd to Heungbu.",
+	[QUEST.CLAIM_HELP] = "Speak with Heungbu again to hear what comes next.",
+	[QUEST.HEAR_NOLBU] = "Listen to Nolbu near his estate gate.",
+	[QUEST.DELIVER_TRIBUTE] = "Grow one more gourd and bring it to Nolbu's gate.",
+	[QUEST.COMPLETE] = "Keep helping the village. Extra gourds still earn coins from Heungbu.",
+}
+
 local villageState = {
 	gourdsHarvested = 0,
+	heungbuDeliveries = 0,
+	nolbuTributes = 0,
 }
 
 local playerData = {}
+
+local villageLayout = {
+	heungbu = {
+		housePad = { name = "HeungbuYardPad", size = Vector3.new(34, 0.8, 24), position = Vector3.new(-72, 1.0, 48), yaw = -20 },
+		talkPart = { name = "HeungbuTalkPart", position = Vector3.new(-72, 5, 44), size = Vector3.new(8, 8, 8) },
+		patchPart = { name = "PlantPatch", position = Vector3.new(-96, 3, 13), size = Vector3.new(10, 6, 10) },
+	},
+	nolbu = {
+		yardPad = { name = "NolbuFrontYard", size = Vector3.new(40, 0.8, 28), position = Vector3.new(74, 1.0, 44), yaw = 18 },
+		talkPart = { name = "NolbuComplaint", position = Vector3.new(74, 5, 48), size = Vector3.new(8, 8, 8) },
+		tributePart = { name = "NolbuTribute", position = Vector3.new(84, 4.2, 57), size = Vector3.new(8, 5, 8) },
+	},
+	village = {
+		well = { name = "VillageWell", size = Vector3.new(10, 5, 10), position = Vector3.new(0, 3.1, 36) },
+		seedMat = { name = "SeedMat", size = Vector3.new(12, 0.6, 10), position = Vector3.new(-24, 1.2, 34) },
+		storyStone = { name = "FestivalStone", size = Vector3.new(8, 2, 8), position = Vector3.new(22, 1.8, 54) },
+		gourdPatch = { name = "GourdPatch", size = Vector3.new(14, 1, 12), position = Vector3.new(-96, 1.5, 13) },
+	},
+}
 
 local function getPlayerProfile(player)
 	local profile = playerData[player]
@@ -50,22 +116,51 @@ local function getPlayerProfile(player)
 		seeds = 1,
 		gourds = 0,
 		coins = 0,
-		questStage = 0,
+		questStage = QUEST.INTRO,
+		heungbuDeliveries = 0,
+		nolbuTributes = 0,
+		bonusSeedsClaimed = false,
 	}
 	playerData[player] = profile
 	return profile
 end
 
+local function setQuestStage(player, stage)
+	local profile = getPlayerProfile(player)
+	if stage > profile.questStage then
+		profile.questStage = stage
+	end
+end
+
 local function syncPlayerAttributes(player)
 	local profile = getPlayerProfile(player)
+	local title = QUEST_TITLES[profile.questStage] or "Village Tale"
+	local objective = QUEST_OBJECTIVES[profile.questStage] or "Help the village."
+
 	player:SetAttribute("Seeds", profile.seeds)
 	player:SetAttribute("Gourds", profile.gourds)
 	player:SetAttribute("Coins", profile.coins)
 	player:SetAttribute("QuestStage", profile.questStage)
+	player:SetAttribute("QuestTitle", title)
+	player:SetAttribute("QuestObjective", objective)
+	player:SetAttribute("HeungbuDeliveries", profile.heungbuDeliveries)
+	player:SetAttribute("NolbuTributes", profile.nolbuTributes)
+end
+
+local function showDialogue(player, speaker, lines, accent)
+	dialogueEvent:FireClient(player, {
+		speaker = speaker,
+		lines = lines,
+		accent = accent,
+	})
 end
 
 Players.PlayerAdded:Connect(function(player)
 	syncPlayerAttributes(player)
+	showDialogue(player, "Village", {
+		"A small valley waits for a kind harvest.",
+		"Read the Story Stone or find Heungbu to begin.",
+	}, Color3.fromRGB(219, 198, 140))
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -190,6 +285,7 @@ local function createFallbackNpc(def)
 
 	local humanoid = Instance.new("Humanoid")
 	humanoid.WalkSpeed = def.walkSpeed or 8
+	humanoid.AutoRotate = true
 	humanoid.Parent = model
 
 	local rootJoint = Instance.new("Motor6D")
@@ -362,6 +458,14 @@ local function attachBillboard(parent, title, body, color)
 	return billboard
 end
 
+local function setBillboardBody(billboard, text)
+	local frame = billboard:FindFirstChildWhichIsA("Frame")
+	local body = frame and frame:FindFirstChild("Body")
+	if body and body:IsA("TextLabel") then
+		body.Text = text
+	end
+end
+
 local function makeWanderNode(name, position)
 	local part = wanderFolder:FindFirstChild(name)
 	if part then
@@ -400,8 +504,15 @@ local function startWanderNpc(model, def)
 
 	anchorModel(model, false)
 	setModelCollision(model, true)
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA("BasePart") and descendant ~= root then
+			descendant.Massless = true
+		end
+	end
 	root:SetNetworkOwner(nil)
+	root.CanCollide = false
 	humanoid.WalkSpeed = def.walkSpeed or humanoid.WalkSpeed
+	humanoid.AutoRotate = true
 
 	task.spawn(function()
 		local nodes = def.nodes
@@ -413,11 +524,14 @@ local function startWanderNpc(model, def)
 					AgentRadius = 2,
 					AgentHeight = 5,
 					AgentCanJump = true,
+					WaypointSpacing = 4,
 				})
 				local ok = pcall(function()
 					path:ComputeAsync(root.Position, target.Position)
 				end)
+				local traversed = false
 				if ok and path.Status == Enum.PathStatus.Success then
+					traversed = true
 					for _, waypoint in ipairs(path:GetWaypoints()) do
 						if waypoint.Action == Enum.PathWaypointAction.Jump then
 							humanoid.Jump = true
@@ -425,14 +539,19 @@ local function startWanderNpc(model, def)
 						humanoid:MoveTo(waypoint.Position)
 						local reached = humanoid.MoveToFinished:Wait()
 						if not reached or not model.Parent then
+							traversed = false
 							break
 						end
 					end
-				else
+				end
+				if not traversed then
 					humanoid:MoveTo(target.Position)
 					humanoid.MoveToFinished:Wait()
 				end
-				task.wait(0.4 + math.random() * 1.2)
+				if root.Parent then
+					root.CFrame = CFrame.lookAt(root.Position, target.Position)
+				end
+				task.wait(0.5 + math.random() * 1.1)
 			end
 			index += 1
 			if index > #nodes then
@@ -505,18 +624,20 @@ for _, def in ipairs(assetDefinitions) do
 	placedByName[def.name] = candidate
 end
 
-local heungbuPad = addPart(placedAssets, "HeungbuYardPad", Vector3.new(34, 0.8, 24), CFrame.new(-72, 1.0, 48) * CFrame.Angles(0, math.rad(-20), 0), Color3.fromRGB(133, 99, 63), Enum.Material.Ground)
-local nolbuPad = addPart(placedAssets, "NolbuFrontYard", Vector3.new(40, 0.8, 28), CFrame.new(74, 1.0, 44) * CFrame.Angles(0, math.rad(18), 0), Color3.fromRGB(142, 111, 77), Enum.Material.Ground)
-local villageWell = addPart(placedAssets, "VillageWell", Vector3.new(10, 5, 10), CFrame.new(0, 3.1, 36), Color3.fromRGB(114, 101, 86), Enum.Material.Slate)
-local marketMat = addPart(placedAssets, "SeedMat", Vector3.new(12, 0.6, 10), CFrame.new(-24, 1.2, 34), Color3.fromRGB(156, 106, 64), Enum.Material.WoodPlanks)
-local gourdPatch = addPart(placedAssets, "GourdPatch", Vector3.new(14, 1, 12), CFrame.new(-96, 1.5, 13), Color3.fromRGB(80, 55, 34), Enum.Material.Mud)
-local festivalStone = addPart(placedAssets, "FestivalStone", Vector3.new(8, 2, 8), CFrame.new(22, 1.8, 54), Color3.fromRGB(124, 118, 112), Enum.Material.Slate)
+local heungbuPad = addPart(placedAssets, villageLayout.heungbu.housePad.name, villageLayout.heungbu.housePad.size, CFrame.new(villageLayout.heungbu.housePad.position) * CFrame.Angles(0, math.rad(villageLayout.heungbu.housePad.yaw), 0), Color3.fromRGB(133, 99, 63), Enum.Material.Ground)
+local nolbuPad = addPart(placedAssets, villageLayout.nolbu.yardPad.name, villageLayout.nolbu.yardPad.size, CFrame.new(villageLayout.nolbu.yardPad.position) * CFrame.Angles(0, math.rad(villageLayout.nolbu.yardPad.yaw), 0), Color3.fromRGB(142, 111, 77), Enum.Material.Ground)
+local villageWell = addPart(placedAssets, villageLayout.village.well.name, villageLayout.village.well.size, CFrame.new(villageLayout.village.well.position), Color3.fromRGB(114, 101, 86), Enum.Material.Slate)
+local marketMat = addPart(placedAssets, villageLayout.village.seedMat.name, villageLayout.village.seedMat.size, CFrame.new(villageLayout.village.seedMat.position), Color3.fromRGB(156, 106, 64), Enum.Material.WoodPlanks)
+local gourdPatch = addPart(placedAssets, villageLayout.village.gourdPatch.name, villageLayout.village.gourdPatch.size, CFrame.new(villageLayout.village.gourdPatch.position), Color3.fromRGB(80, 55, 34), Enum.Material.Mud)
+local festivalStone = addPart(placedAssets, villageLayout.village.storyStone.name, villageLayout.village.storyStone.size, CFrame.new(villageLayout.village.storyStone.position), Color3.fromRGB(124, 118, 112), Enum.Material.Slate)
+local tributeBasket = addPart(placedAssets, "NolbuTributeBasket", Vector3.new(6, 2.2, 6), CFrame.new(villageLayout.nolbu.tributePart.position.X, 2.2, villageLayout.nolbu.tributePart.position.Z), Color3.fromRGB(101, 71, 43), Enum.Material.WoodPlanks)
 
-attachBillboard(heungbuPad, "Heungbu Yard", "A small place to plant hope.", Color3.fromRGB(111, 224, 128))
-attachBillboard(nolbuPad, "Nolbu Gate", "His workers keep pacing the road.", Color3.fromRGB(226, 117, 94))
+local heungbuPadSign = attachBillboard(heungbuPad, "Heungbu Yard", "A small place to plant hope.", Color3.fromRGB(111, 224, 128))
+local nolbuPadSign = attachBillboard(nolbuPad, "Nolbu Gate", "His workers patrol the road with stiff little loops.", Color3.fromRGB(226, 117, 94))
 attachBillboard(villageWell, "Village Well", "The center of the little valley.", Color3.fromRGB(98, 197, 215))
 attachBillboard(marketMat, "Seed Mat", "Pick up a seed pouch if you need one.", Color3.fromRGB(227, 188, 96))
-attachBillboard(festivalStone, "Story Stone", "Villagers whisper about a magic gourd.", Color3.fromRGB(194, 162, 255))
+attachBillboard(festivalStone, "Story Stone", "A tale of kindness, greed, and a magic gourd.", Color3.fromRGB(194, 162, 255))
+local tributeSign = attachBillboard(tributeBasket, "Tribute Basket", "Nolbu demands proof that your harvest is real.", Color3.fromRGB(240, 154, 107))
 
 local patrolANodes = buildWanderRing("NolbuPatrolA", Vector3.new(72, 2, 34), 18, 6)
 local patrolBNodes = buildWanderRing("NolbuPatrolB", Vector3.new(92, 2, 30), 14, 5)
@@ -535,21 +656,24 @@ if placedByName.NolbuPatrolB then
 	})
 end
 
-local heungbuTalkPart = ensureInteractionPart("HeungbuTalkPart", Vector3.new(-72, 5, 44), Vector3.new(8, 8, 8))
+local heungbuTalkPart = ensureInteractionPart(villageLayout.heungbu.talkPart.name, villageLayout.heungbu.talkPart.position, villageLayout.heungbu.talkPart.size)
 local heungbuPrompt = createPrompt(heungbuTalkPart, "Talk", "Heungbu", 0.2, 14)
-local heungbuSign = attachBillboard(heungbuTalkPart, "Heungbu", "Needs one healthy gourd to lift the family's spirits.", Color3.fromRGB(111, 224, 128))
+local heungbuSign = attachBillboard(heungbuTalkPart, "Heungbu", "He keeps smiling even when the house is quiet.", Color3.fromRGB(111, 224, 128))
 
-local seedPart = ensureInteractionPart("SeedBasket", Vector3.new(-24, 3, 34), Vector3.new(8, 6, 8))
+local seedPart = ensureInteractionPart("SeedBasket", villageLayout.village.seedMat.position + Vector3.new(0, 1.8, 0), Vector3.new(8, 6, 8))
 local seedPrompt = createPrompt(seedPart, "Collect", "Seed Basket", 0.15, 12)
 
-local patchPart = ensureInteractionPart("PlantPatch", Vector3.new(-96, 3, 13), Vector3.new(10, 6, 10))
+local patchPart = ensureInteractionPart(villageLayout.heungbu.patchPart.name, villageLayout.heungbu.patchPart.position, villageLayout.heungbu.patchPart.size)
 local plantPrompt = createPrompt(patchPart, "Plant / Harvest", "Gourd Patch", 0.25, 14)
 local patchSign = attachBillboard(patchPart, "Gourd Patch", "Bring a seed, then return when the vine is ready.", Color3.fromRGB(120, 219, 95))
 
-local nolbuTalkPart = ensureInteractionPart("NolbuComplaint", Vector3.new(74, 5, 48), Vector3.new(8, 8, 8))
-local nolbuPrompt = createPrompt(nolbuTalkPart, "Listen", "Nolbu's Boast", 0.15, 12)
+local nolbuTalkPart = ensureInteractionPart(villageLayout.nolbu.talkPart.name, villageLayout.nolbu.talkPart.position, villageLayout.nolbu.talkPart.size)
+local nolbuPrompt = createPrompt(nolbuTalkPart, "Listen", "Nolbu", 0.15, 12)
 
-local storyStonePart = ensureInteractionPart("StoryStonePrompt", Vector3.new(22, 3.5, 54), Vector3.new(8, 5, 8))
+local tributePart = ensureInteractionPart(villageLayout.nolbu.tributePart.name, villageLayout.nolbu.tributePart.position, villageLayout.nolbu.tributePart.size)
+local tributePrompt = createPrompt(tributePart, "Offer", "Tribute Basket", 0.15, 12)
+
+local storyStonePart = ensureInteractionPart("StoryStonePrompt", villageLayout.village.storyStone.position + Vector3.new(0, 1.7, 0), Vector3.new(8, 5, 8))
 local storyPrompt = createPrompt(storyStonePart, "Read", "Story Stone", 0.1, 12)
 
 local currentCrop = {
@@ -559,26 +683,30 @@ local currentCrop = {
 }
 
 local function setPatchText(text)
-	local frame = patchSign:FindFirstChildWhichIsA("Frame")
-	if not frame then
-		return
-	end
-	local labels = frame:GetChildren()
-	for _, child in ipairs(labels) do
-		if child:IsA("TextLabel") and child.Name ~= "Title" then
-			child.Text = text
-		end
-	end
+	setBillboardBody(patchSign, text)
 end
+
+local function refreshVillageSigns()
+	setBillboardBody(heungbuSign, string.format("Deliveries: %d · Village coins shared: %d", villageState.heungbuDeliveries, villageState.heungbuDeliveries * 5))
+	setBillboardBody(heungbuPadSign, string.format("Harvests gathered: %d · Kindness still lives here.", villageState.gourdsHarvested))
+	setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes))
+	setBillboardBody(tributeSign, string.format("Tributes paid: %d · Nolbu still wants more.", villageState.nolbuTributes))
+end
+
+refreshVillageSigns()
 
 seedPrompt.Triggered:Connect(function(player)
 	local profile = getPlayerProfile(player)
 	profile.seeds += 1
-	if profile.questStage < 1 then
-		profile.questStage = 1
+	if profile.questStage <= QUEST.MEET_HEUNGBU then
+		setQuestStage(player, QUEST.PLANT_FIRST)
 	end
 	syncPlayerAttributes(player)
 	seedPrompt.ObjectText = string.format("Seed Basket · %s now has %d", player.Name, profile.seeds)
+	showDialogue(player, "Seed Basket", {
+		"You take a small seed pouch.",
+		"Maybe this harvest can change the mood of the village.",
+	}, Color3.fromRGB(227, 188, 96))
 	task.delay(2, function()
 		if seedPrompt.Parent then
 			seedPrompt.ObjectText = "Seed Basket"
@@ -592,6 +720,10 @@ plantPrompt.Triggered:Connect(function(player)
 	if currentCrop.state == "empty" then
 		if profile.seeds <= 0 then
 			plantPrompt.ObjectText = "Need a Seed"
+			showDialogue(player, "Patch", {
+				"The soil is ready, but your hands are empty.",
+				"Grab another seed from the basket in the village.",
+			}, Color3.fromRGB(170, 115, 82))
 			task.delay(2, function()
 				if plantPrompt.Parent then
 					plantPrompt.ObjectText = "Gourd Patch"
@@ -601,20 +733,24 @@ plantPrompt.Triggered:Connect(function(player)
 		end
 
 		profile.seeds -= 1
-		profile.questStage = math.max(profile.questStage, 2)
+		setQuestStage(player, QUEST.HARVEST_FIRST)
 		currentCrop.state = "growing"
 		currentCrop.owner = player
 		currentCrop.readyAt = os.clock() + 20
 		gourdPatch.Color = Color3.fromRGB(84, 124, 52)
-		setPatchText("A vine is growing. Return in a short while.")
+		setPatchText("A vine is curling out of the soil. Give it a moment.")
 		plantPrompt.ObjectText = "Growing..."
 		syncPlayerAttributes(player)
+		showDialogue(player, "Patch", {
+			"The seed sinks into the earth.",
+			"A green vine begins to wake beneath the soil.",
+		}, Color3.fromRGB(120, 219, 95))
 
 		task.delay(20, function()
 			if currentCrop.state == "growing" then
 				currentCrop.state = "ready"
 				gourdPatch.Color = Color3.fromRGB(196, 138, 58)
-				setPatchText("The gourd is ready to harvest.")
+				setPatchText("The vine is heavy now. The gourd is ready to harvest.")
 				if plantPrompt.Parent then
 					plantPrompt.ObjectText = "Harvest Gourd"
 				end
@@ -625,6 +761,10 @@ plantPrompt.Triggered:Connect(function(player)
 
 	if currentCrop.state == "growing" then
 		plantPrompt.ObjectText = "Still Growing"
+		showDialogue(player, "Patch", {
+			"Not yet.",
+			"The vine still needs a little time.",
+		}, Color3.fromRGB(120, 219, 95))
 		task.delay(2, function()
 			if plantPrompt.Parent then
 				plantPrompt.ObjectText = "Growing..."
@@ -635,7 +775,7 @@ plantPrompt.Triggered:Connect(function(player)
 
 	if currentCrop.state == "ready" then
 		profile.gourds += 1
-		profile.questStage = math.max(profile.questStage, 3)
+		setQuestStage(player, math.max(profile.questStage, QUEST.DELIVER_FIRST))
 		villageState.gourdsHarvested += 1
 		currentCrop.state = "empty"
 		currentCrop.owner = nil
@@ -644,13 +784,49 @@ plantPrompt.Triggered:Connect(function(player)
 		setPatchText("Bring a seed, then return when the vine is ready.")
 		plantPrompt.ObjectText = "Gourd Patch"
 		syncPlayerAttributes(player)
+		refreshVillageSigns()
+		showDialogue(player, "Harvest", {
+			"You lift a ripe gourd from the vine.",
+			"Someone in the village could really use this.",
+		}, Color3.fromRGB(235, 179, 92))
 	end
 end)
 
 heungbuPrompt.Triggered:Connect(function(player)
 	local profile = getPlayerProfile(player)
+
+	if profile.questStage <= QUEST.MEET_HEUNGBU then
+		setQuestStage(player, QUEST.MEET_HEUNGBU)
+		syncPlayerAttributes(player)
+		setBillboardBody(heungbuSign, "Heungbu: 'A single healthy gourd would lift the whole house.'")
+		showDialogue(player, "Heungbu", {
+			"Our home is plain, but hope still fits inside it.",
+			"Could you grow one good gourd for my family?",
+		}, Color3.fromRGB(111, 224, 128))
+		return
+	end
+
 	if profile.gourds <= 0 then
+		if profile.questStage == QUEST.CLAIM_HELP then
+			if not profile.bonusSeedsClaimed then
+				profile.seeds += 2
+				profile.bonusSeedsClaimed = true
+			end
+			setQuestStage(player, QUEST.HEAR_NOLBU)
+			syncPlayerAttributes(player)
+			showDialogue(player, "Heungbu", {
+				"Your kindness reached our table before sunset.",
+				"Take two more seeds. Nolbu has started boasting again at his gate.",
+				"If you hear him out, maybe this story can grow a little further.",
+			}, Color3.fromRGB(111, 224, 128))
+			return
+		end
+
 		heungbuPrompt.ObjectText = "Heungbu Needs a Gourd"
+		showDialogue(player, "Heungbu", {
+			"I can wait, but the house is still hungry for good news.",
+			"Bring a ripe gourd when you have one.",
+		}, Color3.fromRGB(111, 224, 128))
 		task.delay(2, function()
 			if heungbuPrompt.Parent then
 				heungbuPrompt.ObjectText = "Heungbu"
@@ -661,14 +837,23 @@ heungbuPrompt.Triggered:Connect(function(player)
 
 	profile.gourds -= 1
 	profile.coins += 5
-	profile.questStage = math.max(profile.questStage, 4)
-	syncPlayerAttributes(player)
-	heungbuPrompt.ObjectText = string.format("Blessings! %s earned 5 coins.", player.Name)
-	local frame = heungbuSign:FindFirstChildWhichIsA("Frame")
-	local bodyLabel = frame and frame:FindFirstChild("Body")
-	if bodyLabel and bodyLabel:IsA("TextLabel") then
-		bodyLabel.Text = string.format("Delivered gourds: %d · Coins earned: %d", villageState.gourdsHarvested, profile.coins)
+	profile.heungbuDeliveries += 1
+	villageState.heungbuDeliveries += 1
+	if profile.questStage <= QUEST.DELIVER_FIRST then
+		setQuestStage(player, QUEST.CLAIM_HELP)
+	elseif profile.questStage >= QUEST.COMPLETE then
+		profile.coins += 1
 	end
+	syncPlayerAttributes(player)
+	refreshVillageSigns()
+	heungbuPrompt.ObjectText = string.format("Blessings! %s earned %d coins.", player.Name, profile.questStage >= QUEST.COMPLETE and 6 or 5)
+	showDialogue(player, "Heungbu", profile.questStage == QUEST.CLAIM_HELP and {
+		"You brought back exactly what we needed.",
+		"Please, talk to me once more. I have seeds to spare and a warning about Nolbu.",
+	} or {
+		"Another good gourd! You keep this valley cheerful.",
+		"Please take these coins with my thanks.",
+	}, Color3.fromRGB(111, 224, 128))
 	task.delay(3, function()
 		if heungbuPrompt.Parent then
 			heungbuPrompt.ObjectText = "Heungbu"
@@ -678,26 +863,80 @@ end)
 
 nolbuPrompt.Triggered:Connect(function(player)
 	local profile = getPlayerProfile(player)
-	profile.questStage = math.max(profile.questStage, 1)
+	if profile.questStage < QUEST.HEAR_NOLBU then
+		setQuestStage(player, QUEST.MEET_HEUNGBU)
+		syncPlayerAttributes(player)
+		showDialogue(player, "Nolbu", {
+			"Even my gate has more attention than Heungbu's entire house.",
+			"Run along. I only speak with people carrying results.",
+		}, Color3.fromRGB(226, 117, 94))
+		return
+	end
+
+	if profile.questStage == QUEST.HEAR_NOLBU then
+		setQuestStage(player, QUEST.DELIVER_TRIBUTE)
+		syncPlayerAttributes(player)
+		showDialogue(player, "Nolbu", {
+			"So Heungbu found help? Hah.",
+			"If your harvest is truly special, put one gourd in my tribute basket.",
+			"Then I might stop sneering long enough to notice you.",
+		}, Color3.fromRGB(226, 117, 94))
+		return
+	end
+
+	showDialogue(player, "Nolbu", {
+		string.format("My estate still has %d patrol steps and %d reasons to stay impressed.", #patrolANodes + #patrolBNodes, villageState.nolbuTributes),
+		"If you have a spare gourd, the basket is right there.",
+	}, Color3.fromRGB(226, 117, 94))
+end)
+
+tributePrompt.Triggered:Connect(function(player)
+	local profile = getPlayerProfile(player)
+	if profile.questStage < QUEST.DELIVER_TRIBUTE then
+		showDialogue(player, "Tribute Basket", {
+			"The basket sits empty.",
+			"Nolbu has not asked anything from you yet.",
+		}, Color3.fromRGB(240, 154, 107))
+		return
+	end
+
+	if profile.gourds <= 0 then
+		showDialogue(player, "Tribute Basket", {
+			"You have nothing to offer.",
+			"Grow another gourd first.",
+		}, Color3.fromRGB(240, 154, 107))
+		return
+	end
+
+	profile.gourds -= 1
+	profile.coins += 8
+	profile.nolbuTributes += 1
+	villageState.nolbuTributes += 1
+	setQuestStage(player, QUEST.COMPLETE)
 	syncPlayerAttributes(player)
-	nolbuPrompt.ObjectText = string.format("Nolbu scoffs: 'I have %d workers, you have none!'", #patrolANodes + #patrolBNodes)
-	task.delay(3, function()
-		if nolbuPrompt.Parent then
-			nolbuPrompt.ObjectText = "Nolbu's Boast"
-		end
-	end)
+	refreshVillageSigns()
+	showDialogue(player, "Nolbu", {
+		"Hmph. At least the harvest looks worthy.",
+		"Take your coin and go. The village will talk about this for days.",
+		"If you keep farming, Heungbu will always welcome more help.",
+	}, Color3.fromRGB(226, 117, 94))
 end)
 
 storyPrompt.Triggered:Connect(function(player)
+	local profile = getPlayerProfile(player)
+	if profile.questStage == QUEST.INTRO then
+		setQuestStage(player, QUEST.MEET_HEUNGBU)
+		syncPlayerAttributes(player)
+	end
 	storyPrompt.ObjectText = string.format("Village harvests: %d", villageState.gourdsHarvested)
+	showDialogue(player, "Story Stone", {
+		"In this valley, kindness grows quietly and greed makes a lot of noise.",
+		"Heungbu shares what little he has. Nolbu counts what everyone else owes.",
+		"A single magic gourd can push their story forward.",
+	}, Color3.fromRGB(194, 162, 255))
 	task.delay(3, function()
 		if storyPrompt.Parent then
 			storyPrompt.ObjectText = "Story Stone"
 		end
 	end)
-	local profile = getPlayerProfile(player)
-	if profile.questStage == 0 then
-		profile.questStage = 1
-		syncPlayerAttributes(player)
-	end
 end)
