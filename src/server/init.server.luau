@@ -151,6 +151,29 @@ local villageLayout = {
 	},
 }
 
+local housePlacementSpecs = {
+	HeungbuHouse = {
+		padName = villageLayout.heungbu.housePad.name,
+		padPosition = villageLayout.heungbu.housePad.position,
+		orientationCorrection = Vector3.new(90, 0, 0),
+		facingYaw = -22,
+		groundOffset = 0,
+		visualOffset = Vector3.new(0, 0, -2),
+		fallbackFootprint = Vector3.new(34, 18, 26),
+		narrativeRole = "humble",
+	},
+	NolbuHouse = {
+		padName = villageLayout.nolbu.yardPad.name,
+		padPosition = villageLayout.nolbu.yardPad.position,
+		orientationCorrection = Vector3.new(90, 0, 0),
+		facingYaw = 20,
+		groundOffset = 0,
+		visualOffset = Vector3.new(0, 0, -8),
+		fallbackFootprint = Vector3.new(42, 22, 30),
+		narrativeRole = "imposing",
+	},
+}
+
 local function getPlayerProfile(player)
 	local profile = playerData[player]
 	if profile then
@@ -365,12 +388,44 @@ local function addCylinder(parent, name, size, cf, color, material)
 	return part
 end
 
+local function resolvePlacementSpec(def)
+	if def.kind ~= "house" then
+		return nil
+	end
+
+	local spec = housePlacementSpecs[def.name]
+	if not spec then
+		return nil
+	end
+
+	local anchorPosition = spec.padPosition or def.position or Vector3.zero
+	local visualOffset = spec.visualOffset or Vector3.zero
+	local worldPosition = Vector3.new(
+		anchorPosition.X + visualOffset.X,
+		(spec.position and spec.position.Y) or anchorPosition.Y + visualOffset.Y,
+		anchorPosition.Z + visualOffset.Z
+	)
+
+	return {
+		padName = spec.padName,
+		position = worldPosition,
+		orientationCorrection = spec.orientationCorrection or Vector3.zero,
+		facingYaw = spec.facingYaw or 0,
+		groundOffset = spec.groundOffset or 0,
+		visualOffset = visualOffset,
+		fallbackFootprint = spec.fallbackFootprint,
+		narrativeRole = spec.narrativeRole,
+	}
+end
+
 local function createFallbackHouse(def)
 	local model = Instance.new("Model")
 	model.Name = def.name
-	local yaw = math.rad((def.rotation and def.rotation.Y) or 0)
-	local baseCf = CFrame.new(def.position) * CFrame.Angles(0, yaw, 0)
-	local footprint = def.footprint or Vector3.new(26, 18, 22)
+	local placement = resolvePlacementSpec(def) or {}
+	local yaw = math.rad(placement.facingYaw or (def.rotation and def.rotation.Y) or 0)
+	local basePosition = placement.position or def.position or Vector3.zero
+	local baseCf = CFrame.new(basePosition) * CFrame.Angles(0, yaw, 0)
+	local footprint = placement.fallbackFootprint or def.footprint or Vector3.new(26, 18, 22)
 	local floor = addPart(model, "Floor", Vector3.new(footprint.X, 1, footprint.Z), baseCf, Color3.fromRGB(111, 78, 55), Enum.Material.WoodPlanks)
 	local body = addPart(model, "Body", Vector3.new(footprint.X, footprint.Y, footprint.Z), baseCf * CFrame.new(0, footprint.Y / 2, 0), Color3.fromRGB(179, 146, 101), Enum.Material.Wood)
 	local roofLeft = addPart(model, "RoofLeft", Vector3.new(footprint.X + 4, 1.2, footprint.Z / 2 + 3), baseCf * CFrame.new(0, footprint.Y + 4, -2) * CFrame.Angles(math.rad(-28), 0, 0), Color3.fromRGB(55, 34, 24), Enum.Material.WoodPlanks)
@@ -381,6 +436,12 @@ local function createFallbackHouse(def)
 	roofRight.CanCollide = false
 	porch.CanCollide = true
 	model.PrimaryPart = floor
+	if placement.padName then
+		model:SetAttribute("PlacementPad", placement.padName)
+	end
+	if placement.narrativeRole then
+		model:SetAttribute("NarrativeRole", placement.narrativeRole)
+	end
 	model.Parent = placedAssets
 	return model
 end
@@ -443,8 +504,15 @@ local function createFallbackNpc(def)
 end
 
 local function applyPlacement(candidate, def)
+	local placement = resolvePlacementSpec(def)
 	local rotation = def.rotation or Vector3.zero
-	local cf = CFrame.new(def.position) * CFrame.Angles(math.rad(rotation.X), math.rad(rotation.Y), math.rad(rotation.Z))
+	local correction = placement and placement.orientationCorrection or rotation
+	local facingYaw = placement and placement.facingYaw or rotation.Y
+	local targetPosition = placement and placement.position or def.position
+	local groundY = (placement and placement.position and placement.position.Y) or (def.position and def.position.Y) or 0
+	local groundOffset = placement and placement.groundOffset or def.groundOffset or 0
+	local cf = CFrame.new(targetPosition) * CFrame.Angles(math.rad(correction.X), math.rad(facingYaw), math.rad(correction.Z))
+
 	if candidate:IsA("Model") then
 		local primary = getPrimary(candidate)
 		if not primary then return false, "model has no basepart" end
@@ -453,15 +521,19 @@ local function applyPlacement(candidate, def)
 		candidate:PivotTo(cf)
 		local boxCf, boxSize = candidate:GetBoundingBox()
 		local bottomY = boxCf.Position.Y - (boxSize.Y / 2)
-		local lift = def.position.Y - bottomY + (def.groundOffset or 0)
+		local lift = groundY - bottomY + groundOffset
 		if math.abs(lift) > 0.001 then candidate:PivotTo(candidate:GetPivot() + Vector3.new(0, lift, 0)) end
+		if placement then
+			candidate:SetAttribute("PlacementPad", placement.padName)
+			candidate:SetAttribute("NarrativeRole", placement.narrativeRole)
+		end
 		return true
 	elseif candidate:IsA("BasePart") then
 		if typeof(def.scale) == "number" and def.scale > 0 and def.scale ~= 1 then candidate.Size = candidate.Size * def.scale end
 		candidate.CFrame = cf
 		candidate.Anchored = true
 		local bottomY = candidate.Position.Y - (candidate.Size.Y / 2)
-		local lift = def.position.Y - bottomY + (def.groundOffset or 0)
+		local lift = groundY - bottomY + groundOffset
 		candidate.Position += Vector3.new(0, lift, 0)
 		return true
 	end
