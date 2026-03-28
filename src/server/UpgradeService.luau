@@ -38,6 +38,8 @@ function UpgradeService:start(remotes)
 					worldPosition = promptPosition,
 					tone = "good",
 					intensity = "T3",
+					context = "UpgradePurchase",
+					upgradeId = upgradeId,
 				})
 			elseif reason == "money" then
 				self.feedbackRemote:FireClient(player, {

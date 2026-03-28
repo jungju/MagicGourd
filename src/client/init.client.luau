@@ -209,6 +209,7 @@ local feedbackToken = 0
 local activeWorldPopupCounts = {}
 local activeWorldPopupState = {}
 local activeWorldPopupEntries = {}
+local recentLoopReset = nil
 local feedbackConfig = ArcadeConfig.Feedback or {}
 local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
 local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
@@ -442,6 +443,23 @@ local function getPrimaryGuidance(playerState)
 	return "Next: Keep the loop moving and buy when the pace boost matters.", Color3.fromRGB(240, 224, 163)
 end
 
+local function getRecentLoopReset(playerState)
+	if not recentLoopReset then
+		return nil
+	end
+
+	if os.clock() > recentLoopReset.expiresAt then
+		recentLoopReset = nil
+		return nil
+	end
+
+	if recentLoopReset.kind == "upgradePurchase" and not playerState.isSlowed then
+		return recentLoopReset
+	end
+
+	return nil
+end
+
 local function getStatusSummary(playerState)
 	if playerState.isSlowed then
 		return "Status: Goblin slow active", Color3.fromRGB(240, 149, 112)
@@ -647,14 +665,32 @@ local function refreshHud()
 		affordableUpgradeIds = affordableUpgradeIds,
 		ownedPumpkins = ownedPumpkins,
 	}
+	local recentReset = getRecentLoopReset(playerState)
 
 	resourcesLabel.Text = string.format("Seeds %d   |   Money %d", seeds, money)
 
-	local nextText, nextColor = getPrimaryGuidance(playerState)
+	local nextText, nextColor
+	if recentReset and recentReset.kind == "upgradePurchase" then
+		if seeds > 0 then
+			nextText = "Next: Plant a pumpkin and feel the upgrade on this run."
+			nextColor = Color3.fromRGB(220, 235, 196)
+		else
+			nextText = "Next: Return to Heungbu Village for fresh seeds."
+			nextColor = Color3.fromRGB(206, 232, 190)
+		end
+	else
+		nextText, nextColor = getPrimaryGuidance(playerState)
+	end
 	nextLabel.Text = nextText
 	nextLabel.TextColor3 = nextColor
 
-	local statusText, statusColor = getStatusSummary(playerState)
+	local statusText, statusColor
+	if recentReset and recentReset.kind == "upgradePurchase" then
+		statusText = "Status: Upgrade applied"
+		statusColor = Color3.fromRGB(245, 215, 152)
+	else
+		statusText, statusColor = getStatusSummary(playerState)
+	end
 	statusLabel.Text = statusText
 	statusLabel.TextColor3 = statusColor
 
@@ -670,7 +706,19 @@ local function refreshHud()
 	blessingLabel.Text = blessingText
 	blessingLabel.TextColor3 = blessingColor
 
-	tipLabel.Text = getSupportTip(playerState)
+	if recentReset and recentReset.kind == "upgradePurchase" then
+		if recentReset.upgradeId == "MoveSpeed" then
+			tipLabel.Text = seeds > 0 and "Plant now, then take the village route again and feel the lighter pace." or "Take the village route again and feel the lighter pace."
+		elseif recentReset.upgradeId == "AttackSpeed" then
+			tipLabel.Text = seeds > 0 and "Plant now and cash out the next pumpkin faster." or "Heal once more, then cash out the next pumpkin faster."
+		elseif recentReset.upgradeId == "SeedMultiplier" then
+			tipLabel.Text = seeds > 0 and "Plant if you want, or heal again to turn one swallow into a bigger setup." or "Go heal again to turn one swallow into a bigger setup."
+		else
+			tipLabel.Text = getSupportTip(playerState)
+		end
+	else
+		tipLabel.Text = getSupportTip(playerState)
+	end
 
 	useSeedButton.Active = seeds > 0
 	useSeedButton.AutoButtonColor = seeds > 0
@@ -843,8 +891,23 @@ feedbackRemote.OnClientEvent:Connect(function(payload)
 		return
 	end
 
+	if payload.context == "UpgradePurchase" then
+		recentLoopReset = {
+			kind = "upgradePurchase",
+			upgradeId = payload.upgradeId,
+			expiresAt = os.clock() + 2.8,
+		}
+		task.delay(2.8, function()
+			if recentLoopReset and recentLoopReset.kind == "upgradePurchase" and recentLoopReset.upgradeId == payload.upgradeId and os.clock() >= recentLoopReset.expiresAt then
+				recentLoopReset = nil
+				refreshHud()
+			end
+		end)
+	end
+
 	showFeedback(payload)
 	showWorldPopup(payload)
+	refreshHud()
 end)
 
 refreshHud()
