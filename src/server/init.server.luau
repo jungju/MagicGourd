@@ -143,6 +143,8 @@ local AMBIENT_ENDING = {
 }
 
 local ENDING_SUPPORT_ROTATION_THRESHOLD = 2
+local ENDING_LANDMARK_TIER_ONE_THRESHOLD = 3
+local ENDING_LANDMARK_TIER_TWO_THRESHOLD = 6
 
 local ENDING_SUPPORT_POINTS = {
 	restoration = {
@@ -274,6 +276,45 @@ local function getSupportPointList(errandKind)
 	return ENDING_SUPPORT_POINTS[errandKind] or {}
 end
 
+local function getEndingLandmarkTierFromCount(count)
+	if count >= ENDING_LANDMARK_TIER_TWO_THRESHOLD then
+		return 2
+	elseif count >= ENDING_LANDMARK_TIER_ONE_THRESHOLD then
+		return 1
+	end
+	return 0
+end
+
+local function getEndingLandmarkTier(profile, errandKind)
+	if errandKind == "restoration" then
+		local drops = profile and profile.sharedHarvestDrops or 0
+		return getEndingLandmarkTierFromCount(drops)
+	elseif errandKind == "tribute" then
+		local dues = profile and profile.tributeDuesPaid or 0
+		return getEndingLandmarkTierFromCount(dues)
+	end
+	return 0
+end
+
+local function getVillageEndingLandmarkTier(errandKind)
+	if errandKind == "restoration" then
+		return getEndingLandmarkTierFromCount(villageState.sharedHarvestDrops)
+	elseif errandKind == "tribute" then
+		return getEndingLandmarkTierFromCount(villageState.tributeDuesPaid)
+	end
+	return 0
+end
+
+local function getActiveVillageSupportPointId(errandKind)
+	local points = getSupportPointList(errandKind)
+	if #points == 0 then
+		return nil
+	end
+	local count = errandKind == "restoration" and villageState.sharedHarvestDrops or villageState.tributeDuesPaid
+	local index = ((count // ENDING_SUPPORT_ROTATION_THRESHOLD) % #points) + 1
+	return points[index].id
+end
+
 local function getActiveSupportPoint(profile, errandKind)
 	local points = getSupportPointList(errandKind)
 	if #points == 0 then
@@ -298,22 +339,24 @@ local function getEndingHint(choice, profile)
 		local drops = profile and profile.sharedHarvestDrops or 0
 		local activePoint = profile and getActiveSupportPoint(profile, "restoration") or nil
 		local activeHint = activePoint and activePoint.hint or "Shared harvests are being gathered near the well."
-		if drops >= 6 then
-			return string.format("Ending: Restored Valley · Shared harvests now return seeds to the valley (%d drops). %s", drops, activeHint)
-		elseif drops >= 3 then
-			return string.format("Ending: Restored Valley · The village is starting to give seeds back (%d drops). %s", drops, activeHint)
+		local tier = getEndingLandmarkTier(profile, "restoration")
+		if tier >= 2 then
+			return string.format("Ending: Restored Valley · The valley now keeps visible stores near its shared drop points (%d drops). %s", drops, activeHint)
+		elseif tier >= 1 then
+			return string.format("Ending: Restored Valley · The village pantry is starting to stay stocked between shared drops (%d drops). %s", drops, activeHint)
 		end
-		return string.format("Ending: Restored Valley · The village protects shared harvests. %s", activeHint)
+		return string.format("Ending: Restored Valley · Shared harvests are being gathered near the well (%d drops). %s", drops, activeHint)
 	elseif choice == "tribute" then
 		local dues = profile and profile.tributeDuesPaid or 0
 		local activePoint = profile and getActiveSupportPoint(profile, "tribute") or nil
 		local activeHint = activePoint and activePoint.hint or "The next road due is being counted by Nolbu's road."
-		if dues >= 6 then
-			return string.format("Ending: Tribute Road · The tally stand now expects counted harvests (%d dues). %s", dues, activeHint)
-		elseif dues >= 3 then
-			return string.format("Ending: Tribute Road · The road has started recognizing steady tribute (%d dues). %s", dues, activeHint)
+		local tier = getEndingLandmarkTier(profile, "tribute")
+		if tier >= 2 then
+			return string.format("Ending: Tribute Road · The road's due now reads like a standing village habit (%d dues). %s", dues, activeHint)
+		elseif tier >= 1 then
+			return string.format("Ending: Tribute Road · Nolbu's tally points are settling into a stricter routine (%d dues). %s", dues, activeHint)
 		end
-		return string.format("Ending: Tribute Road · The harvest still grows under Nolbu's shadow. %s", activeHint)
+		return string.format("Ending: Tribute Road · The next road due is being counted nearby (%d dues). %s", dues, activeHint)
 	end
 	return "Watch the village signs for story changes."
 end
@@ -1075,6 +1118,34 @@ local tributeGateTallyStand = addPart(endingAccentFolder, "GateTallyStand", Vect
 local tributeRouteMarker = addPart(endingAccentFolder, "TributeRouteMarker", Vector3.new(1.2, 4.6, 1.2), CFrame.new(tributeBasketPosition + Vector3.new(16, 2.3, 6)), Color3.fromRGB(89, 69, 51), Enum.Material.Wood)
 local tributeBanner = addPart(endingAccentFolder, "TributeRoadMarker", Vector3.new(0.6, 6, 0.6), CFrame.new(nolbuFront + Vector3.new(-10, 3, 3)), Color3.fromRGB(86, 67, 55), Enum.Material.Wood)
 local tributeBannerCloth = addPart(endingAccentFolder, "TributeRoadCloth", Vector3.new(2.4, 3.2, 0.2), tributeBanner.CFrame * CFrame.new(1.3, 0.7, 0), Color3.fromRGB(123, 77, 69), Enum.Material.Fabric)
+local restorationBasketTierOneCrate = addPart(endingAccentFolder, "RestorationBasketTierOneCrate", Vector3.new(2.2, 1.1, 1.8), restorationErrandBasket.CFrame * CFrame.new(-2.6, -0.2, 1.8), Color3.fromRGB(171, 126, 82), Enum.Material.WoodPlanks)
+local restorationBasketTierOneGourd = addPart(endingAccentFolder, "RestorationBasketTierOneGourd", Vector3.new(1.1, 1.1, 1.1), restorationErrandBasket.CFrame * CFrame.new(-2.1, 0.9, 1.6), Color3.fromRGB(194, 154, 85), Enum.Material.SmoothPlastic)
+local restorationPantryTierOneSack = addPart(endingAccentFolder, "RestorationPantryTierOneSack", Vector3.new(1.5, 1.7, 1.5), restorationPantryCrate.CFrame * CFrame.new(2.8, 0.1, -0.6), Color3.fromRGB(206, 194, 153), Enum.Material.Fabric)
+local restorationPantryTierOneGourd = addPart(endingAccentFolder, "RestorationPantryTierOneGourd", Vector3.new(0.9, 0.9, 0.9), restorationPantryCrate.CFrame * CFrame.new(2.5, 1.1, -0.4), Color3.fromRGB(196, 151, 92), Enum.Material.SmoothPlastic)
+local restorationBasketTierTwoCrate = addPart(endingAccentFolder, "RestorationBasketTierTwoCrate", Vector3.new(1.9, 0.95, 1.6), restorationErrandBasket.CFrame * CFrame.new(2.7, -0.25, -1.7), Color3.fromRGB(162, 118, 76), Enum.Material.WoodPlanks)
+local restorationBasketTierTwoCloth = addPart(endingAccentFolder, "RestorationBasketTierTwoCloth", Vector3.new(1.8, 0.18, 1.4), restorationErrandBasket.CFrame * CFrame.new(2.7, 0.37, -1.7), Color3.fromRGB(222, 214, 178), Enum.Material.Fabric)
+local restorationPantryTierTwoLantern = addPart(endingAccentFolder, "RestorationPantryTierTwoLantern", Vector3.new(0.7, 1.6, 0.7), restorationPantryCrate.CFrame * CFrame.new(-2.5, 1.2, 0.8), Color3.fromRGB(232, 198, 110), Enum.Material.WoodPlanks)
+local restorationPantryTierTwoLanternGlow = Instance.new("PointLight")
+restorationPantryTierTwoLanternGlow.Color = Color3.fromRGB(255, 225, 162)
+restorationPantryTierTwoLanternGlow.Range = 10
+restorationPantryTierTwoLanternGlow.Brightness = 0
+restorationPantryTierTwoLanternGlow.Parent = restorationPantryTierTwoLantern
+local restorationReliefTierOneBundle = addPart(endingAccentFolder, "RestorationReliefTierOneBundle", Vector3.new(1.3, 0.9, 1.3), restorationReliefMat.CFrame * CFrame.new(-1.6, 0.7, 0.9), Color3.fromRGB(201, 188, 146), Enum.Material.Fabric)
+local restorationReliefTierOneGourd = addPart(endingAccentFolder, "RestorationReliefTierOneGourd", Vector3.new(0.95, 0.95, 0.95), restorationReliefMat.CFrame * CFrame.new(-1.2, 1.25, 0.6), Color3.fromRGB(195, 152, 88), Enum.Material.SmoothPlastic)
+local restorationReliefTierTwoTray = addPart(endingAccentFolder, "RestorationReliefTierTwoTray", Vector3.new(1.7, 0.22, 1.4), restorationReliefMat.CFrame * CFrame.new(1.7, 0.4, -0.8), Color3.fromRGB(165, 122, 81), Enum.Material.WoodPlanks)
+local restorationReliefTierTwoSeedSack = addPart(endingAccentFolder, "RestorationReliefTierTwoSeedSack", Vector3.new(1.15, 1.4, 1.15), restorationReliefMat.CFrame * CFrame.new(1.7, 1.15, -0.8), Color3.fromRGB(214, 204, 168), Enum.Material.Fabric)
+local tributeStandTierOneLedger = addPart(endingAccentFolder, "TributeStandTierOneLedger", Vector3.new(1.8, 0.35, 1.4), tributeErrandStand.CFrame * CFrame.new(2.5, 1.4, 1.4), Color3.fromRGB(108, 81, 61), Enum.Material.WoodPlanks)
+local tributeStandTierOneStone = addPart(endingAccentFolder, "TributeStandTierOneStone", Vector3.new(0.9, 0.7, 0.9), tributeErrandStand.CFrame * CFrame.new(2.2, 1.85, 1.1), Color3.fromRGB(128, 121, 114), Enum.Material.Slate)
+local tributeGateTierOneLedger = addPart(endingAccentFolder, "TributeGateTierOneLedger", Vector3.new(1.6, 0.3, 1.1), tributeGateTallyStand.CFrame * CFrame.new(-2.1, 1.05, -0.3), Color3.fromRGB(99, 73, 54), Enum.Material.WoodPlanks)
+local tributeGateTierOneRope = addPart(endingAccentFolder, "TributeGateTierOneRope", Vector3.new(2.2, 0.18, 0.18), tributeGateTallyStand.CFrame * CFrame.new(-0.4, 0.8, 1.6) * CFrame.Angles(0, math.rad(18), 0), Color3.fromRGB(164, 137, 104), Enum.Material.Fabric)
+local tributeStandTierTwoLedger = addPart(endingAccentFolder, "TributeStandTierTwoLedger", Vector3.new(1.7, 0.32, 1.2), tributeErrandStand.CFrame * CFrame.new(-2.6, 1.35, -1.5), Color3.fromRGB(92, 68, 50), Enum.Material.WoodPlanks)
+local tributeStandTierTwoStone = addPart(endingAccentFolder, "TributeStandTierTwoStone", Vector3.new(0.8, 0.65, 0.8), tributeErrandStand.CFrame * CFrame.new(-2.8, 1.8, -1.8), Color3.fromRGB(115, 108, 103), Enum.Material.Slate)
+local tributeGateTierTwoPost = addPart(endingAccentFolder, "TributeGateTierTwoPost", Vector3.new(0.35, 2.6, 0.35), tributeGateTallyStand.CFrame * CFrame.new(2.6, 1.3, 1.1), Color3.fromRGB(87, 68, 51), Enum.Material.Wood)
+local tributeGateTierTwoCloth = addPart(endingAccentFolder, "TributeGateTierTwoCloth", Vector3.new(1.3, 1.7, 0.16), tributeGateTierTwoPost.CFrame * CFrame.new(0.7, 0.2, 0), Color3.fromRGB(132, 84, 77), Enum.Material.Fabric)
+local tributeRouteTierOneLantern = addPart(endingAccentFolder, "TributeRouteTierOneLantern", Vector3.new(0.65, 1.5, 0.65), tributeRouteMarker.CFrame * CFrame.new(1.4, 0.2, 0.5), Color3.fromRGB(171, 136, 90), Enum.Material.WoodPlanks)
+local tributeRouteTierOneLedger = addPart(endingAccentFolder, "TributeRouteTierOneLedger", Vector3.new(1.2, 0.22, 0.9), tributeRouteMarker.CFrame * CFrame.new(1.8, -1.35, 0.3), Color3.fromRGB(103, 76, 56), Enum.Material.WoodPlanks)
+local tributeRouteTierTwoRope = addPart(endingAccentFolder, "TributeRouteTierTwoRope", Vector3.new(2.4, 0.16, 0.16), tributeRouteMarker.CFrame * CFrame.new(-1.1, -0.7, 1.5) * CFrame.Angles(0, math.rad(26), 0), Color3.fromRGB(160, 133, 101), Enum.Material.Fabric)
+local tributeRouteTierTwoStone = addPart(endingAccentFolder, "TributeRouteTierTwoStone", Vector3.new(0.85, 0.7, 0.85), tributeRouteMarker.CFrame * CFrame.new(-1.7, -1.45, 1.7), Color3.fromRGB(118, 112, 105), Enum.Material.Slate)
 local repairMarkerBase = addPart(placedAssets, "HeungbuYardMarkerBase", Vector3.new(3.2, 0.8, 3.2), CFrame.new(repairMarkerBasePosition), Color3.fromRGB(104, 81, 57), Enum.Material.WoodPlanks)
 local repairMarkerPost = addPart(placedAssets, "HeungbuYardMarkerPost", Vector3.new(0.8, 4.8, 0.8), repairMarkerBase.CFrame * CFrame.new(0, 2.8, 0), Color3.fromRGB(122, 90, 62), Enum.Material.Wood)
 local repairMarkerCrossbeam = addPart(placedAssets, "HeungbuYardMarkerCrossbeam", Vector3.new(3, 0.5, 0.8), repairMarkerPost.CFrame * CFrame.new(0, 1.3, 0), Color3.fromRGB(131, 97, 68), Enum.Material.WoodPlanks)
@@ -1082,7 +1153,42 @@ local repairMarkerCloth = addPart(placedAssets, "HeungbuYardMarkerCloth", Vector
 local repairMarkerBrokenBeam = addPart(placedAssets, "HeungbuYardMarkerBrokenBeam", Vector3.new(2.6, 0.5, 0.8), repairMarkerPost.CFrame * CFrame.new(-0.4, 0.2, 0) * CFrame.Angles(0, 0, math.rad(-38)), Color3.fromRGB(108, 77, 52), Enum.Material.WoodPlanks)
 local repairMarkerBramble = addPart(placedAssets, "HeungbuYardMarkerBramble", Vector3.new(1.4, 2.4, 1.4), repairMarkerPost.CFrame * CFrame.new(-0.7, -0.2, 0), Color3.fromRGB(81, 100, 50), Enum.Material.Grass)
 
-for _, accentPart in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, restorationPantryCrate, restorationReliefMat, tributeLedger, tributeErrandStand, tributeGateTallyStand, tributeRouteMarker, tributeBanner, tributeBannerCloth }) do
+local restorationLandmarkTierOneParts = {
+	restorationBasketTierOneCrate,
+	restorationBasketTierOneGourd,
+	restorationPantryTierOneSack,
+	restorationPantryTierOneGourd,
+	restorationReliefTierOneBundle,
+	restorationReliefTierOneGourd,
+}
+
+local restorationLandmarkTierTwoParts = {
+	restorationBasketTierTwoCrate,
+	restorationBasketTierTwoCloth,
+	restorationPantryTierTwoLantern,
+	restorationReliefTierTwoTray,
+	restorationReliefTierTwoSeedSack,
+}
+
+local tributeLandmarkTierOneParts = {
+	tributeStandTierOneLedger,
+	tributeStandTierOneStone,
+	tributeGateTierOneLedger,
+	tributeGateTierOneRope,
+	tributeRouteTierOneLantern,
+	tributeRouteTierOneLedger,
+}
+
+local tributeLandmarkTierTwoParts = {
+	tributeStandTierTwoLedger,
+	tributeStandTierTwoStone,
+	tributeGateTierTwoPost,
+	tributeGateTierTwoCloth,
+	tributeRouteTierTwoRope,
+	tributeRouteTierTwoStone,
+}
+
+for _, accentPart in ipairs({ restorationLantern, restorationCrate, restorationErrandBasket, restorationPantryCrate, restorationReliefMat, tributeLedger, tributeErrandStand, tributeGateTallyStand, tributeRouteMarker, tributeBanner, tributeBannerCloth, restorationBasketTierOneCrate, restorationBasketTierOneGourd, restorationPantryTierOneSack, restorationPantryTierOneGourd, restorationBasketTierTwoCrate, restorationBasketTierTwoCloth, restorationPantryTierTwoLantern, restorationReliefTierOneBundle, restorationReliefTierOneGourd, restorationReliefTierTwoTray, restorationReliefTierTwoSeedSack, tributeStandTierOneLedger, tributeStandTierOneStone, tributeGateTierOneLedger, tributeGateTierOneRope, tributeStandTierTwoLedger, tributeStandTierTwoStone, tributeGateTierTwoPost, tributeGateTierTwoCloth, tributeRouteTierOneLantern, tributeRouteTierOneLedger, tributeRouteTierTwoRope, tributeRouteTierTwoStone }) do
 	accentPart.Transparency = 1
 	accentPart.CanCollide = false
 end
@@ -1192,6 +1298,22 @@ end
 
 setSupportPointState("restored")
 
+local function setLandmarkTierVisibility(parts, visible)
+	for _, part in ipairs(parts) do
+		part.Transparency = visible and 0 or 1
+	end
+end
+
+local function updateEndingLandmarkProps(mode)
+	local restorationTier = mode == AMBIENT_ENDING.RESTORATION and getVillageEndingLandmarkTier("restoration") or 0
+	local tributeTier = mode == AMBIENT_ENDING.TRIBUTE and getVillageEndingLandmarkTier("tribute") or 0
+	setLandmarkTierVisibility(restorationLandmarkTierOneParts, restorationTier >= 1)
+	setLandmarkTierVisibility(restorationLandmarkTierTwoParts, restorationTier >= 2)
+	setLandmarkTierVisibility(tributeLandmarkTierOneParts, tributeTier >= 1)
+	setLandmarkTierVisibility(tributeLandmarkTierTwoParts, tributeTier >= 2)
+	restorationPantryTierTwoLanternGlow.Brightness = restorationTier >= 2 and 0.85 or 0
+end
+
 local function setEndingAccentVisibility(mode)
 	local restorationVisible = mode == AMBIENT_ENDING.RESTORATION
 	local tributeVisible = mode == AMBIENT_ENDING.TRIBUTE
@@ -1208,6 +1330,7 @@ local function setEndingAccentVisibility(mode)
 	for _, prompt in ipairs({ tributeErrandPrompt, tributeGatePrompt, tributeRoutePrompt }) do
 		prompt.Enabled = tributeVisible
 	end
+	updateEndingLandmarkProps(mode)
 end
 
 local function applyAmbientPatchState(mode)
@@ -1256,21 +1379,23 @@ refreshVillageSigns = function()
 		setBillboardBody(storyStoneSign, "The valley is not deciding its future yet. First it has to steady what spite bent.")
 		setBillboardBody(wellSign, "The village well watches the yard recover one landmark at a time.")
 	elseif ambientMode == AMBIENT_ENDING.RESTORATION then
+		local restorationTier = getVillageEndingLandmarkTier("restoration")
 		setBillboardBody(heungbuPadSign, string.format("The yard stays open to all. Restoration endings: %d · Shared drops: %d", villageState.restorationEndings, villageState.sharedHarvestDrops))
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · The gate watches a valley that chose warmth over tribute.", #patrolANodes + #patrolBNodes))
 		setBillboardBody(tributeSign, string.format("Tributes once paid: %d · The basket remains as a warning, not a rule.", villageState.nolbuTributes))
-		setBillboardBody(storyStoneSign, villageState.sharedHarvestDrops >= 6 and "The stone now speaks of a valley that shares enough to plant again." or "The valley remembers the day kindness held the patch open.")
-		setBillboardBody(wellSign, villageState.sharedHarvestDrops >= 3 and string.format("Shared harvests left here: %d · Some drops now return seeds to the valley.", villageState.sharedHarvestDrops) or string.format("Shared harvests left here: %d · The center of the valley feels calmer after restoration.", villageState.sharedHarvestDrops))
-		setBillboardBody(restorationErrandSign, villageState.sharedHarvestDrops >= 6 and string.format("Leave a fresh gourd. The basket has started sending seeds back out. Shared drops: %d", villageState.sharedHarvestDrops) or string.format("Leave a fresh gourd so the valley keeps eating together. Shared drops so far: %d", villageState.sharedHarvestDrops))
+		setBillboardBody(storyStoneSign, restorationTier >= 2 and "The stone now speaks of a valley that shares enough to plant again." or restorationTier >= 1 and "The stone now tells of a pantry learning how to stay stocked." or "The valley remembers the day kindness held the patch open.")
+		setBillboardBody(wellSign, restorationTier >= 2 and string.format("Shared harvests left here: %d · Visible stores now sit beside the village well.", villageState.sharedHarvestDrops) or restorationTier >= 1 and string.format("Shared harvests left here: %d · The village pantry is starting to stay stocked between drops.", villageState.sharedHarvestDrops) or string.format("Shared harvests left here: %d · The center of the valley feels calmer after restoration.", villageState.sharedHarvestDrops))
+		setBillboardBody(restorationErrandSign, restorationTier >= 2 and string.format("Leave a fresh gourd. The basket now sends food and seed back through the valley. Shared drops: %d", villageState.sharedHarvestDrops) or restorationTier >= 1 and string.format("Leave a fresh gourd. The basket is starting to keep communal stock between drops. Shared drops: %d", villageState.sharedHarvestDrops) or string.format("Leave a fresh gourd so the valley keeps eating together. Shared drops so far: %d", villageState.sharedHarvestDrops))
 		setBillboardBody(tributeErrandSign, "The road-due stand looks out of place in a restored valley.")
 	elseif ambientMode == AMBIENT_ENDING.TRIBUTE then
+		local tributeTier = getVillageEndingLandmarkTier("tribute")
 		setBillboardBody(heungbuPadSign, string.format("Hope survives under count and caution. Tribute endings lived: %d", villageState.tributeEndings))
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tribute order holds the road in a colder peace.", #patrolANodes + #patrolBNodes))
 		setBillboardBody(tributeSign, string.format("Tributes paid: %d · Nolbu's basket has become part of the road.", villageState.nolbuTributes))
-		setBillboardBody(storyStoneSign, villageState.tributeDuesPaid >= 6 and "The stone now tells of a valley so practiced at tribute that even the road expects it." or "The stone now tells of a valley that survives by paying what it owes.")
-		setBillboardBody(wellSign, villageState.tributeDuesPaid >= 3 and string.format("The center of the valley is busy, productive, and marked by %d counted road dues.", villageState.tributeDuesPaid) or "The center of the valley is busy, productive, and a little quieter than before.")
+		setBillboardBody(storyStoneSign, tributeTier >= 2 and "The stone now tells of a valley so practiced at tribute that even the road expects it." or tributeTier >= 1 and "The stone now tells of tally points settling into a stricter routine." or "The stone now tells of a valley that survives by paying what it owes.")
+		setBillboardBody(wellSign, tributeTier >= 2 and string.format("The center of the valley now reads like a standing habit of tribute (%d counted dues).", villageState.tributeDuesPaid) or tributeTier >= 1 and string.format("The center of the valley is marked by tally points settling into routine (%d counted dues).", villageState.tributeDuesPaid) or "The center of the valley is busy, productive, and a little quieter than before.")
 		setBillboardBody(restorationErrandSign, "The shared basket is quiet here; the road now asks to be counted instead.")
-		setBillboardBody(tributeErrandSign, villageState.tributeDuesPaid >= 6 and string.format("One more gourd keeps Nolbu's road quiet. Reliable dues paid: %d", villageState.tributeDuesPaid) or string.format("One more gourd keeps Nolbu's road quiet for another day. Dues paid: %d", villageState.tributeDuesPaid))
+		setBillboardBody(tributeErrandSign, tributeTier >= 2 and string.format("One more gourd keeps Nolbu's road quiet. The road now expects tribute as routine order. Dues: %d", villageState.tributeDuesPaid) or tributeTier >= 1 and string.format("One more gourd keeps Nolbu's tally points in rhythm. Counted dues: %d", villageState.tributeDuesPaid) or string.format("One more gourd keeps Nolbu's road quiet for another day. Dues paid: %d", villageState.tributeDuesPaid))
 	else
 		setBillboardBody(heungbuPadSign, villageState.magicPayoffs > 0 and string.format("The yard glows a little brighter. Retaliations weathered: %d", villageState.retaliations) or string.format("Harvests gathered: %d · Kindness still lives here.", villageState.gourdsHarvested))
 		setBillboardBody(nolbuPadSign, string.format("Patrols circling: %d · Tributes demanded: %d", #patrolANodes + #patrolBNodes, villageState.nolbuTributes))
@@ -1291,35 +1416,61 @@ updateEndingSupportSigns = function()
 	local ambientMode = getVillageAmbientEndingChoice()
 
 	if ambientMode == AMBIENT_ENDING.RESTORATION then
-		local activeRestorationId = ENDING_SUPPORT_POINTS.restoration[((villageState.sharedHarvestDrops // ENDING_SUPPORT_ROTATION_THRESHOLD) % #ENDING_SUPPORT_POINTS.restoration) + 1].id
+		local restorationTier = getVillageEndingLandmarkTier("restoration")
+		local activeRestorationId = getActiveVillageSupportPointId("restoration")
 		local pantryBody = activeRestorationId == "wellPantry"
-			and string.format("Shared harvests are currently being gathered here by the well. Village-wide drops: %d", villageState.sharedHarvestDrops)
-			or villageState.sharedHarvestDrops >= 2
-				and string.format("The well pantry is taking turns with the basket. Shared drops so far: %d", villageState.sharedHarvestDrops)
+			and (restorationTier >= 2
+				and string.format("Shared stores now gather here by the well between village drops. Village-wide drops: %d", villageState.sharedHarvestDrops)
+				or restorationTier >= 1
+					and string.format("The pantry is staying stocked between shared drops here by the well. Village-wide drops: %d", villageState.sharedHarvestDrops)
+					or string.format("Shared harvests are currently being gathered here by the well. Village-wide drops: %d", villageState.sharedHarvestDrops))
+			or restorationTier >= 2
+				and string.format("The well pantry now keeps visible stores even while the active drop rotates elsewhere. Shared drops so far: %d", villageState.sharedHarvestDrops)
+			or restorationTier >= 1
+				and string.format("The well pantry is taking turns with the basket and starting to stay stocked. Shared drops so far: %d", villageState.sharedHarvestDrops)
 				or "The well pantry waits nearby in case the next shared harvest shifts toward the village center."
 		local reliefBody = activeRestorationId == "yardRelief"
-			and "The active shared drop has shifted to Heungbu's yard marker. Leave the next relief harvest here if your own route points this way."
-			or villageState.sharedHarvestDrops >= 4
-				and "Heungbu's repaired yard marker now looks ready to carry the next relief drop."
+			and (restorationTier >= 2
+				and "Heungbu's yard marker now keeps seed and supper set aside. Leave the next relief harvest here if your own route points this way."
+				or restorationTier >= 1
+					and "The active shared drop has shifted to Heungbu's yard marker. Small relief bundles are starting to collect here."
+					or "The active shared drop has shifted to Heungbu's yard marker. Leave the next relief harvest here if your own route points this way.")
+			or restorationTier >= 2
+				and "Heungbu's repaired yard marker now looks lived-in, with relief stores ready for the next family in need."
+			or restorationTier >= 1
+				and "Heungbu's repaired yard marker is starting to hold small relief bundles between shared drops."
 				or "The relief mat waits by Heungbu's marker for when the valley needs one more shared stop."
 		setBillboardBody(restorationPantrySign, pantryBody)
 		setBillboardBody(restorationReliefSign, reliefBody)
 		setBillboardBody(tributeGateSign, "Nolbu's tally post is no longer the valley's rule; it stands here as a colder reminder.")
-		setBillboardBody(tributeRouteSign, "The route marker still watches the road, but restored harvests are being claimed elsewhere.")
+		setBillboardBody(tributeRouteSign, restorationTier >= 2 and "The route marker still watches the road, but the restored valley now keeps fuller relief stops elsewhere." or "The route marker still watches the road, but restored harvests are being claimed elsewhere.")
 	elseif ambientMode == AMBIENT_ENDING.TRIBUTE then
-		local activeTributeId = ENDING_SUPPORT_POINTS.tribute[((villageState.tributeDuesPaid // ENDING_SUPPORT_ROTATION_THRESHOLD) % #ENDING_SUPPORT_POINTS.tribute) + 1].id
+		local tributeTier = getVillageEndingLandmarkTier("tribute")
+		local activeTributeId = getActiveVillageSupportPointId("tribute")
 		local gateBody = activeTributeId == "gateTally"
-			and string.format("Today's counted road due is being marked at Nolbu's gate. Village-wide dues: %d", villageState.tributeDuesPaid)
-			or villageState.tributeDuesPaid >= 2
+			and (tributeTier >= 2
+				and string.format("Today's counted road due is being marked at Nolbu's gate beneath a settled tally post. Village-wide dues: %d", villageState.tributeDuesPaid)
+				or tributeTier >= 1
+					and string.format("Today's counted road due is being marked at Nolbu's gate as the tally routine settles in. Village-wide dues: %d", villageState.tributeDuesPaid)
+					or string.format("Today's counted road due is being marked at Nolbu's gate. Village-wide dues: %d", villageState.tributeDuesPaid))
+			or tributeTier >= 2
+				and string.format("Nolbu's gate now reads like a standing checkpoint even when the due rotates away. Counted dues so far: %d", villageState.tributeDuesPaid)
+			or tributeTier >= 1
 				and string.format("Nolbu's gate keeps a stricter count now. Counted dues so far: %d", villageState.tributeDuesPaid)
 				or "Nolbu's gate keeps a stricter count when tribute shifts away from the main road stand."
 		local routeBody = activeTributeId == "routeMarker"
-			and "The active road due has shifted to the route marker. Surrender the next counted harvest here if your own tally points this way."
-			or villageState.tributeDuesPaid >= 4
-				and "The roadside route marker looks ready to claim the next due before it ever reaches the basket."
+			and (tributeTier >= 2
+				and "The active road due has shifted to the route marker. The road now expects a counted harvest here as routine order."
+				or tributeTier >= 1
+					and "The active road due has shifted to the route marker. Ledger props and guide rope now make the count feel more official."
+					or "The active road due has shifted to the route marker. Surrender the next counted harvest here if your own tally points this way.")
+			or tributeTier >= 2
+				and "The roadside route marker now reads like part of a standing due route before the basket is even reached."
+			or tributeTier >= 1
+				and "The roadside route marker has started to look like a formal tally stop before the basket."
 				or "The roadside marker waits for the road's claim whenever the tally shifts off the main stand."
-		setBillboardBody(restorationPantrySign, "The pantry still stands, but the road's count now reaches farther than the shared table.")
-		setBillboardBody(restorationReliefSign, "Heungbu's marker stays standing, though tribute leaves little room for open relief.")
+		setBillboardBody(restorationPantrySign, tributeTier >= 2 and "The pantry still stands, but the road's count now reaches farther than the shared table." or "The pantry still stands, though tribute is pulling attention toward the tally route.")
+		setBillboardBody(restorationReliefSign, tributeTier >= 2 and "Heungbu's marker stays standing, but the village now leaves more ropes and counts than open relief." or "Heungbu's marker stays standing, though tribute leaves little room for open relief.")
 		setBillboardBody(tributeGateSign, gateBody)
 		setBillboardBody(tributeRouteSign, routeBody)
 	else
