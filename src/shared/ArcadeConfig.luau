@@ -185,7 +185,11 @@ local config = {
 		WalkSpeed = 10,
 		ChaseRange = 84,
 		LeashRadius = 18,
-		ChaseZonePadding = 10,
+		ChaseZonePadding = {
+			Front = 4,
+			Back = 10,
+			Side = 8,
+		},
 		RetargetInterval = 0.75,
 		TouchSlowDuration = 2.5,
 		TouchSlowFactor = 0.55,

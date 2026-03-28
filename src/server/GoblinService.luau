@@ -192,9 +192,28 @@ function GoblinService:_isInsideExpandedDangerZone(position)
 	end
 
 	local padding = self.config.Goblins.ChaseZonePadding or 0
-	local halfSize = (size * 0.5) + Vector3.new(padding, 0, padding)
-	local delta = position - center
-	return math.abs(delta.X) <= halfSize.X and math.abs(delta.Z) <= halfSize.Z
+	local halfSize = size * 0.5
+	local frontPadding = 0
+	local backPadding = 0
+	local sidePadding = 0
+
+	if type(padding) == "table" then
+		frontPadding = math.max(tonumber(padding.Front) or 0, 0)
+		backPadding = math.max(tonumber(padding.Back) or 0, 0)
+		sidePadding = math.max(tonumber(padding.Side) or 0, 0)
+	else
+		local uniformPadding = math.max(tonumber(padding) or 0, 0)
+		frontPadding = uniformPadding
+		backPadding = uniformPadding
+		sidePadding = uniformPadding
+	end
+
+	local minX = center.X - halfSize.X - frontPadding
+	local maxX = center.X + halfSize.X + backPadding
+	local minZ = center.Z - halfSize.Z - sidePadding
+	local maxZ = center.Z + halfSize.Z + sidePadding
+
+	return position.X >= minX and position.X <= maxX and position.Z >= minZ and position.Z <= maxZ
 end
 
 function GoblinService:_getNextDestination(goblin)
