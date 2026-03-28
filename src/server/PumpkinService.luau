@@ -3,6 +3,8 @@ local Workspace = game:GetService("Workspace")
 local PumpkinService = {}
 PumpkinService.__index = PumpkinService
 
+local FALLBACK_SURFACE_OFFSET = 1.7
+
 local function getRootPart(player)
 	local character = player.Character
 	if not character then
@@ -225,19 +227,64 @@ function PumpkinService:_destroyPumpkin(pumpkinId)
 end
 
 function PumpkinService:_getSpawnPosition(player, root)
-	local angle = self.random:NextNumber(0, math.pi * 2)
-	local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * self.config.Pumpkins.SpawnRadius
-	local targetPosition = root.Position + offset
-
 	local rayParams = RaycastParams.new()
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
 	rayParams.FilterDescendantsInstances = { player.Character, self.world.folders.pumpkins }
 
-	local origin = targetPosition + Vector3.new(0, self.config.Pumpkins.SpawnHeight, 0)
-	local result = Workspace:Raycast(origin, Vector3.new(0, -self.config.Pumpkins.SpawnHeight * 2, 0), rayParams)
-	local groundY = result and result.Position.Y or root.Position.Y - 3
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = { player.Character }
 
-	return Vector3.new(targetPosition.X, groundY + 1.7, targetPosition.Z)
+	local forward = root.CFrame.LookVector
+	local forwardFlat = Vector3.new(forward.X, 0, forward.Z)
+	if forwardFlat.Magnitude < 0.001 then
+		forwardFlat = Vector3.new(0, 0, -1)
+	else
+		forwardFlat = forwardFlat.Unit
+	end
+
+	local spawnRadius = self.config.Pumpkins.SpawnRadius
+	local clearanceRadius = self.config.Pumpkins.ClearanceRadius or 2.6
+	local spawnAttempts = self.config.Pumpkins.SpawnAttempts or 8
+	local bestPosition
+	local bestPenalty = math.huge
+
+	for attempt = 1, spawnAttempts do
+		local angleOffset = self.random:NextNumber(-math.pi * 0.85, math.pi * 0.85)
+		local distanceScale = self.random:NextNumber(0.68, 1)
+		local offsetDirection = CFrame.fromAxisAngle(Vector3.yAxis, angleOffset):VectorToWorldSpace(forwardFlat)
+		local targetPosition = root.Position + (offsetDirection * spawnRadius * distanceScale)
+		local origin = targetPosition + Vector3.new(0, self.config.Pumpkins.SpawnHeight, 0)
+		local result = Workspace:Raycast(origin, Vector3.new(0, -self.config.Pumpkins.SpawnHeight * 2, 0), rayParams)
+		local groundPosition = result and result.Position or Vector3.new(targetPosition.X, root.Position.Y - 3, targetPosition.Z)
+		local spawnPosition = Vector3.new(targetPosition.X, groundPosition.Y + FALLBACK_SURFACE_OFFSET, targetPosition.Z)
+		local overlapParts = Workspace:GetPartBoundsInRadius(spawnPosition, clearanceRadius, overlapParams)
+
+		local penalty = 0
+		for _, part in ipairs(overlapParts) do
+			if part:IsDescendantOf(self.world.folders.pumpkins) then
+				penalty += 100
+			elseif part.CanCollide and not part:IsDescendantOf(player.Character) then
+				penalty += 1
+			end
+		end
+
+		if penalty <= 0 then
+			return spawnPosition
+		end
+
+		if penalty < bestPenalty then
+			bestPenalty = penalty
+			bestPosition = spawnPosition
+		end
+	end
+
+	if bestPosition then
+		return bestPosition
+	end
+
+	local fallbackTarget = root.Position + (forwardFlat * spawnRadius)
+	return Vector3.new(fallbackTarget.X, root.Position.Y - 1.3, fallbackTarget.Z)
 end
 
 return PumpkinService

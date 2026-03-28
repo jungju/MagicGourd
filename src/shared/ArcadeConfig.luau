@@ -127,6 +127,8 @@ local config = {
 		Reward = 10,
 		SpawnRadius = 6,
 		SpawnHeight = 24,
+		SpawnAttempts = 9,
+		ClearanceRadius = 2.6,
 		HitDistance = 14,
 		PromptDistance = 12,
 	},
