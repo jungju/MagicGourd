@@ -1,6 +1,7 @@
 local Workspace = game:GetService("Workspace")
 
 local ArcadeWorld = {}
+local UPGRADE_PROMPT_DISTANCE = 9
 
 local function createFolder(parent, name)
 	local folder = Instance.new("Folder")
@@ -23,11 +24,11 @@ local function createPart(parent, name, size, cframe, color, material)
 	return part
 end
 
-local function createPrompt(parent, actionText, objectText)
+local function createPrompt(parent, actionText, objectText, maxDistance)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = actionText
 	prompt.ObjectText = objectText
-	prompt.MaxActivationDistance = 12
+	prompt.MaxActivationDistance = maxDistance or 12
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0
 	prompt.Parent = parent
@@ -166,7 +167,7 @@ function ArcadeWorld.build(config)
 		)
 		pad:SetAttribute(config.Attributes.Interaction.UpgradeId, upgradeId)
 		attachBillboard(pad, padDef.displayName, padDef.body, padDef.color)
-		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName)
+		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName, UPGRADE_PROMPT_DISTANCE)
 	end
 
 	for index, point in ipairs(config.World.GoblinSpawnPoints) do
