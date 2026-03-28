@@ -26,6 +26,7 @@
 | MG-PM-010 | Post-ending errand escalation | 2026-03-28 post-ending errand escalation | done | 반복 심부름 3회 단위 milestone 보상(복원: 씨앗 반환 / 공물: inspection coin), 분기별 QuestHint/간판 문구 상승, milestone 전용 effect/dialogue가 `init.server.luau`와 신규 설계 문서에 반영됨 | 유지, Studio에서 sign 가독성과 보상 체감만 최종 확인 | P2 |
 | MG-PM-011 | Post-ending support-point rotations | 2026-03-28 post-ending support rotations | done | `init.server.luau`에 restoration/tribute 3개 지점 프롬프트 연결, per-player active-point gating/redirect, rotation threshold advancement, QuestHint 활성 지점 반영, 그리고 `refreshVillageSigns()`에서 안전한 `updateEndingSupportSigns` 연결 + village-level active-point copy 갱신이 구현됨 | 유지, Studio에서 각 지점 동선/가독성만 최종 확인 | P2 |
 | MG-PM-012 | Post-ending landmark accrual tiers | 2026-03-28 post-ending landmark accrual | done | `init.server.luau`에 landmark tier helper(`getEndingLandmarkTier*`), village-global tier sign/hint copy, restoration/tribute Tier 1/2 prop visibility, 그리고 basket/pantry/relief + road/gate/route까지 3지점 전부의 landmark accrual 연출이 구현됨 | 유지, Studio에서 각 tier 가독성과 충돌만 최종 확인 | P2 |
+| MG-PM-013 | Post-ending rare event variants | 2026-03-28 post-ending rare event variants | done | `init.server.luau`에 branch별 희귀 이벤트 테이블과 `getEndingRareEvent`/`applyEndingRareEventRewards`가 추가되어, `COMPLETE` 이후 반복 심부름 4/7/10회차에 restoration/tribute 톤별 추가 dialogue/effect/소규모 보너스가 안전하게 발생함 | 유지, Studio에서 희귀 이벤트 빈도와 문구 체감만 최종 확인 | P2 |
 
 ## NPC / World
 

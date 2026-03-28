@@ -278,6 +278,142 @@ local ENDING_WITNESSES = {
 	},
 }
 
+local ENDING_RARE_EVENTS = {
+	restoration = {
+		[4] = {
+			{
+				title = "Pantry Whisper",
+				body = "A neighbor quietly leaves a seed back with the shared stores.",
+				speaker = "Well Neighbor",
+				lines = {
+					"Someone tucked a good seed beside the pantry after your last drop.",
+					"That is how shared harvests stop feeling symbolic and start feeding tomorrow.",
+				},
+				color = Color3.fromRGB(142, 220, 116),
+				kind = "restoration",
+				duration = 3.8,
+				pulseCount = 1,
+				rewards = { seeds = 1 },
+			},
+		},
+		[7] = {
+			{
+				title = "Relief Passed On",
+				body = "The village answers your shared harvest with a little returned coin.",
+				speaker = "Yard Helper",
+				lines = {
+					"A family took what it needed and still left a coin under the cloth for the next grower.",
+					"That is the kind of gratitude that turns a patch into a real village habit.",
+				},
+				color = Color3.fromRGB(142, 220, 116),
+				kind = "restoration",
+				duration = 3.8,
+				pulseCount = 1,
+				rewards = { coins = 1 },
+				pointId = "yardRelief",
+			},
+			{
+				title = "Basket Note",
+				body = "Someone at the center path leaves a quiet thank-you with the basket.",
+				speaker = "Shared Basket",
+				lines = {
+					"The next passerby left a folded thanks and a coin beside the basket.",
+					"A restored valley does not cheer loudly. It keeps answering kindness with enough to continue.",
+				},
+				color = Color3.fromRGB(142, 220, 116),
+				kind = "restoration",
+				duration = 3.8,
+				pulseCount = 1,
+				rewards = { coins = 1 },
+			},
+		},
+		[10] = {
+			{
+				title = "Abundance Settles In",
+				body = "The shared route feels stocked enough to return seed and coin together.",
+				speaker = "Village",
+				lines = {
+					"The village does not seem surprised by shared stores anymore.",
+					"That may be the clearest sign that restoration has stopped being a speech and become routine.",
+				},
+				color = Color3.fromRGB(142, 220, 116),
+				kind = "celebration",
+				duration = 4.2,
+				pulseCount = 2,
+				rewards = { seeds = 1, coins = 1 },
+				requiredTier = 2,
+			},
+		},
+	},
+	tribute = {
+		[4] = {
+			{
+				title = "Inspection Slip",
+				body = "The road clerk files your due cleanly and returns a stamped coin.",
+				speaker = "Road Clerk",
+				lines = {
+					"The ledger closes with unusual satisfaction and one inspection coin slides back your way.",
+					"Tribute rarely says thank you, so it settles for documentation.",
+				},
+				color = Color3.fromRGB(226, 117, 94),
+				kind = "warning",
+				duration = 3.8,
+				pulseCount = 1,
+				rewards = { coins = 1 },
+			},
+		},
+		[7] = {
+			{
+				title = "Gate Seal",
+				body = "Nolbu's gate adds a stricter mark and pays one extra inspection coin.",
+				speaker = "Gate Watcher",
+				lines = {
+					"The tally at the gate is sharper today. Someone wanted your due to look exemplary.",
+					"The road has a way of rewarding the people who help it feel inevitable.",
+				},
+				color = Color3.fromRGB(226, 117, 94),
+				kind = "warning",
+				duration = 3.8,
+				pulseCount = 1,
+				rewards = { coins = 1 },
+				pointId = "gateTally",
+			},
+			{
+				title = "Route Compliance",
+				body = "The roadside marker records your consistency and returns a small coin.",
+				speaker = "Route Marker",
+				lines = {
+					"Even the marker seems practiced now. Your due disappears into the road and a small coin comes back out.",
+					"That is what efficiency looks like when it has been asked to replace warmth.",
+				},
+				color = Color3.fromRGB(226, 117, 94),
+				kind = "warning",
+				duration = 3.8,
+				pulseCount = 1,
+				rewards = { coins = 1 },
+				pointId = "routeMarker",
+			},
+		},
+		[10] = {
+			{
+				title = "Office of the Road",
+				body = "The due now feels institutional enough to return an official inspection coin.",
+				speaker = "Village",
+				lines = {
+					"No one even blinks when the road takes its due now.",
+					"That may be the clearest sign that tribute has turned itself into ordinary architecture.",
+				},
+				color = Color3.fromRGB(226, 117, 94),
+				kind = "warning",
+				duration = 4.2,
+				pulseCount = 2,
+				rewards = { coins = 1 },
+				requiredTier = 2,
+			},
+		},
+	},
+}
+
 local playerData = {}
 
 local villageLayout = {
@@ -669,6 +805,42 @@ local function canUseEndingErrand(player, errandKind, pointId)
 	return true, nil, activePoint
 end
 
+local function getEndingRareEvent(profile, errandKind, activePoint)
+	local count = errandKind == "restoration" and profile.sharedHarvestDrops or profile.tributeDuesPaid
+	local branchEvents = ENDING_RARE_EVENTS[errandKind]
+	local candidates = branchEvents and branchEvents[count]
+	if not candidates then
+		return nil
+	end
+
+	local tier = getEndingLandmarkTier(profile, errandKind)
+	local filtered = {}
+	for _, event in ipairs(candidates) do
+		local pointOk = not event.pointId or (activePoint and activePoint.id == event.pointId)
+		local tierOk = not event.requiredTier or tier >= event.requiredTier
+		if pointOk and tierOk then
+			table.insert(filtered, event)
+		end
+	end
+	if #filtered == 0 then
+		return nil
+	end
+
+	return filtered[((count - 1) % #filtered) + 1]
+end
+
+local function applyEndingRareEventRewards(profile, rareEvent)
+	if not rareEvent or not rareEvent.rewards then
+		return
+	end
+	if rareEvent.rewards.seeds then
+		profile.seeds += rareEvent.rewards.seeds
+	end
+	if rareEvent.rewards.coins then
+		profile.coins += rareEvent.rewards.coins
+	end
+end
+
 local function completeEndingErrand(player, errandKind, pointId)
 	local profile = getPlayerProfile(player)
 	local ok, message, activePoint = canUseEndingErrand(player, errandKind, pointId)
@@ -734,6 +906,24 @@ local function completeEndingErrand(player, errandKind, pointId)
 		end
 	end
 
+	local rareEvent = getEndingRareEvent(profile, errandKind, activePoint)
+	local rareRewardSummary = nil
+	if rareEvent then
+		applyEndingRareEventRewards(profile, rareEvent)
+		if rareEvent.rewards then
+			local bonusSummary = {}
+			if rareEvent.rewards.coins then
+				table.insert(bonusSummary, string.format("+%d bonus coin%s", rareEvent.rewards.coins, rareEvent.rewards.coins == 1 and "" or "s"))
+			end
+			if rareEvent.rewards.seeds then
+				table.insert(bonusSummary, string.format("+%d seed%s", rareEvent.rewards.seeds, rareEvent.rewards.seeds == 1 and "" or "s"))
+			end
+			if #bonusSummary > 0 then
+				rareRewardSummary = table.concat(bonusSummary, " · ")
+			end
+		end
+	end
+
 	local rotationStepField = errandKind == "restoration" and "restorationRotationStep" or "tributeRotationStep"
 	profile[rotationStepField] += 1
 	if profile[rotationStepField] >= ENDING_SUPPORT_ROTATION_THRESHOLD then
@@ -743,7 +933,7 @@ local function completeEndingErrand(player, errandKind, pointId)
 
 	syncPlayerAttributes(player)
 	refreshVillageSigns()
-	return true, rewardSummary, ambientLineKey, milestoneLine, milestoneEffect, activePoint, rotatedFromPoint, rotatedToPoint
+	return true, rewardSummary, ambientLineKey, milestoneLine, milestoneEffect, activePoint, rotatedFromPoint, rotatedToPoint, rareEvent, rareRewardSummary
 end
 
 local function startPresentation(player)
@@ -2423,7 +2613,7 @@ nolbuPrompt.Triggered:Connect(function(player)
 end)
 
 local function handleEndingSupportPrompt(player, errandKind, pointId, speaker, accent, successTitle, successBody, ambientLines)
-	local ok, message, rewardSummary, ambientLineKey, milestoneLine, milestoneEffect, _, rotatedFromPoint, rotatedToPoint = completeEndingErrand(player, errandKind, pointId)
+	local ok, message, rewardSummary, ambientLineKey, milestoneLine, milestoneEffect, _, rotatedFromPoint, rotatedToPoint, rareEvent, rareRewardSummary = completeEndingErrand(player, errandKind, pointId)
 	if not ok then
 		showDialogue(player, speaker, { message }, accent)
 		return
@@ -2435,6 +2625,12 @@ local function handleEndingSupportPrompt(player, errandKind, pointId, speaker, a
 	else
 		showEffect(player, errandKind == "restoration" and "restoration" or "warning", successTitle, string.format("%s · %s", rewardSummary, successBody), accent, 3.6, 1)
 		showDialogue(player, speaker, getNextAmbientLine(player, ambientLineKey, ambientLines), accent)
+	end
+
+	if rareEvent then
+		local rareBody = rareRewardSummary and string.format("%s · %s", rareRewardSummary, rareEvent.body) or rareEvent.body
+		showEffect(player, rareEvent.kind or (errandKind == "restoration" and "restoration" or "warning"), rareEvent.title, rareBody, rareEvent.color or accent, rareEvent.duration or 3.8, rareEvent.pulseCount or 1)
+		showDialogue(player, rareEvent.speaker or speaker, rareEvent.lines, rareEvent.color or accent)
 	end
 
 	if rotatedToPoint then
