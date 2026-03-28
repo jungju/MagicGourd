@@ -45,6 +45,8 @@ function UpgradeService:start(remotes)
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("Need %d money for %s", cost, displayName),
 					detail = "Break another pumpkin or two, then come back to the plaza.",
+					worldText = string.format("Need %d", cost),
+					worldPosition = promptPosition,
 					tone = "warn",
 					intensity = "T1",
 				})
@@ -52,6 +54,8 @@ function UpgradeService:start(remotes)
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("%s is maxed", displayName),
 					detail = "Buy a different upgrade or keep the loop moving.",
+					worldText = "MAX",
+					worldPosition = promptPosition,
 					tone = "warn",
 					intensity = "T1",
 				})
