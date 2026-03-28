@@ -802,6 +802,11 @@ local function canUseEndingErrand(player, errandKind, pointId)
 			and "Let the basket settle for a breath before you leave another shared harvest."
 			or "The tally stand is still being marked. Give it a breath before the next due."
 	end
+	if profile.presentationBusy then
+		return false, errandKind == "restoration"
+			and "Let this shared harvest land before you bring the next one."
+			or "Let the road finish marking this due before you count another."
+	end
 	return true, nil, activePoint
 end
 
@@ -2619,35 +2624,86 @@ local function handleEndingSupportPrompt(player, errandKind, pointId, speaker, a
 		return
 	end
 
+	local beats = {}
 	if milestoneEffect then
-		showEffect(player, milestoneEffect.kind, milestoneEffect.title, milestoneEffect.body, milestoneEffect.color, milestoneEffect.duration, milestoneEffect.pulseCount)
-		showDialogue(player, speaker, milestoneLine, accent)
+		table.insert(beats, {
+			effect = {
+				kind = milestoneEffect.kind,
+				title = milestoneEffect.title,
+				body = milestoneEffect.body,
+				color = milestoneEffect.color,
+				duration = milestoneEffect.duration,
+				pulseCount = milestoneEffect.pulseCount,
+			},
+			dialogue = {
+				speaker = speaker,
+				lines = milestoneLine,
+				accent = accent,
+			},
+			delay = 0.25,
+		})
 	else
-		showEffect(player, errandKind == "restoration" and "restoration" or "warning", successTitle, string.format("%s · %s", rewardSummary, successBody), accent, 3.6, 1)
-		showDialogue(player, speaker, getNextAmbientLine(player, ambientLineKey, ambientLines), accent)
+		table.insert(beats, {
+			effect = {
+				kind = errandKind == "restoration" and "restoration" or "warning",
+				title = successTitle,
+				body = string.format("%s · %s", rewardSummary, successBody),
+				color = accent,
+				duration = 3.6,
+				pulseCount = 1,
+			},
+			dialogue = {
+				speaker = speaker,
+				lines = getNextAmbientLine(player, ambientLineKey, ambientLines),
+				accent = accent,
+			},
+			delay = 0.25,
+		})
 	end
 
 	if rareEvent then
 		local rareBody = rareRewardSummary and string.format("%s · %s", rareRewardSummary, rareEvent.body) or rareEvent.body
-		showEffect(player, rareEvent.kind or (errandKind == "restoration" and "restoration" or "warning"), rareEvent.title, rareBody, rareEvent.color or accent, rareEvent.duration or 3.8, rareEvent.pulseCount or 1)
-		showDialogue(player, rareEvent.speaker or speaker, rareEvent.lines, rareEvent.color or accent)
+		table.insert(beats, {
+			effect = {
+				kind = rareEvent.kind or (errandKind == "restoration" and "restoration" or "warning"),
+				title = rareEvent.title,
+				body = rareBody,
+				color = rareEvent.color or accent,
+				duration = rareEvent.duration or 3.8,
+				pulseCount = rareEvent.pulseCount or 1,
+			},
+			dialogue = {
+				speaker = rareEvent.speaker or speaker,
+				lines = rareEvent.lines,
+				accent = rareEvent.color or accent,
+			},
+			delay = 0.2,
+		})
 	end
 
 	if rotatedToPoint then
-		showEffect(
-			player,
-			errandKind == "restoration" and "restoration" or "warning",
-			errandKind == "restoration" and "Shared Route Shifts" or "Road Count Shifts",
-			string.format("%s now points toward %s.", rotatedFromPoint and rotatedFromPoint.name or "The village", rotatedToPoint.name),
-			accent,
-			3.4,
-			1
-		)
-		showDialogue(player, speaker, {
-			string.format("This stop is settled for now. Take the next one to %s.", rotatedToPoint.name),
-			rotatedToPoint.hint,
-		}, accent)
+		table.insert(beats, {
+			effect = {
+				kind = errandKind == "restoration" and "restoration" or "warning",
+				title = errandKind == "restoration" and "Shared Route Shifts" or "Road Count Shifts",
+				body = string.format("%s now points toward %s.", rotatedFromPoint and rotatedFromPoint.name or "The village", rotatedToPoint.name),
+				color = accent,
+				duration = 3.4,
+				pulseCount = 1,
+			},
+			dialogue = {
+				speaker = speaker,
+				lines = {
+					string.format("This stop is settled for now. Take the next one to %s.", rotatedToPoint.name),
+					rotatedToPoint.hint,
+				},
+				accent = accent,
+			},
+			delay = 0.2,
+		})
 	end
+
+	playPresentationSequence(player, beats)
 end
 
 restorationErrandPrompt.Triggered:Connect(function(player)
