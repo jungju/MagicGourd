@@ -3,7 +3,9 @@ print("MagicGourd arcade client started")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -204,10 +206,14 @@ local function getAttribute(name)
 	return player:GetAttribute(name)
 end
 
+local function getFeedbackColors(tone)
+	return feedbackColors[tone] or feedbackColors.info
+end
+
 local function showFeedback(text, tone, detail)
 	feedbackToken += 1
 	local activeToken = feedbackToken
-	local colors = feedbackColors[tone] or feedbackColors.info
+	local colors = getFeedbackColors(tone)
 
 	if detail and detail ~= "" then
 		feedbackLabel.Text = string.format("%s\n%s", text or "", detail)
@@ -230,6 +236,62 @@ local function showFeedback(text, tone, detail)
 
 		feedbackLabel.Visible = false
 		feedbackLabel.Text = ""
+	end)
+end
+
+local function showWorldPopup(text, tone, worldPosition)
+	if typeof(worldPosition) ~= "Vector3" or text == nil or text == "" then
+		return
+	end
+
+	local colors = getFeedbackColors(tone)
+	local popupPart = Instance.new("Part")
+	popupPart.Name = "ArcadeFeedbackAnchor"
+	popupPart.Anchored = true
+	popupPart.CanCollide = false
+	popupPart.CanTouch = false
+	popupPart.CanQuery = false
+	popupPart.Transparency = 1
+	popupPart.Size = Vector3.new(0.2, 0.2, 0.2)
+	popupPart.CFrame = CFrame.new(worldPosition + Vector3.new(0, 3.6, 0))
+	popupPart.Parent = Workspace
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "ArcadeFeedbackBillboard"
+	billboard.Size = UDim2.fromOffset(170, 46)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 0, 0)
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = 110
+	billboard.Parent = popupPart
+
+	local label = Instance.new("TextLabel")
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextStrokeTransparency = 0.4
+	label.TextStrokeColor3 = Color3.new(0, 0, 0)
+	label.TextColor3 = colors.text
+	label.Text = text
+	label.Parent = billboard
+
+	local riseTween = TweenService:Create(
+		popupPart,
+		TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ CFrame = popupPart.CFrame + Vector3.new(0, 2.2, 0) }
+	)
+	local fadeTween = TweenService:Create(
+		label,
+		TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ TextTransparency = 1, TextStrokeTransparency = 1 }
+	)
+
+	riseTween:Play()
+	fadeTween:Play()
+	fadeTween.Completed:Connect(function()
+		popupPart:Destroy()
 	end)
 end
 
@@ -329,6 +391,7 @@ feedbackRemote.OnClientEvent:Connect(function(payload)
 	end
 
 	showFeedback(payload.text, payload.tone, payload.detail)
+	showWorldPopup(payload.worldText or payload.text, payload.tone, payload.worldPosition)
 end)
 
 refreshHud()
