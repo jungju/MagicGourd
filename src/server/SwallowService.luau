@@ -17,6 +17,7 @@ local function createPrompt(parent, actionText, objectText, maxDistance)
 	prompt.MaxActivationDistance = maxDistance
 	prompt.RequiresLineOfSight = false
 	prompt.HoldDuration = 0
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
 	prompt.Parent = parent
 	return prompt
 end
