@@ -145,12 +145,13 @@ function PumpkinService:_useSeed(player)
 			worldText = "Planted",
 			worldPosition = rootPart.Position,
 			tone = "info",
+			intensity = "T1",
 		})
 	end
 
 	task.delay(self.config.Pumpkins.Lifetime, function()
 		if self.pumpkins[pumpkinId] then
-			self:_destroyPumpkin(pumpkinId)
+			self:_destroyPumpkin(pumpkinId, "expired")
 		end
 	end)
 end
@@ -188,6 +189,7 @@ function PumpkinService:_hitPumpkin(player, pumpkinId)
 				worldText = string.format("+%d Money", self.config.Pumpkins.Reward),
 				worldPosition = root.Position,
 				tone = "good",
+				intensity = "T3",
 			})
 		end
 		self:_destroyPumpkin(pumpkinId)
@@ -201,11 +203,12 @@ function PumpkinService:_hitPumpkin(player, pumpkinId)
 			worldText = currentHealth == 1 and "Final Hit" or string.format("%d Left", currentHealth),
 			worldPosition = root.Position,
 			tone = "info",
+			intensity = "T2",
 		})
 	end
 end
 
-function PumpkinService:_destroyPumpkin(pumpkinId)
+function PumpkinService:_destroyPumpkin(pumpkinId, reason)
 	local pumpkin = self.pumpkins[pumpkinId]
 	if not pumpkin then
 		return
@@ -219,6 +222,17 @@ function PumpkinService:_destroyPumpkin(pumpkinId)
 		if not next(ownerPumpkins) then
 			self.playerPumpkins[pumpkin.owner] = nil
 		end
+	end
+
+	if reason == "expired" and self.feedbackRemote and pumpkin.owner and pumpkin.owner.Parent then
+		self.feedbackRemote:FireClient(pumpkin.owner, {
+			text = "Pumpkin faded.",
+			detail = "Break planted pumpkins before they time out, or plant again when you are ready.",
+			worldText = "Faded",
+			worldPosition = pumpkin.root and pumpkin.root.Position or nil,
+			tone = "warn",
+			intensity = "T1",
+		})
 	end
 
 	if pumpkin.model then
