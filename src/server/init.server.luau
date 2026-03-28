@@ -910,6 +910,38 @@ local function resolvePlacementSpec(def)
 	}
 end
 
+local function getDirectionalSupportDistance(instance, origin, direction)
+	local unitDirection = direction.Magnitude > 0 and direction.Unit or Vector3.new(0, 0, 1)
+	local furthest = 0
+	local foundPart = false
+
+	local function considerPart(part)
+		local relative = part.Position - origin
+		local signedCenterDistance = relative:Dot(unitDirection)
+		local halfSize = part.Size * 0.5
+		local reach = math.abs(unitDirection:Dot(part.CFrame.XVector)) * halfSize.X
+		reach += math.abs(unitDirection:Dot(part.CFrame.YVector)) * halfSize.Y
+		reach += math.abs(unitDirection:Dot(part.CFrame.ZVector)) * halfSize.Z
+		local extent = signedCenterDistance + reach
+		if not foundPart or extent > furthest then
+			furthest = extent
+			foundPart = true
+		end
+	end
+
+	if instance:IsA("Model") then
+		for _, descendant in ipairs(instance:GetDescendants()) do
+			if descendant:IsA("BasePart") then
+				considerPart(descendant)
+			end
+		end
+	elseif instance:IsA("BasePart") then
+		considerPart(instance)
+	end
+
+	return foundPart and furthest or 0
+end
+
 local function stampHousePlacementAttributes(instance, placement, boxCf, boxSize)
 	if not placement then
 		return
@@ -938,10 +970,12 @@ local function stampHousePlacementAttributes(instance, placement, boxCf, boxSize
 
 	local clearance = placement.frontClearance or 0
 	local frontDirection = CFrame.Angles(0, math.rad(placement.facingYaw or 0), 0).LookVector
-	local frontPosition = boxCf.Position + (frontDirection * ((boxSize.Z / 2) + clearance))
+	local frontDistance = getDirectionalSupportDistance(instance, boxCf.Position, frontDirection)
+	local frontPosition = boxCf.Position + (frontDirection * (frontDistance + clearance))
 	instance:SetAttribute("FrontX", frontPosition.X)
 	instance:SetAttribute("FrontY", frontPosition.Y)
 	instance:SetAttribute("FrontZ", frontPosition.Z)
+	instance:SetAttribute("FrontExtent", frontDistance)
 end
 
 local function createFallbackHouse(def)
