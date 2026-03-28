@@ -13,19 +13,11 @@ local UpgradeService = require(script.Parent:WaitForChild("UpgradeService"))
 local ArcadeRuntime = {}
 
 local function ensureRemotes(sharedFolder)
-	local allowedRemotes = {}
 	local remotes = {}
 
-	for _, remoteName in pairs(ArcadeConfig.RemoteNames) do
-		allowedRemotes[remoteName] = true
-	end
-
-	for _, child in ipairs(sharedFolder:GetChildren()) do
-		if child:IsA("RemoteEvent") and not allowedRemotes[child.Name] then
-			child:Destroy()
-		end
-	end
-
+	-- Only ensure the arcade loop remotes exist.
+	-- Do not delete unrelated Shared remotes here: Studio helpers, migration shims,
+	-- or parallel experiments may coexist during refinement passes.
 	for key, remoteName in pairs(ArcadeConfig.RemoteNames) do
 		local remote = sharedFolder:FindFirstChild(remoteName)
 		if not remote then
