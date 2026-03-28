@@ -1,6 +1,46 @@
 local Players = game:GetService("Players")
 
 local GoblinService = {}
+
+local function getDangerBounds(dangerZone, padding, invertPadding)
+	if type(dangerZone) ~= "table" then
+		return nil
+	end
+
+	local center = dangerZone.center
+	local size = dangerZone.size
+	if typeof(center) ~= "Vector3" or typeof(size) ~= "Vector3" then
+		return nil
+	end
+
+	local halfSize = size * 0.5
+	local frontPadding = 0
+	local backPadding = 0
+	local sidePadding = 0
+
+	if type(padding) == "table" then
+		frontPadding = math.max(tonumber(padding.Front) or 0, 0)
+		backPadding = math.max(tonumber(padding.Back) or 0, 0)
+		sidePadding = math.max(tonumber(padding.Side) or 0, 0)
+	else
+		local uniformPadding = math.max(tonumber(padding) or 0, 0)
+		frontPadding = uniformPadding
+		backPadding = uniformPadding
+		sidePadding = uniformPadding
+	end
+
+	local direction = invertPadding and 1 or -1
+	local minX = center.X - halfSize.X + (frontPadding * direction)
+	local maxX = center.X + halfSize.X - (backPadding * direction)
+	local minZ = center.Z - halfSize.Z + (sidePadding * direction)
+	local maxZ = center.Z + halfSize.Z - (sidePadding * direction)
+
+	if minX > maxX or minZ > maxZ then
+		return nil
+	end
+
+	return minX, maxX, minZ, maxZ
+end
 GoblinService.__index = GoblinService
 
 local function getPlayerFromHit(hit)
@@ -181,39 +221,39 @@ function GoblinService:_isInsideExpandedDangerZone(position)
 	local dangerZone = self.config.World
 		and self.config.World.Zones
 		and self.config.World.Zones.NolbuDanger
-	if typeof(position) ~= "Vector3" or type(dangerZone) ~= "table" then
+	if typeof(position) ~= "Vector3" then
 		return false
 	end
 
-	local center = dangerZone.center
-	local size = dangerZone.size
-	if typeof(center) ~= "Vector3" or typeof(size) ~= "Vector3" then
+	local minX, maxX, minZ, maxZ = getDangerBounds(dangerZone, self.config.Goblins.ChaseZonePadding or 0, false)
+	if not minX then
 		return false
 	end
-
-	local padding = self.config.Goblins.ChaseZonePadding or 0
-	local halfSize = size * 0.5
-	local frontPadding = 0
-	local backPadding = 0
-	local sidePadding = 0
-
-	if type(padding) == "table" then
-		frontPadding = math.max(tonumber(padding.Front) or 0, 0)
-		backPadding = math.max(tonumber(padding.Back) or 0, 0)
-		sidePadding = math.max(tonumber(padding.Side) or 0, 0)
-	else
-		local uniformPadding = math.max(tonumber(padding) or 0, 0)
-		frontPadding = uniformPadding
-		backPadding = uniformPadding
-		sidePadding = uniformPadding
-	end
-
-	local minX = center.X - halfSize.X - frontPadding
-	local maxX = center.X + halfSize.X + backPadding
-	local minZ = center.Z - halfSize.Z - sidePadding
-	local maxZ = center.Z + halfSize.Z + sidePadding
 
 	return position.X >= minX and position.X <= maxX and position.Z >= minZ and position.Z <= maxZ
+end
+
+function GoblinService:_getIdleRoamTarget(goblin)
+	local roamOffset = Vector3.new(
+		self.random:NextNumber(-self.config.Goblins.LeashRadius, self.config.Goblins.LeashRadius),
+		0,
+		self.random:NextNumber(-self.config.Goblins.LeashRadius, self.config.Goblins.LeashRadius)
+	)
+	local roamTarget = goblin.home + roamOffset
+
+	local dangerZone = self.config.World
+		and self.config.World.Zones
+		and self.config.World.Zones.NolbuDanger
+	local minX, maxX, minZ, maxZ = getDangerBounds(dangerZone, self.config.Goblins.IdleRoamInset or 0, true)
+	if minX then
+		roamTarget = Vector3.new(
+			math.clamp(roamTarget.X, minX, maxX),
+			roamTarget.Y,
+			math.clamp(roamTarget.Z, minZ, maxZ)
+		)
+	end
+
+	return Vector3.new(roamTarget.X, goblin.root.Position.Y, roamTarget.Z)
 end
 
 function GoblinService:_getNextDestination(goblin)
@@ -238,13 +278,7 @@ function GoblinService:_getNextDestination(goblin)
 		return Vector3.new(closestRoot.Position.X, goblin.root.Position.Y, closestRoot.Position.Z)
 	end
 
-	local roamOffset = Vector3.new(
-		self.random:NextNumber(-self.config.Goblins.LeashRadius, self.config.Goblins.LeashRadius),
-		0,
-		self.random:NextNumber(-self.config.Goblins.LeashRadius, self.config.Goblins.LeashRadius)
-	)
-	local roamTarget = goblin.home + roamOffset
-	return Vector3.new(roamTarget.X, goblin.root.Position.Y, roamTarget.Z)
+	return self:_getIdleRoamTarget(goblin)
 end
 
 return GoblinService

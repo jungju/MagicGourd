@@ -190,6 +190,11 @@ local config = {
 			Back = 10,
 			Side = 8,
 		},
+		IdleRoamInset = {
+			Front = 10,
+			Back = 4,
+			Side = 5,
+		},
 		RetargetInterval = 0.75,
 		TouchSlowDuration = 2.5,
 		TouchSlowFactor = 0.55,
