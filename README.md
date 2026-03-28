@@ -34,7 +34,8 @@ Roblox game project powered by Rojo.
   10. receive Heungbu's blessed seed
   11. grow and harvest the true magic gourd
   12. trigger Heungbu's magic payoff
-  13. hear Nolbu's retaliation and clear brambles from the patch
+  13. hear Nolbu's retaliation, clear brambles from the patch, and repair the damaged yard marker
+  14. resolve the ending, then replay it through a branch-specific shared basket or road-due hand-in loop
 - A lightweight client HUD shows the current quest title, objective, and normal/blessed crop counts.
 - Dialogue popups fire from server-side interactions so the story stays readable even with basic placeholder assets.
 - Story beat banners and flash feedback make the blessed seed payoff and retaliation more visible.
@@ -80,6 +81,12 @@ This is intended to keep the project honest about what is actually finished, wha
 - Long-running orchestration is defined in `LOOP_AGENT.md`.
 - Loop Agent rotates through Design -> PM -> Dev -> Review.
 - This is the repo's default autonomous continuation mode when ongoing progress is desired.
+
+## Meta Agent Workflow
+
+- Meta/pipeline upgrade workflow is defined in `META_AGENT.md`.
+- Meta Agent scans the agent system itself and improves the pipeline.
+- It should run in maintenance mode so it does not interfere with active feature-development windows.
 
 ## Run
 

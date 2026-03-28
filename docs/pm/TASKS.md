@@ -19,8 +19,10 @@
 | MG-PM-003 | Nolbu tribute quest | current quest slice | done | Nolbu tribute 단계 및 전달 흐름 문서화/구현됨 | 유지 | P1 |
 | MG-PM-004 | Swallow injury / herb healing slice | swallow healing story slice | done | 퀘스트 단계와 약초 인벤토리, 제비 단계 추가됨 | 유지 | P1 |
 | MG-PM-005 | Blessed seed / true magic gourd payoff | 2026-03-28 blessed seed payoff design | done | 설계 문서와 함께 blessed seed, golden vine, true magic gourd harvest, Heungbu payoff, HUD/effect 반영 구현됨 | 유지, Studio 체감만 추가 검증 | P1 |
-| MG-PM-006 | Nolbu retaliation after magic payoff | 2026-03-28 blessed seed payoff design | done | Nolbu jealousy 대화, patch bramble sabotage, clear-brambles recovery 단계가 구현됨 | 유지, 후속 retaliation 확장만 검토 | P1 |
+| MG-PM-006 | Nolbu retaliation after magic payoff | 2026-03-28 blessed seed payoff design | done | Nolbu jealousy 대화, patch bramble sabotage, clear-brambles recovery 단계가 구현됨 | 유지 | P1 |
 | MG-PM-007 | Ending / branching outcome structure | 2026-03-28 branching ending structure | done | `FINAL_AUDIENCE -> CHOOSE_ENDING -> ENDING_RESTORATION/ENDING_TRIBUTE -> COMPLETE` 흐름, 선택 UI RemoteEvent, ending 결과/HUD 힌트/간판 반영 구현됨 | 유지, Studio 체감만 추가 검증 | P1 |
+| MG-PM-008 | Retaliation pressure expansion | 2026-03-28 retaliation pressure pass | done | retaliation 이후 `CLEAR_BRAMBLES -> STABILIZE_VALLEY -> FINAL_AUDIENCE` 분기, Heungbu yard marker 파손/수리 연출, 표지판/패치 카피 갱신, 복구 프롬프트 및 보상 흐름이 `init.server.luau`에 구현됨 | 유지, Studio에서 yard marker 가시성/동선만 최종 확인 | P1 |
+| MG-PM-009 | Post-ending replay variations | 2026-03-28 post-ending replay variations | done | `COMPLETE` 이후 restoration용 shared basket, tribute용 road-due stand, 1-gourd hand-in, modest coin 보상, 분기 대사/간판/카운터가 `init.server.luau`에 구현됨 | 유지, Studio에서 위치/가독성만 최종 확인 | P1 |
 
 ## NPC / World
 
@@ -31,6 +33,7 @@
 | MG-PM-103 | House placement/orientation final polish | house setup goal | rebuild | pad/yaw 기반 house placement contract, bottom anchoring, front-anchor metadata, and prompt/tribute alignment logic are now implemented in server code; final visual confirmation in Studio is still pending | Run one Studio visual pass, then close if imported houses read upright and grounded | P1 |
 | MG-PM-104 | World storytelling props | village decor slice | done | 울타리/나무/돌/등불 및 추가 마당 연출 반영 | 유지 | P2 |
 | MG-PM-105 | Swallow/nest scene staging | swallow healing slice | done | 담벼락 근처 제비/둥지 연출 추가됨 | 유지 | P2 |
+| MG-PM-106 | Post-ending ambient follow-through | 2026-03-28 post-ending ambient followthrough | done | `init.server.luau`에 ambient ending mode, 엔딩별 패치 무드/표지판 문구, Heungbu/Nolbu/tribute basket 분기 대사, restoration/tribute accent prop 가시성 제어가 구현됨 | 유지, Studio 체감만 추가 검증 | P2 |
 
 ## UX / Interface
 
@@ -64,10 +67,8 @@
 
 ### Rebuild / revisit soon
 - 실제 집 배치/방향/크기 최종 튜닝
-- 대화창 실제 화면 가독성 조정
 
 ### Next new work to prioritize
-1. house placement/orientation final polish
-2. dialogue readability / sizing polish
-3. retaliation expansion beyond the current sabotage beat
-4. richer post-ending ambient follow-through / replay variations
+1. one Studio/MCP validation pass across house placement, dialogue readability, ending aftermath feel, post-ending errand readability, and retaliation yard-marker readability
+2. optional retaliation replay variation (rotate support-point landmark choices) if the current marker pass feels solid in Studio
+3. richer post-ending replay extensions beyond the current single shared-basket / road-due loop (location rotation, rare seed return, branch-specific flavor escalation)
