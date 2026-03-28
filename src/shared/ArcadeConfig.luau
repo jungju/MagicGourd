@@ -38,7 +38,7 @@ local config = {
 				color = Color3.fromRGB(167, 147, 109),
 				material = Enum.Material.Slate,
 				title = "Central Plaza",
-				body = "Buy upgrades here. Reset your pace before the next run.",
+				body = "Buy upgrades, then reset for the next run.",
 			},
 			HeungbuVillage = {
 				center = Vector3.new(-72, 0.5, 24),
@@ -46,7 +46,7 @@ local config = {
 				color = Color3.fromRGB(111, 145, 88),
 				material = Enum.Material.Grass,
 				title = "Heungbu Village",
-				body = "Heal injured swallows here to earn seeds.",
+				body = "Heal swallows here for seeds.",
 			},
 			NolbuDanger = {
 				center = Vector3.new(72, 0.5, 24),
@@ -54,7 +54,7 @@ local config = {
 				color = Color3.fromRGB(82, 72, 76),
 				material = Enum.Material.Slate,
 				title = "Nolbu Area",
-				body = "Goblins slow careless players. Enter for risk, not safety.",
+				body = "Goblins slow greedy pushes.",
 			},
 		},
 		Paths = {
@@ -83,28 +83,28 @@ local config = {
 				position = Vector3.new(-24, 1.8, 20),
 				color = Color3.fromRGB(214, 196, 124),
 				title = "Village First",
-				body = "Start left: heal swallows for seeds.",
+				body = "Start left: heal for seeds.",
 			},
 			{
 				name = "WorkLaneSign",
 				position = Vector3.new(0, 1.8, 33),
 				color = Color3.fromRGB(222, 170, 92),
 				title = "Work Lane",
-				body = "Plant here, then break your pumpkin for money.",
+				body = "Plant and break here for money.",
 			},
 			{
 				name = "DangerGateSign",
 				position = Vector3.new(40, 1.8, 20),
 				color = Color3.fromRGB(226, 135, 102),
 				title = "Slow Zone",
-				body = "Goblins punish greedy pushes. Back off and reset if tagged.",
+				body = "Goblins punish greedy pushes.",
 			},
 			{
 				name = "RetreatLaneSign",
 				position = Vector3.new(28, 1.8, 29),
 				color = Color3.fromRGB(237, 195, 123),
 				title = "Reset Lane",
-				body = "If you get clipped, peel back toward the plaza side before re-entering.",
+				body = "Tagged? Peel back toward the plaza.",
 			},
 		},
 		WorkLanePosts = {
@@ -114,13 +114,13 @@ local config = {
 		UpgradePads = {
 			MoveSpeed = {
 				displayName = "Footwork",
-				body = "Move between loop steps faster.",
+				body = "Run faster between loop steps.",
 				position = Vector3.new(-13, 1.3, 18),
 				color = Color3.fromRGB(93, 174, 214),
 			},
 			AttackSpeed = {
 				displayName = "Quick Hands",
-				body = "Break pumpkins in less time.",
+				body = "Break pumpkins faster.",
 				position = Vector3.new(0, 1.3, 18),
 				color = Color3.fromRGB(223, 171, 88),
 			},

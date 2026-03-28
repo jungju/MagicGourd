@@ -35,19 +35,63 @@ local function createPrompt(parent, actionText, objectText, maxDistance)
 	return prompt
 end
 
-local function attachBillboard(part, title, body, color)
+local BILLBOARD_PRESETS = {
+	Loop = {
+		size = Vector2.new(232, 86),
+		offset = Vector3.new(0, 5.4, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.18,
+		strokeThickness = 2.25,
+		titleHeight = 24,
+		titleSize = 20,
+		bodyY = 34,
+		bodyTextSize = 15,
+		bodyColor = Color3.fromRGB(234, 228, 216),
+		bodyTransparency = 0,
+	},
+	Zone = {
+		size = Vector2.new(214, 78),
+		offset = Vector3.new(0, 5, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.26,
+		strokeThickness = 2,
+		titleHeight = 22,
+		titleSize = 17,
+		bodyY = 31,
+		bodyTextSize = 13,
+		bodyColor = Color3.fromRGB(223, 217, 204),
+		bodyTransparency = 0.06,
+	},
+	Plaza = {
+		size = Vector2.new(192, 68),
+		offset = Vector3.new(0, 4.7, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.34,
+		strokeThickness = 1.75,
+		titleHeight = 20,
+		titleSize = 15,
+		bodyY = 29,
+		bodyTextSize = 11,
+		bodyColor = Color3.fromRGB(214, 208, 198),
+		bodyTransparency = 0.14,
+	},
+}
+
+local function attachBillboard(part, title, body, color, presetName)
+	local preset = BILLBOARD_PRESETS[presetName] or BILLBOARD_PRESETS.Zone
+
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "Sign"
-	billboard.Size = UDim2.fromOffset(220, 82)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 5, 0)
-	billboard.AlwaysOnTop = true
+	billboard.Size = UDim2.fromOffset(preset.size.X, preset.size.Y)
+	billboard.StudsOffsetWorldSpace = preset.offset
+	billboard.AlwaysOnTop = preset.alwaysOnTop
 	billboard.Adornee = part
 	billboard.Parent = part
 
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.fromScale(1, 1)
 	frame.BackgroundColor3 = Color3.fromRGB(20, 18, 16)
-	frame.BackgroundTransparency = 0.2
+	frame.BackgroundTransparency = preset.backgroundTransparency
 	frame.BorderSizePixel = 0
 	frame.Parent = billboard
 
@@ -57,28 +101,35 @@ local function attachBillboard(part, title, body, color)
 
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = color
-	stroke.Thickness = 2
+	stroke.Thickness = preset.strokeThickness
+	stroke.Transparency = presetName == "Plaza" and 0.18 or 0
 	stroke.Parent = frame
 
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Position = UDim2.fromOffset(10, 8)
-	titleLabel.Size = UDim2.new(1, -20, 0, 22)
+	titleLabel.Size = UDim2.new(1, -20, 0, preset.titleHeight)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = title
 	titleLabel.TextColor3 = Color3.fromRGB(248, 240, 218)
-	titleLabel.TextScaled = true
+	titleLabel.TextSize = preset.titleSize
+	titleLabel.TextWrapped = false
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 	titleLabel.Parent = frame
 
 	local bodyLabel = Instance.new("TextLabel")
 	bodyLabel.BackgroundTransparency = 1
-	bodyLabel.Position = UDim2.fromOffset(10, 32)
-	bodyLabel.Size = UDim2.new(1, -20, 1, -40)
+	bodyLabel.Position = UDim2.fromOffset(10, preset.bodyY)
+	bodyLabel.Size = UDim2.new(1, -20, 1, -(preset.bodyY + 8))
 	bodyLabel.Font = Enum.Font.Gotham
 	bodyLabel.Text = body
 	bodyLabel.TextWrapped = true
-	bodyLabel.TextColor3 = Color3.fromRGB(232, 226, 214)
-	bodyLabel.TextScaled = true
+	bodyLabel.TextColor3 = preset.bodyColor
+	bodyLabel.TextSize = preset.bodyTextSize
+	bodyLabel.TextTransparency = preset.bodyTransparency
+	bodyLabel.TextXAlignment = Enum.TextXAlignment.Center
+	bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
 	bodyLabel.Parent = frame
 end
 
@@ -102,7 +153,7 @@ local function createSignPost(parent, name, position, title, body, color)
 
 	local sign = createPart(parent, name .. "Board", Vector3.new(6.5, 3.2, 0.4), CFrame.new(position + Vector3.new(0, 4.4, 0)), Color3.fromRGB(54, 40, 31), Enum.Material.WoodPlanks)
 	sign.CanCollide = false
-	attachBillboard(sign, title, body, color)
+	attachBillboard(sign, title, body, color, "Zone")
 	return sign
 end
 
@@ -138,7 +189,13 @@ function ArcadeWorld.build(config)
 			zone.color,
 			zone.material
 		)
-		attachBillboard(pad, zone.title, zone.body, zoneName == "NolbuDanger" and Color3.fromRGB(224, 126, 109) or Color3.fromRGB(229, 196, 124))
+		attachBillboard(
+			pad,
+			zone.title,
+			zone.body,
+			zoneName == "NolbuDanger" and Color3.fromRGB(224, 126, 109) or Color3.fromRGB(229, 196, 124),
+			"Zone"
+		)
 	end
 
 	for _, path in ipairs(config.World.Paths) do
@@ -165,7 +222,7 @@ function ArcadeWorld.build(config)
 	spawn.CanCollide = true
 	spawn.Parent = staticFolder
 
-	attachBillboard(spawn, "Arcade Loop", "Heal -> Plant -> Break -> Buy.", Color3.fromRGB(240, 205, 117))
+	attachBillboard(spawn, "Arcade Loop", "Heal -> Plant -> Break -> Buy.", Color3.fromRGB(240, 205, 117), "Loop")
 
 	local statue = createPart(staticFolder, "PumpkinStatue", Vector3.new(4, 4, 4), CFrame.new(config.World.SpawnPoint + Vector3.new(0, 3.2, -8)), Color3.fromRGB(211, 133, 46), Enum.Material.SmoothPlastic)
 	statue.Shape = Enum.PartType.Ball
@@ -185,7 +242,7 @@ function ArcadeWorld.build(config)
 			Enum.Material.WoodPlanks
 		)
 		pad:SetAttribute(config.Attributes.Interaction.UpgradeId, upgradeId)
-		attachBillboard(pad, padDef.displayName, padDef.body, padDef.color)
+		attachBillboard(pad, padDef.displayName, padDef.body, padDef.color, "Plaza")
 		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName, upgradePromptDistance)
 	end
 
