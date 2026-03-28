@@ -1,7 +1,6 @@
 local Workspace = game:GetService("Workspace")
 
 local ArcadeWorld = {}
-local UPGRADE_PROMPT_DISTANCE = 9
 
 local function createFolder(parent, name)
 	local folder = Instance.new("Folder")
@@ -155,6 +154,7 @@ function ArcadeWorld.build(config)
 	local stem = createPart(staticFolder, "PumpkinStatueStem", Vector3.new(0.6, 1.2, 0.6), statue.CFrame + Vector3.new(0, 2.3, 0), Color3.fromRGB(80, 120, 68), Enum.Material.Wood)
 	stem.CanCollide = false
 
+	local upgradePromptDistance = (config.Upgrades and config.Upgrades.PromptDistance) or 9
 	local upgradePrompts = {}
 	for upgradeId, padDef in pairs(config.World.UpgradePads) do
 		local pad = createPart(
@@ -167,7 +167,7 @@ function ArcadeWorld.build(config)
 		)
 		pad:SetAttribute(config.Attributes.Interaction.UpgradeId, upgradeId)
 		attachBillboard(pad, padDef.displayName, padDef.body, padDef.color)
-		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName, UPGRADE_PROMPT_DISTANCE)
+		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName, upgradePromptDistance)
 	end
 
 	for index, point in ipairs(config.World.GoblinSpawnPoints) do
