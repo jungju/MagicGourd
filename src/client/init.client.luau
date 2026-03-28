@@ -230,6 +230,29 @@ local function getAffordableUpgradeIds(money)
 	return affordable
 end
 
+local function getOwnedPumpkinCount()
+	local runtimeFolder = Workspace:FindFirstChild("Map")
+	and Workspace.Map:FindFirstChild("Runtime")
+	and Workspace.Map.Runtime:FindFirstChild("Pumpkins")
+
+	if not runtimeFolder then
+		return 0
+	end
+
+	local ownedCount = 0
+	for _, descendant in ipairs(runtimeFolder:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			local ownerUserId = descendant:GetAttribute(ArcadeConfig.Attributes.Pumpkin.Owner)
+			local pumpkinKind = descendant:GetAttribute(interactionAttributes.Kind)
+			if ownerUserId == player.UserId and pumpkinKind == "Pumpkin" then
+				ownedCount += 1
+			end
+		end
+	end
+
+	return ownedCount
+end
+
 local function formatDelta(value)
 	if math.abs(value - math.floor(value)) < 0.001 then
 		return tostring(math.floor(value))
@@ -291,6 +314,10 @@ local function getPrimaryGuidance(playerState)
 		return "Next: Recover from the goblin slow before pushing deeper.", Color3.fromRGB(245, 188, 150)
 	end
 
+	if playerState.ownedPumpkins > 0 then
+		return "Next: Break your pumpkin for money.", Color3.fromRGB(240, 224, 163)
+	end
+
 	if playerState.seeds > 0 then
 		return "Next: Plant a pumpkin nearby, then break it for money.", Color3.fromRGB(220, 235, 196)
 	end
@@ -311,6 +338,10 @@ local function getStatusSummary(playerState)
 		return "Status: Goblin slow active", Color3.fromRGB(240, 149, 112)
 	end
 
+	if playerState.ownedPumpkins > 0 then
+		return playerState.ownedPumpkins == 1 and "Status: Pumpkin ready" or string.format("Status: %d pumpkins ready", playerState.ownedPumpkins), Color3.fromRGB(245, 215, 152)
+	end
+
 	if playerState.seeds > 0 then
 		return "Status: Seed-ready", Color3.fromRGB(196, 233, 170)
 	end
@@ -325,6 +356,14 @@ end
 local function getSupportTip(playerState)
 	if playerState.isSlowed then
 		return "Loop paused: recover, then restart the chain."
+	end
+
+	if playerState.ownedPumpkins > 0 and #playerState.affordableUpgradeIds > 0 then
+		return "Cash out your pumpkin, then decide if this is the plaza trip."
+	end
+
+	if playerState.ownedPumpkins > 0 then
+		return "Break first, then replant or head back to the plaza."
 	end
 
 	if #playerState.affordableUpgradeIds > 0 and playerState.seeds <= 0 then
@@ -430,11 +469,13 @@ local function refreshHud()
 	local money = getAttribute(playerAttributes.Money) or 0
 	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
 	local affordableUpgradeIds = getAffordableUpgradeIds(money)
+	local ownedPumpkins = getOwnedPumpkinCount()
 	local playerState = {
 		seeds = seeds,
 		money = money,
 		isSlowed = isSlowed,
 		affordableUpgradeIds = affordableUpgradeIds,
+		ownedPumpkins = ownedPumpkins,
 	}
 
 	resourcesLabel.Text = string.format("Seeds %d   |   Money %d", seeds, money)
@@ -464,8 +505,17 @@ local function refreshHud()
 	useSeedButton.Active = seeds > 0
 	useSeedButton.AutoButtonColor = seeds > 0
 	useSeedButton.BackgroundColor3 = seeds > 0 and Color3.fromRGB(97, 162, 88) or Color3.fromRGB(88, 82, 78)
-	useSeedButton.Text = seeds > 0 and string.format("Plant Pumpkin [Q]\nSpend 1 seed and grow your own pumpkin (%d ready)", seeds)
-		or "Need Seeds\nHeal a swallow first"
+	if seeds > 0 then
+		local secondLine
+		if ownedPumpkins > 0 then
+			secondLine = string.format("Break yours first, or plant again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+		else
+			secondLine = string.format("Spend 1 seed and grow your own pumpkin (%d ready)", seeds)
+		end
+		useSeedButton.Text = string.format("Plant Pumpkin [Q]\n%s", secondLine)
+	else
+		useSeedButton.Text = "Need Seeds\nHeal a swallow first"
+	end
 end
 
 local function useSeed()
@@ -521,6 +571,63 @@ for _, attributeName in ipairs({
 	playerAttributes.IsSlowed,
 }) do
 	player:GetAttributeChangedSignal(attributeName):Connect(refreshHud)
+end
+
+local function connectPumpkinFolder(folder)
+	if not folder then
+		return
+	end
+
+	folder.ChildAdded:Connect(refreshHud)
+	folder.ChildRemoved:Connect(refreshHud)
+
+	for _, descendant in ipairs(folder:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(refreshHud)
+		end
+	end
+
+	folder.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("BasePart") then
+			descendant:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(refreshHud)
+			refreshHud()
+		end
+	end)
+
+	folder.DescendantRemoving:Connect(function(descendant)
+		if descendant:IsA("BasePart") then
+			refreshHud()
+		end
+	end)
+end
+
+local mapFolder = Workspace:FindFirstChild("Map")
+if mapFolder then
+	local runtimeFolder = mapFolder:FindFirstChild("Runtime")
+	if runtimeFolder then
+		connectPumpkinFolder(runtimeFolder:FindFirstChild("Pumpkins"))
+		runtimeFolder.ChildAdded:Connect(function(child)
+			if child.Name == "Pumpkins" then
+				connectPumpkinFolder(child)
+				refreshHud()
+			end
+		end)
+	end
+
+	mapFolder.ChildAdded:Connect(function(child)
+		if child.Name ~= "Runtime" then
+			return
+		end
+
+		connectPumpkinFolder(child:FindFirstChild("Pumpkins"))
+		child.ChildAdded:Connect(function(grandChild)
+			if grandChild.Name == "Pumpkins" then
+				connectPumpkinFolder(grandChild)
+				refreshHud()
+			end
+		end)
+		refreshHud()
+	end)
 end
 
 player:GetAttributeChangedSignal(playerAttributes.IsSlowed):Connect(function()
