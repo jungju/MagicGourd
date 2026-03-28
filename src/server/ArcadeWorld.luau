@@ -49,34 +49,52 @@ local BILLBOARD_PRESETS = {
 		bodyTextSize = 14,
 		bodyColor = Color3.fromRGB(234, 228, 216),
 		bodyTransparency = 0.02,
+		strokeTransparency = 0.05,
 	},
 	Zone = {
-		size = Vector2.new(208, 74),
+		size = Vector2.new(204, 72),
+		offset = Vector3.new(0, 5.1, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.31,
+		strokeThickness = 1.8,
+		titleHeight = 20,
+		titleSize = 17,
+		titleTransparency = 0.03,
+		bodyY = 29,
+		bodyTextSize = 11,
+		bodyColor = Color3.fromRGB(221, 216, 204),
+		bodyTransparency = 0.16,
+		strokeTransparency = 0.1,
+	},
+	Lane = {
+		size = Vector2.new(194, 68),
 		offset = Vector3.new(0, 5, 0),
 		alwaysOnTop = true,
-		backgroundTransparency = 0.28,
-		strokeThickness = 1.9,
-		titleHeight = 21,
-		titleSize = 17,
-		titleTransparency = 0.02,
-		bodyY = 30,
-		bodyTextSize = 12,
-		bodyColor = Color3.fromRGB(223, 217, 204),
-		bodyTransparency = 0.12,
+		backgroundTransparency = 0.38,
+		strokeThickness = 1.55,
+		titleHeight = 19,
+		titleSize = 16,
+		titleTransparency = 0.06,
+		bodyY = 28,
+		bodyTextSize = 11,
+		bodyColor = Color3.fromRGB(216, 209, 197),
+		bodyTransparency = 0.2,
+		strokeTransparency = 0.14,
 	},
 	Plaza = {
-		size = Vector2.new(176, 58),
-		offset = Vector3.new(0, 4.45, 0),
+		size = Vector2.new(170, 54),
+		offset = Vector3.new(0, 4.35, 0),
 		alwaysOnTop = false,
-		backgroundTransparency = 0.46,
-		strokeThickness = 1.35,
+		backgroundTransparency = 0.54,
+		strokeThickness = 1.15,
 		titleHeight = 18,
 		titleSize = 14,
-		titleTransparency = 0.08,
-		bodyY = 26,
+		titleTransparency = 0.12,
+		bodyY = 25,
 		bodyTextSize = 10,
-		bodyColor = Color3.fromRGB(210, 205, 196),
-		bodyTransparency = 0.28,
+		bodyColor = Color3.fromRGB(205, 199, 190),
+		bodyTransparency = 0.34,
+		strokeTransparency = 0.4,
 	},
 }
 
@@ -112,7 +130,7 @@ local function attachBillboard(part, title, body, color, presetName)
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = color
 	stroke.Thickness = preset.strokeThickness
-	stroke.Transparency = presetName == "Plaza" and 0.3 or 0.05
+	stroke.Transparency = preset.strokeTransparency or 0.05
 	stroke.Parent = frame
 
 	local titleLabel = Instance.new("TextLabel")
@@ -166,7 +184,7 @@ local function createSignPost(parent, name, position, title, body, color)
 
 	local sign = createPart(parent, name .. "Board", Vector3.new(6.5, 3.2, 0.4), CFrame.new(position + Vector3.new(0, 4.4, 0)), Color3.fromRGB(54, 40, 31), Enum.Material.WoodPlanks)
 	sign.CanCollide = false
-	attachBillboard(sign, title, body, color, "Zone")
+	attachBillboard(sign, title, body, color, "Lane")
 	return sign
 end
 

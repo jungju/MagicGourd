@@ -54,7 +54,7 @@ local config = {
 				color = Color3.fromRGB(82, 72, 76),
 				material = Enum.Material.Slate,
 				title = "Nolbu Area",
-				body = "Goblins slow greedy pushes.",
+				body = "Watch for slowing goblins.",
 			},
 		},
 		Paths = {
@@ -97,14 +97,14 @@ local config = {
 				position = Vector3.new(40, 1.8, 20),
 				color = Color3.fromRGB(226, 135, 102),
 				title = "Slow Zone",
-				body = "Goblins punish greedy pushes.",
+				body = "Goblins slow risky pushes.",
 			},
 			{
 				name = "RetreatLaneSign",
 				position = Vector3.new(28, 1.8, 29),
 				color = Color3.fromRGB(237, 195, 123),
 				title = "Reset Lane",
-				body = "Tagged? Peel back toward the plaza.",
+				body = "Tagged? Pull back to plaza.",
 			},
 		},
 		WorkLanePosts = {
