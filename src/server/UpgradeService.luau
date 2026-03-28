@@ -20,10 +20,14 @@ function UpgradeService:start(remotes)
 			end
 
 			local displayName = self.config.Upgrades.Definitions[upgradeId].DisplayName
+			local promptParent = prompt.Parent
+			local promptPosition = promptParent and promptParent:IsA("BasePart") and promptParent.Position or nil
 			if success then
 				self.feedbackRemote:FireClient(player, {
 					text = string.format("Bought %s Lv.%d (-%d money)", displayName, newLevel, cost),
 					detail = "Your next loop should feel faster right away.",
+					worldText = string.format("%s Up", displayName),
+					worldPosition = promptPosition,
 					tone = "good",
 				})
 			elseif reason == "money" then

@@ -58,7 +58,7 @@ function ArcadeRuntime.start()
 	upgradeService:start(remotes)
 	swallowService:start(remotes)
 	pumpkinService:start(remotes)
-	goblinService:start()
+	goblinService:start(remotes)
 end
 
 return ArcadeRuntime
