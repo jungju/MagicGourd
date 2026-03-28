@@ -345,6 +345,44 @@ local function getAffordableUpgradeIds(money)
 	return affordable
 end
 
+local function getThresholdState(money)
+	local nearest = nil
+
+	for _, upgradeId in ipairs(ArcadeConfig.Upgrades.Order) do
+		local definition = upgradeDefinitions[upgradeId]
+		local currentLevel = getAttribute(definition.AttributeName) or 0
+		local nextCost = upgradeCosts[currentLevel + 1]
+		if nextCost then
+			local gap = math.max(nextCost - money, 0)
+			if not nearest or gap < nearest.gap or (gap == nearest.gap and nextCost < nearest.cost) then
+				nearest = {
+					upgradeId = upgradeId,
+					displayName = definition.DisplayName,
+					cost = nextCost,
+					gap = gap,
+				}
+			end
+		end
+	end
+
+	if not nearest then
+		return {
+			allMaxed = true,
+			gap = 0,
+		}
+	end
+
+	local pumpkinReward = ArcadeConfig.Pumpkins and ArcadeConfig.Pumpkins.Reward or 0
+	nearest.allMaxed = false
+	nearest.isAffordable = nearest.gap <= 0
+	nearest.pumpkinsNeeded = nil
+	if pumpkinReward > 0 and nearest.gap > 0 and nearest.gap % pumpkinReward == 0 then
+		nearest.pumpkinsNeeded = nearest.gap / pumpkinReward
+	end
+
+	return nearest
+end
+
 local function findPumpkinFolder()
 	local mapFolder = Workspace:FindFirstChild("Map")
 	local runtimeFolder = mapFolder and mapFolder:FindFirstChild("Runtime")
@@ -635,6 +673,16 @@ local function getZoneState(rootPosition)
 end
 
 local function getPrimaryGuidance(playerState)
+	if playerState.thresholdState.allMaxed then
+		if playerState.ownedPumpkins > 0 then
+			return "Next: Break your pumpkin for money.", Color3.fromRGB(240, 224, 163)
+		end
+		if playerState.seeds > 0 then
+			return "Next: Plant a pumpkin nearby.", Color3.fromRGB(220, 235, 196)
+		end
+		return "Next: Keep the farming loop moving.", Color3.fromRGB(220, 235, 196)
+	end
+
 	if playerState.isSlowed then
 		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
 			return "Next: Pull back toward Central Plaza.", Color3.fromRGB(245, 188, 150)
@@ -643,6 +691,9 @@ local function getPrimaryGuidance(playerState)
 	end
 
 	if playerState.ownedPumpkins > 0 then
+		if #playerState.affordableUpgradeIds <= 0 and playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+			return string.format("Next: Break %d more pumpkin%s for your next plaza buy.", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s"), Color3.fromRGB(240, 224, 163)
+		end
 		return "Next: Break your pumpkin for money.", Color3.fromRGB(240, 224, 163)
 	end
 
@@ -697,6 +748,10 @@ local function getDisplayPromptOwner(playerState)
 end
 
 local function getStatusSummary(playerState)
+	if playerState.thresholdState.allMaxed then
+		return "Status: All upgrades maxed", Color3.fromRGB(196, 233, 170)
+	end
+
 	if playerState.isSlowed then
 		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
 			return "Status: Under danger pressure", Color3.fromRGB(240, 149, 112)
@@ -720,10 +775,28 @@ local function getStatusSummary(playerState)
 		return "Status: Upgrade available", Color3.fromRGB(245, 215, 152)
 	end
 
+	if playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+		return string.format("Status: %d pumpkin%s from upgrade", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s"), Color3.fromRGB(238, 211, 149)
+	end
+
+	if playerState.thresholdState.gap and playerState.thresholdState.gap > 0 then
+		return string.format("Status: %d money from upgrade", playerState.thresholdState.gap), Color3.fromRGB(238, 211, 149)
+	end
+
 	return "Status: Safe to farm", Color3.fromRGB(245, 215, 152)
 end
 
 local function getSupportTip(playerState)
+	if playerState.thresholdState.allMaxed then
+		if playerState.ownedPumpkins > 0 then
+			return "Cash out, then keep farming — your upgrades are already topped off."
+		end
+		if playerState.seeds > 0 then
+			return "Plant and keep the loop rolling — you are now playing for flow, not upgrades."
+		end
+		return "Loop freely — the plaza is finished, so keep farming for pace and mastery."
+	end
+
 	if playerState.isSlowed then
 		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
 			if playerState.ownedPumpkins > 0 then
@@ -765,6 +838,9 @@ local function getSupportTip(playerState)
 	end
 
 	if playerState.ownedPumpkins > 0 then
+		if playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+			return string.format("This cash-out puts you %d pumpkin%s from the next plaza buy.", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s")
+		end
 		return "Break first, then replant or head back to the plaza."
 	end
 
@@ -774,6 +850,14 @@ local function getSupportTip(playerState)
 
 	if #playerState.affordableUpgradeIds > 0 then
 		return "Plant first, or swing by the plaza if you want a stronger next route."
+	end
+
+	if playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+		return string.format("Your next plaza buy is only %d pumpkin%s away.", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s")
+	end
+
+	if playerState.thresholdState.gap and playerState.thresholdState.gap > 0 then
+		return string.format("You are %d money short of the next plaza buy — keep the loop moving.", playerState.thresholdState.gap)
 	end
 
 	return "Loop: heal -> plant -> break -> buy."
@@ -970,6 +1054,7 @@ function refreshHud()
 		ownedPumpkins = ownedPumpkins,
 		zoneState = zoneState,
 		activePromptOwner = activePromptOwner,
+		thresholdState = getThresholdState(money),
 		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and os.clock() <= recentLoopReset.expiresAt,
 	}
 	local displayPromptOwner = getDisplayPromptOwner(playerState)
