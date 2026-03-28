@@ -177,6 +177,26 @@ function GoblinService:_runLoop(index)
 	end
 end
 
+function GoblinService:_isInsideExpandedDangerZone(position)
+	local dangerZone = self.config.World
+		and self.config.World.Zones
+		and self.config.World.Zones.NolbuDanger
+	if typeof(position) ~= "Vector3" or type(dangerZone) ~= "table" then
+		return false
+	end
+
+	local center = dangerZone.center
+	local size = dangerZone.size
+	if typeof(center) ~= "Vector3" or typeof(size) ~= "Vector3" then
+		return false
+	end
+
+	local padding = self.config.Goblins.ChaseZonePadding or 0
+	local halfSize = (size * 0.5) + Vector3.new(padding, 0, padding)
+	local delta = position - center
+	return math.abs(delta.X) <= halfSize.X and math.abs(delta.Z) <= halfSize.Z
+end
+
 function GoblinService:_getNextDestination(goblin)
 	local closestRoot
 	local closestDistance = math.huge
@@ -185,7 +205,7 @@ function GoblinService:_getNextDestination(goblin)
 		local character = player.Character
 		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if humanoid and root and humanoid.Health > 0 then
+		if humanoid and root and humanoid.Health > 0 and self:_isInsideExpandedDangerZone(root.Position) then
 			local distanceFromGoblin = (root.Position - goblin.root.Position).Magnitude
 			local distanceFromHome = (root.Position - goblin.home).Magnitude
 			if distanceFromGoblin < closestDistance and distanceFromHome <= self.config.Goblins.ChaseRange then
