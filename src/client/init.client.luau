@@ -183,6 +183,20 @@ buttonStroke.Color = Color3.fromRGB(235, 219, 177)
 buttonStroke.Thickness = 2
 buttonStroke.Parent = useSeedButton
 
+local isTouchPrimary = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+if isTouchPrimary then
+	useSeedButton.Size = UDim2.fromOffset(300, 76)
+	useSeedButton.Position = UDim2.new(0.5, 0, 1, -18)
+end
+
+local function getPlantButtonTitle(label)
+	if isTouchPrimary then
+		return label
+	end
+
+	return string.format("%s [Q]", label)
+end
+
 local playerAttributes = ArcadeConfig.Attributes.Player
 local interactionAttributes = ArcadeConfig.Attributes.Interaction
 local upgradeDefinitions = ArcadeConfig.Upgrades.Definitions
@@ -991,34 +1005,34 @@ function refreshHud()
 	useSeedButton.AutoButtonColor = seeds > 0
 
 	if seeds > 0 then
-		local buttonTitle = "Plant Pumpkin [Q]"
+		local buttonTitle = getPlantButtonTitle("Plant Pumpkin")
 		local secondLine = string.format("Spend 1 seed and grow your own pumpkin (%d ready)", seeds)
 		local backgroundColor = Color3.fromRGB(97, 162, 88)
 		local strokeColor = Color3.fromRGB(235, 219, 177)
 		local textColor = Color3.fromRGB(252, 247, 239)
 
 		if isSlowed then
-			buttonTitle = "Plant After Recovery [Q]"
+			buttonTitle = getPlantButtonTitle("Plant After Recovery")
 			secondLine = string.format("You can plant now, but recovering first keeps the loop cleaner (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(128, 104, 78)
 			strokeColor = Color3.fromRGB(245, 188, 150)
 		elseif displayPromptOwner and displayPromptOwner.kind == "Pumpkin" then
-			buttonTitle = "Plant After This Break [Q]"
+			buttonTitle = getPlantButtonTitle("Plant After This Break")
 			secondLine = string.format("Your pumpkin prompt owns this moment — cash out first, or step off to plant again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(132, 110, 72)
 			strokeColor = Color3.fromRGB(240, 224, 163)
 		elseif ownedPumpkins > 0 then
-			buttonTitle = "Plant Another Pumpkin [Q]"
+			buttonTitle = getPlantButtonTitle("Plant Another Pumpkin")
 			secondLine = string.format("Break yours first for the clean cash-out, or spend another seed now (%d ready)", seeds)
 			backgroundColor = Color3.fromRGB(132, 110, 72)
 			strokeColor = Color3.fromRGB(240, 224, 163)
 		elseif displayPromptOwner and displayPromptOwner.kind == "Upgrade" then
-			buttonTitle = "Plant After This Buy [Q]"
+			buttonTitle = getPlantButtonTitle("Plant After This Buy")
 			secondLine = string.format("A plaza pad owns this moment — step off it to make planting primary again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(118, 96, 74)
 			strokeColor = Color3.fromRGB(236, 190, 126)
 		elseif displayPromptOwner and displayPromptOwner.kind == "Swallow" then
-			buttonTitle = "Plant After This Heal [Q]"
+			buttonTitle = getPlantButtonTitle("Plant After This Heal")
 			secondLine = string.format("The village heal prompt is the local commitment here; planting stays ready after that (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
 			backgroundColor = Color3.fromRGB(101, 122, 88)
 			strokeColor = Color3.fromRGB(206, 232, 190)
