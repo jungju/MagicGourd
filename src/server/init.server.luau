@@ -308,6 +308,12 @@ local housePlacementSpecs = {
 		padPosition = villageLayout.heungbu.housePad.position,
 		padYaw = villageLayout.heungbu.housePad.yaw,
 		orientationCorrection = Vector3.new(90, 0, 0),
+		orientationCandidates = {
+			Vector3.new(90, 0, 0),
+			Vector3.new(-90, 0, 0),
+			Vector3.new(90, 180, 0),
+			Vector3.new(-90, 180, 0),
+		},
 		yawOffset = -2,
 		groundOffset = 0,
 		visualOffset = Vector3.new(0, 0, -2),
@@ -322,6 +328,12 @@ local housePlacementSpecs = {
 		padPosition = villageLayout.nolbu.yardPad.position,
 		padYaw = villageLayout.nolbu.yardPad.yaw,
 		orientationCorrection = Vector3.new(90, 0, 0),
+		orientationCandidates = {
+			Vector3.new(90, 0, 0),
+			Vector3.new(-90, 0, 0),
+			Vector3.new(90, 180, 0),
+			Vector3.new(-90, 180, 0),
+		},
 		yawOffset = 2,
 		groundOffset = 0,
 		visualOffset = Vector3.new(0, 0, -8),
@@ -888,6 +900,7 @@ local function resolvePlacementSpec(def)
 		padYaw = padYaw,
 		position = worldPosition,
 		orientationCorrection = spec.orientationCorrection or Vector3.zero,
+		orientationCandidates = spec.orientationCandidates,
 		facingYaw = facingYaw,
 		groundOffset = spec.groundOffset or 0,
 		visualOffset = visualOffset,
@@ -910,6 +923,11 @@ local function stampHousePlacementAttributes(instance, placement, boxCf, boxSize
 	end
 	instance:SetAttribute("FacingYaw", placement.facingYaw or 0)
 	instance:SetAttribute("GroundY", (placement.padPosition and placement.padPosition.Y) or 0)
+	if placement.chosenOrientationCorrection then
+		instance:SetAttribute("OrientationCorrectionX", placement.chosenOrientationCorrection.X)
+		instance:SetAttribute("OrientationCorrectionY", placement.chosenOrientationCorrection.Y)
+		instance:SetAttribute("OrientationCorrectionZ", placement.chosenOrientationCorrection.Z)
+	end
 	instance:SetAttribute("BoundsCenterX", boxCf.Position.X)
 	instance:SetAttribute("BoundsCenterY", boxCf.Position.Y)
 	instance:SetAttribute("BoundsCenterZ", boxCf.Position.Z)
@@ -1007,32 +1025,140 @@ local function createFallbackNpc(def)
 	return model
 end
 
+local function buildOrientationCFrame(correction)
+	return CFrame.Angles(math.rad(correction.X), math.rad(correction.Y), math.rad(correction.Z))
+end
+
+local function getOrientationCandidates(placement, rotation)
+	local candidates = {}
+	local seen = {}
+
+	local function push(value)
+		if typeof(value) ~= "Vector3" then
+			return
+		end
+		local key = string.format("%.3f|%.3f|%.3f", value.X, value.Y, value.Z)
+		if seen[key] then
+			return
+		end
+		seen[key] = true
+		table.insert(candidates, value)
+	end
+
+	if placement and type(placement.orientationCandidates) == "table" then
+		for _, value in ipairs(placement.orientationCandidates) do
+			push(value)
+		end
+	end
+	push(placement and placement.orientationCorrection or nil)
+	push(rotation)
+	if #candidates == 0 then
+		push(Vector3.zero)
+	end
+	return candidates
+end
+
+local function scoreHouseOrientation(model, boxCf, boxSize)
+	local bottomY = boxCf.Position.Y - (boxSize.Y / 2)
+	local topY = boxCf.Position.Y + (boxSize.Y / 2)
+	local score = 0
+	local hintCount = 0
+
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			local name = string.lower(descendant.Name)
+			local isFloorLike = string.find(name, "floor", 1, true)
+				or string.find(name, "base", 1, true)
+				or string.find(name, "ground", 1, true)
+				or string.find(name, "porch", 1, true)
+				or string.find(name, "platform", 1, true)
+			local isRoofLike = string.find(name, "roof", 1, true)
+				or string.find(name, "ceiling", 1, true)
+				or string.find(name, "top", 1, true)
+
+			if isFloorLike or isRoofLike then
+				hintCount += 1
+				local partY = descendant.Position.Y
+				local distToBottom = math.abs(partY - bottomY)
+				local distToTop = math.abs(topY - partY)
+				local upY = descendant.CFrame.UpVector.Y
+
+				if isFloorLike then
+					score += distToTop - distToBottom
+					score += upY * 6
+				end
+				if isRoofLike then
+					score += distToBottom - distToTop
+					score += math.abs(upY) * 2
+				end
+			end
+		end
+	end
+
+	if hintCount == 0 then
+		local primary = model.PrimaryPart or getPrimary(model)
+		if primary then
+			score += primary.CFrame.UpVector.Y
+		end
+	end
+
+	return score, hintCount
+end
+
 local function applyPlacement(candidate, def)
 	local placement = resolvePlacementSpec(def)
 	local rotation = def.rotation or Vector3.zero
-	local correction = placement and placement.orientationCorrection or rotation
 	local facingYaw = placement and placement.facingYaw or rotation.Y
 	local targetPosition = placement and placement.position or def.position
 	local groundY = (placement and placement.padPosition and placement.padPosition.Y) or (def.position and def.position.Y) or 0
 	local groundOffset = placement and placement.groundOffset or def.groundOffset or 0
-	local orientationCf = CFrame.Angles(math.rad(correction.X), 0, math.rad(correction.Z))
 	local yawCf = CFrame.Angles(0, math.rad(facingYaw), 0)
-	local cf = CFrame.new(targetPosition) * yawCf * orientationCf
+	local orientationCandidates = getOrientationCandidates(placement, rotation)
 
 	if candidate:IsA("Model") then
 		local primary = getPrimary(candidate)
 		if not primary then return false, "model has no basepart" end
 		candidate.PrimaryPart = primary
 		if typeof(def.scale) == "number" and def.scale > 0 and def.scale ~= 1 then pcall(function() candidate:ScaleTo(def.scale) end) end
-		candidate:PivotTo(cf)
-		local boxCf, boxSize = candidate:GetBoundingBox()
-		local bottomY = boxCf.Position.Y - (boxSize.Y / 2)
-		local lift = groundY - bottomY + groundOffset
-		if math.abs(lift) > 0.001 then candidate:PivotTo(candidate:GetPivot() + Vector3.new(0, lift, 0)) end
-		boxCf, boxSize = candidate:GetBoundingBox()
-		stampHousePlacementAttributes(candidate, placement, boxCf, boxSize)
+
+		local bestScore = -math.huge
+		local bestCorrection = orientationCandidates[1] or Vector3.zero
+		local bestPivot = nil
+		local bestBoxCf = nil
+		local bestBoxSize = nil
+
+		for _, correction in ipairs(orientationCandidates) do
+			local cf = CFrame.new(targetPosition) * yawCf * buildOrientationCFrame(correction)
+			candidate:PivotTo(cf)
+			local trialBoxCf, trialBoxSize = candidate:GetBoundingBox()
+			local bottomY = trialBoxCf.Position.Y - (trialBoxSize.Y / 2)
+			local lift = groundY - bottomY + groundOffset
+			if math.abs(lift) > 0.001 then
+				candidate:PivotTo(candidate:GetPivot() + Vector3.new(0, lift, 0))
+				trialBoxCf, trialBoxSize = candidate:GetBoundingBox()
+			end
+
+			local score = scoreHouseOrientation(candidate, trialBoxCf, trialBoxSize)
+			if score > bestScore then
+				bestScore = score
+				bestCorrection = correction
+				bestPivot = candidate:GetPivot()
+				bestBoxCf = trialBoxCf
+				bestBoxSize = trialBoxSize
+			end
+		end
+
+		if bestPivot then
+			candidate:PivotTo(bestPivot)
+		end
+		if placement then
+			placement.chosenOrientationCorrection = bestCorrection
+		end
+		stampHousePlacementAttributes(candidate, placement, bestBoxCf or candidate:GetBoundingBox())
 		return true
 	elseif candidate:IsA("BasePart") then
+		local correction = orientationCandidates[1] or Vector3.zero
+		local cf = CFrame.new(targetPosition) * yawCf * buildOrientationCFrame(correction)
 		if typeof(def.scale) == "number" and def.scale > 0 and def.scale ~= 1 then candidate.Size = candidate.Size * def.scale end
 		candidate.CFrame = cf
 		candidate.Anchored = true
@@ -1040,8 +1166,12 @@ local function applyPlacement(candidate, def)
 		local lift = groundY - bottomY + groundOffset
 		candidate.Position += Vector3.new(0, lift, 0)
 		if placement then
+			placement.chosenOrientationCorrection = correction
 			candidate:SetAttribute("PlacementPad", placement.padName)
 			candidate:SetAttribute("FacingYaw", placement.facingYaw)
+			candidate:SetAttribute("OrientationCorrectionX", correction.X)
+			candidate:SetAttribute("OrientationCorrectionY", correction.Y)
+			candidate:SetAttribute("OrientationCorrectionZ", correction.Z)
 		end
 		return true
 	end
