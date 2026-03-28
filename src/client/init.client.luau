@@ -1,579 +1,307 @@
-print("MagicGourd client started")
+print("MagicGourd arcade client started")
 
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local shared = ReplicatedStorage:WaitForChild("Shared")
-local dialogueEvent = shared:WaitForChild("DialogueEvent")
-local effectEvent = shared:WaitForChild("StoryEffectEvent")
-local endingChoiceEvent = shared:WaitForChild("EndingChoiceEvent")
-local endingChoiceResponseEvent = shared:WaitForChild("EndingChoiceResponseEvent")
+local ArcadeConfig = require(shared:WaitForChild("ArcadeConfig"))
+
+local healSwallowRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.HealSwallow)
+local useSeedRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.UseSeed)
+local hitPumpkinRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.HitPumpkin)
+local feedbackRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.Feedback)
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MagicGourdHUD"
+screenGui.Name = "MagicGourdArcadeHUD"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local questFrame = Instance.new("Frame")
-questFrame.Name = "QuestTracker"
-questFrame.Position = UDim2.fromOffset(20, 20)
-questFrame.Size = UDim2.fromOffset(420, 140)
-questFrame.BackgroundColor3 = Color3.fromRGB(26, 18, 12)
-questFrame.BackgroundTransparency = 0.2
-questFrame.BorderSizePixel = 0
-questFrame.Parent = screenGui
+local rootFrame = Instance.new("Frame")
+rootFrame.Name = "HUD"
+rootFrame.AnchorPoint = Vector2.new(0, 0)
+rootFrame.Position = UDim2.fromOffset(18, 18)
+rootFrame.Size = UDim2.fromOffset(340, 250)
+rootFrame.BackgroundColor3 = Color3.fromRGB(26, 20, 15)
+rootFrame.BackgroundTransparency = 0.18
+rootFrame.BorderSizePixel = 0
+rootFrame.Parent = screenGui
 
-local questCorner = Instance.new("UICorner")
-questCorner.CornerRadius = UDim.new(0, 14)
-questCorner.Parent = questFrame
+local rootCorner = Instance.new("UICorner")
+rootCorner.CornerRadius = UDim.new(0, 16)
+rootCorner.Parent = rootFrame
 
-local questStroke = Instance.new("UIStroke")
-questStroke.Color = Color3.fromRGB(227, 188, 96)
-questStroke.Thickness = 2
-questStroke.Parent = questFrame
+local rootStroke = Instance.new("UIStroke")
+rootStroke.Color = Color3.fromRGB(230, 196, 117)
+rootStroke.Thickness = 2
+rootStroke.Parent = rootFrame
 
-local questTitle = Instance.new("TextLabel")
-questTitle.BackgroundTransparency = 1
-questTitle.Position = UDim2.fromOffset(12, 10)
-questTitle.Size = UDim2.new(1, -24, 0, 30)
-questTitle.Font = Enum.Font.GothamBold
-questTitle.TextXAlignment = Enum.TextXAlignment.Left
-questTitle.TextColor3 = Color3.fromRGB(255, 239, 204)
-questTitle.TextScaled = true
-questTitle.Text = "Village Rumor"
-questTitle.Parent = questFrame
+local titleLabel = Instance.new("TextLabel")
+titleLabel.BackgroundTransparency = 1
+titleLabel.Position = UDim2.fromOffset(14, 12)
+titleLabel.Size = UDim2.new(1, -28, 0, 28)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "Heungbu Arcade Loop"
+titleLabel.TextColor3 = Color3.fromRGB(252, 241, 218)
+titleLabel.TextScaled = true
+titleLabel.Parent = rootFrame
 
-local questBody = Instance.new("TextLabel")
-questBody.BackgroundTransparency = 1
-questBody.Position = UDim2.fromOffset(12, 42)
-questBody.Size = UDim2.new(1, -24, 0, 52)
-questBody.Font = Enum.Font.Gotham
-questBody.TextXAlignment = Enum.TextXAlignment.Left
-questBody.TextYAlignment = Enum.TextYAlignment.Top
-questBody.TextWrapped = true
-questBody.TextColor3 = Color3.fromRGB(240, 231, 214)
-questBody.TextScaled = true
-questBody.Text = "Read the Story Stone or speak with Heungbu."
-questBody.Parent = questFrame
+local resourcesLabel = Instance.new("TextLabel")
+resourcesLabel.BackgroundTransparency = 1
+resourcesLabel.Position = UDim2.fromOffset(14, 46)
+resourcesLabel.Size = UDim2.new(1, -28, 0, 48)
+resourcesLabel.Font = Enum.Font.GothamBold
+resourcesLabel.TextColor3 = Color3.fromRGB(242, 232, 213)
+resourcesLabel.TextWrapped = true
+resourcesLabel.TextScaled = true
+resourcesLabel.Parent = rootFrame
 
-local statsLabel = Instance.new("TextLabel")
-statsLabel.BackgroundTransparency = 1
-statsLabel.Position = UDim2.fromOffset(12, 98)
-statsLabel.Size = UDim2.new(1, -24, 0, 20)
-statsLabel.Font = Enum.Font.GothamMedium
-statsLabel.TextXAlignment = Enum.TextXAlignment.Left
-statsLabel.TextColor3 = Color3.fromRGB(214, 201, 180)
-statsLabel.TextScaled = true
-statsLabel.Text = "Seeds 0 · Gourds 0 · Herbs 0 · Coins 0"
-statsLabel.Parent = questFrame
+local upgradesFrame = Instance.new("Frame")
+upgradesFrame.BackgroundTransparency = 1
+upgradesFrame.Position = UDim2.fromOffset(14, 96)
+upgradesFrame.Size = UDim2.new(1, -28, 0, 88)
+upgradesFrame.Parent = rootFrame
 
-local hintLabel = Instance.new("TextLabel")
-hintLabel.BackgroundTransparency = 1
-hintLabel.Position = UDim2.fromOffset(12, 118)
-hintLabel.Size = UDim2.new(1, -24, 0, 14)
-hintLabel.Font = Enum.Font.Gotham
-hintLabel.TextXAlignment = Enum.TextXAlignment.Left
-hintLabel.TextColor3 = Color3.fromRGB(180, 168, 148)
-hintLabel.TextScaled = true
-hintLabel.Text = "Watch the village signs for story changes."
-hintLabel.Parent = questFrame
+local upgradesTitle = Instance.new("TextLabel")
+upgradesTitle.BackgroundTransparency = 1
+upgradesTitle.Position = UDim2.fromOffset(0, 0)
+upgradesTitle.Size = UDim2.new(1, 0, 0, 18)
+upgradesTitle.Font = Enum.Font.GothamBold
+upgradesTitle.Text = "Plaza Upgrades"
+upgradesTitle.TextColor3 = Color3.fromRGB(229, 197, 118)
+upgradesTitle.TextScaled = true
+upgradesTitle.Parent = upgradesFrame
 
-local endingFrame = Instance.new("Frame")
-endingFrame.Name = "EndingChoicePanel"
-endingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-endingFrame.Position = UDim2.fromScale(0.5, 0.53)
-endingFrame.Size = UDim2.fromOffset(560, 310)
-endingFrame.BackgroundColor3 = Color3.fromRGB(28, 18, 12)
-endingFrame.BackgroundTransparency = 0.08
-endingFrame.BorderSizePixel = 0
-endingFrame.Visible = false
-endingFrame.ZIndex = 10
-endingFrame.Parent = screenGui
+local footworkLabel = Instance.new("TextLabel")
+footworkLabel.BackgroundTransparency = 1
+footworkLabel.Position = UDim2.fromOffset(0, 22)
+footworkLabel.Size = UDim2.new(1, 0, 0, 18)
+footworkLabel.Font = Enum.Font.Gotham
+footworkLabel.TextColor3 = Color3.fromRGB(220, 233, 241)
+footworkLabel.TextScaled = true
+footworkLabel.Parent = upgradesFrame
 
-local endingCorner = Instance.new("UICorner")
-endingCorner.CornerRadius = UDim.new(0, 18)
-endingCorner.Parent = endingFrame
+local handsLabel = Instance.new("TextLabel")
+handsLabel.BackgroundTransparency = 1
+handsLabel.Position = UDim2.fromOffset(0, 42)
+handsLabel.Size = UDim2.new(1, 0, 0, 18)
+handsLabel.Font = Enum.Font.Gotham
+handsLabel.TextColor3 = Color3.fromRGB(240, 222, 184)
+handsLabel.TextScaled = true
+handsLabel.Parent = upgradesFrame
 
-local endingStroke = Instance.new("UIStroke")
-endingStroke.Color = Color3.fromRGB(227, 188, 96)
-endingStroke.Thickness = 2
-endingStroke.Parent = endingFrame
+local blessingLabel = Instance.new("TextLabel")
+blessingLabel.BackgroundTransparency = 1
+blessingLabel.Position = UDim2.fromOffset(0, 62)
+blessingLabel.Size = UDim2.new(1, 0, 0, 18)
+blessingLabel.Font = Enum.Font.Gotham
+blessingLabel.TextColor3 = Color3.fromRGB(214, 244, 202)
+blessingLabel.TextScaled = true
+blessingLabel.Parent = upgradesFrame
 
-local endingTitle = Instance.new("TextLabel")
-endingTitle.BackgroundTransparency = 1
-endingTitle.Position = UDim2.fromOffset(20, 18)
-endingTitle.Size = UDim2.new(1, -40, 0, 34)
-endingTitle.Font = Enum.Font.GothamBold
-endingTitle.TextColor3 = Color3.fromRGB(255, 239, 204)
-endingTitle.TextScaled = true
-endingTitle.Text = "The Valley Waits"
-endingTitle.ZIndex = 11
-endingTitle.Parent = endingFrame
+local statusLabel = Instance.new("TextLabel")
+statusLabel.BackgroundTransparency = 1
+statusLabel.Position = UDim2.fromOffset(14, 188)
+statusLabel.Size = UDim2.new(1, -28, 0, 18)
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextColor3 = Color3.fromRGB(245, 215, 152)
+statusLabel.TextScaled = true
+statusLabel.Parent = rootFrame
 
-local endingBody = Instance.new("TextLabel")
-endingBody.BackgroundTransparency = 1
-endingBody.Position = UDim2.fromOffset(20, 58)
-endingBody.Size = UDim2.new(1, -40, 0, 58)
-endingBody.Font = Enum.Font.Gotham
-endingBody.TextColor3 = Color3.fromRGB(235, 226, 210)
-endingBody.TextWrapped = true
-endingBody.TextYAlignment = Enum.TextYAlignment.Top
-endingBody.TextScaled = true
-endingBody.Text = "Choose what kind of harvest the valley should protect."
-endingBody.ZIndex = 11
-endingBody.Parent = endingFrame
+local tipLabel = Instance.new("TextLabel")
+tipLabel.BackgroundTransparency = 1
+tipLabel.Position = UDim2.fromOffset(14, 208)
+tipLabel.Size = UDim2.new(1, -28, 0, 28)
+tipLabel.Font = Enum.Font.Gotham
+tipLabel.Text = "Village: heal swallows. Anywhere: use seeds. Danger: avoid goblin touches."
+tipLabel.TextColor3 = Color3.fromRGB(214, 206, 190)
+tipLabel.TextWrapped = true
+tipLabel.TextScaled = true
+tipLabel.Parent = rootFrame
 
-local endingStatus = Instance.new("TextLabel")
-endingStatus.BackgroundTransparency = 1
-endingStatus.Position = UDim2.fromOffset(20, 118)
-endingStatus.Size = UDim2.new(1, -40, 0, 18)
-endingStatus.Font = Enum.Font.GothamMedium
-endingStatus.TextColor3 = Color3.fromRGB(194, 180, 158)
-endingStatus.TextScaled = true
-endingStatus.Text = "Choose once. Your ending will shape the village mood."
-endingStatus.ZIndex = 11
-endingStatus.Parent = endingFrame
+local feedbackLabel = Instance.new("TextLabel")
+feedbackLabel.Name = "FeedbackLabel"
+feedbackLabel.AnchorPoint = Vector2.new(0.5, 0)
+feedbackLabel.Position = UDim2.new(0.5, 0, 0, 18)
+feedbackLabel.Size = UDim2.fromOffset(360, 44)
+feedbackLabel.BackgroundColor3 = Color3.fromRGB(33, 28, 23)
+feedbackLabel.BackgroundTransparency = 0.2
+feedbackLabel.BorderSizePixel = 0
+feedbackLabel.Font = Enum.Font.GothamBold
+feedbackLabel.Text = ""
+feedbackLabel.TextColor3 = Color3.fromRGB(252, 241, 218)
+feedbackLabel.TextScaled = true
+feedbackLabel.Visible = false
+feedbackLabel.Parent = screenGui
 
-local choiceButtons = {}
+local feedbackCorner = Instance.new("UICorner")
+feedbackCorner.CornerRadius = UDim.new(0, 14)
+feedbackCorner.Parent = feedbackLabel
 
-local function createChoiceButton(name, position, strokeColor)
-	local button = Instance.new("TextButton")
-	button.Name = name
-	button.Position = position
-	button.Size = UDim2.fromOffset(244, 128)
-	button.AutoButtonColor = true
-	button.BackgroundColor3 = Color3.fromRGB(46, 30, 22)
-	button.BorderSizePixel = 0
-	button.Text = ""
-	button.ZIndex = 11
-	button.Parent = endingFrame
+local feedbackStroke = Instance.new("UIStroke")
+feedbackStroke.Thickness = 2
+feedbackStroke.Color = Color3.fromRGB(229, 196, 124)
+feedbackStroke.Parent = feedbackLabel
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 14)
-	corner.Parent = button
+local useSeedButton = Instance.new("TextButton")
+useSeedButton.Name = "UseSeedButton"
+useSeedButton.AnchorPoint = Vector2.new(0.5, 1)
+useSeedButton.Position = UDim2.new(0.5, 0, 1, -24)
+useSeedButton.Size = UDim2.fromOffset(260, 64)
+useSeedButton.BackgroundColor3 = Color3.fromRGB(97, 162, 88)
+useSeedButton.BorderSizePixel = 0
+useSeedButton.Font = Enum.Font.GothamBold
+useSeedButton.TextColor3 = Color3.fromRGB(252, 247, 239)
+useSeedButton.TextWrapped = true
+useSeedButton.TextScaled = true
+useSeedButton.Parent = screenGui
 
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = strokeColor
-	stroke.Thickness = 2
-	stroke.Parent = button
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 16)
+buttonCorner.Parent = useSeedButton
 
-	local title = Instance.new("TextLabel")
-	title.Name = "Title"
-	title.BackgroundTransparency = 1
-	title.Position = UDim2.fromOffset(14, 12)
-	title.Size = UDim2.new(1, -28, 0, 30)
-	title.Font = Enum.Font.GothamBold
-	title.TextColor3 = Color3.fromRGB(255, 239, 204)
-	title.TextWrapped = true
-	title.TextScaled = true
-	title.ZIndex = 12
-	title.Parent = button
+local buttonStroke = Instance.new("UIStroke")
+buttonStroke.Color = Color3.fromRGB(235, 219, 177)
+buttonStroke.Thickness = 2
+buttonStroke.Parent = useSeedButton
 
-	local body = Instance.new("TextLabel")
-	body.Name = "Body"
-	body.BackgroundTransparency = 1
-	body.Position = UDim2.fromOffset(14, 46)
-	body.Size = UDim2.new(1, -28, 1, -58)
-	body.Font = Enum.Font.Gotham
-	body.TextColor3 = Color3.fromRGB(231, 222, 208)
-	body.TextWrapped = true
-	body.TextYAlignment = Enum.TextYAlignment.Top
-	body.TextScaled = true
-	body.ZIndex = 12
-	body.Parent = button
+local playerAttributes = ArcadeConfig.Attributes.Player
+local interactionAttributes = ArcadeConfig.Attributes.Interaction
 
-	button:SetAttribute("ChoiceId", name:lower())
-	choiceButtons[#choiceButtons + 1] = button
-	return button
-end
-
-local restorationButton = createChoiceButton("Restoration", UDim2.fromOffset(20, 148), Color3.fromRGB(142, 220, 116))
-local tributeButton = createChoiceButton("Tribute", UDim2.fromOffset(296, 148), Color3.fromRGB(226, 117, 94))
-
-local dialogueFrame = Instance.new("Frame")
-dialogueFrame.Name = "DialogueBox"
-dialogueFrame.AnchorPoint = Vector2.new(0.5, 1)
-dialogueFrame.Position = UDim2.new(0.5, 0, 1, -28)
-dialogueFrame.Size = UDim2.fromOffset(620, 130)
-dialogueFrame.BackgroundColor3 = Color3.fromRGB(22, 15, 10)
-dialogueFrame.BackgroundTransparency = 0.18
-dialogueFrame.BorderSizePixel = 0
-dialogueFrame.Visible = false
-dialogueFrame.Parent = screenGui
-
-local dialogueCorner = Instance.new("UICorner")
-dialogueCorner.CornerRadius = UDim.new(0, 16)
-dialogueCorner.Parent = dialogueFrame
-
-local dialogueStroke = Instance.new("UIStroke")
-dialogueStroke.Color = Color3.fromRGB(111, 224, 128)
-dialogueStroke.Thickness = 2
-dialogueStroke.Parent = dialogueFrame
-
-local speakerLabel = Instance.new("TextLabel")
-speakerLabel.BackgroundTransparency = 1
-speakerLabel.Position = UDim2.fromOffset(16, 10)
-speakerLabel.Size = UDim2.new(1, -32, 0, 24)
-speakerLabel.Font = Enum.Font.GothamBold
-speakerLabel.TextXAlignment = Enum.TextXAlignment.Left
-speakerLabel.TextColor3 = Color3.fromRGB(255, 236, 199)
-speakerLabel.TextScaled = true
-speakerLabel.Text = "Speaker"
-speakerLabel.Parent = dialogueFrame
-
-local bodyLabel = Instance.new("TextLabel")
-bodyLabel.BackgroundTransparency = 1
-bodyLabel.Position = UDim2.fromOffset(16, 38)
-bodyLabel.Size = UDim2.new(1, -32, 1, -56)
-bodyLabel.Font = Enum.Font.Gotham
-bodyLabel.TextXAlignment = Enum.TextXAlignment.Left
-bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
-bodyLabel.TextWrapped = true
-bodyLabel.TextColor3 = Color3.fromRGB(243, 236, 226)
-bodyLabel.TextScaled = true
-bodyLabel.Text = ""
-bodyLabel.Parent = dialogueFrame
-
-local eventBanner = Instance.new("Frame")
-eventBanner.Name = "StoryBanner"
-eventBanner.AnchorPoint = Vector2.new(0.5, 0)
-eventBanner.Position = UDim2.new(0.5, 0, 0, -90)
-eventBanner.Size = UDim2.fromOffset(460, 84)
-eventBanner.BackgroundColor3 = Color3.fromRGB(36, 24, 14)
-eventBanner.BackgroundTransparency = 0.1
-eventBanner.BorderSizePixel = 0
-eventBanner.Parent = screenGui
-
-local bannerCorner = Instance.new("UICorner")
-bannerCorner.CornerRadius = UDim.new(0, 16)
-bannerCorner.Parent = eventBanner
-
-local bannerStroke = Instance.new("UIStroke")
-bannerStroke.Color = Color3.fromRGB(245, 211, 94)
-bannerStroke.Thickness = 2
-bannerStroke.Parent = eventBanner
-
-local bannerTitle = Instance.new("TextLabel")
-bannerTitle.BackgroundTransparency = 1
-bannerTitle.Position = UDim2.fromOffset(14, 8)
-bannerTitle.Size = UDim2.new(1, -28, 0, 30)
-bannerTitle.Font = Enum.Font.GothamBold
-bannerTitle.TextColor3 = Color3.fromRGB(255, 240, 206)
-bannerTitle.TextScaled = true
-bannerTitle.Text = ""
-bannerTitle.Parent = eventBanner
-
-local bannerBody = Instance.new("TextLabel")
-bannerBody.BackgroundTransparency = 1
-bannerBody.Position = UDim2.fromOffset(14, 38)
-bannerBody.Size = UDim2.new(1, -28, 0, 28)
-bannerBody.Font = Enum.Font.Gotham
-bannerBody.TextColor3 = Color3.fromRGB(241, 232, 216)
-bannerBody.TextScaled = true
-bannerBody.Text = ""
-bannerBody.Parent = eventBanner
-
-eventBanner.Visible = false
-
-local flash = Instance.new("Frame")
-flash.BackgroundColor3 = Color3.fromRGB(255, 236, 180)
-flash.BackgroundTransparency = 1
-flash.Size = UDim2.fromScale(1, 1)
-flash.BorderSizePixel = 0
-flash.Parent = screenGui
-
-local activeDialogueToken = 0
-local activeBannerToken = 0
-local activeBannerPulseToken = 0
-local endingChoiceOpen = false
-local endingChoiceLocked = false
-
-local function clamp(value, minimum, maximum)
-	return math.max(minimum, math.min(maximum, value))
-end
-
-local function getViewportSize()
-	local camera = workspace.CurrentCamera
-	if camera then
-		return camera.ViewportSize
-	end
-	return Vector2.new(1280, 720)
-end
-
-local function setTextSize(label, size)
-	label.TextScaled = false
-	label.TextSize = size
-end
-
-local kindStyles = {
-	banner = {
-		background = Color3.fromRGB(36, 24, 14),
-		stroke = Color3.fromRGB(245, 211, 94),
-		title = Color3.fromRGB(255, 240, 206),
-		body = Color3.fromRGB(241, 232, 216),
-		flash = Color3.fromRGB(255, 236, 180),
-		flashTransparency = 0.45,
+local feedbackColors = {
+	good = {
+		background = Color3.fromRGB(52, 98, 58),
+		stroke = Color3.fromRGB(170, 234, 164),
+		text = Color3.fromRGB(243, 252, 231),
 	},
-	celebration = {
-		background = Color3.fromRGB(56, 33, 14),
-		stroke = Color3.fromRGB(250, 218, 120),
-		title = Color3.fromRGB(255, 243, 214),
-		body = Color3.fromRGB(255, 234, 196),
-		flash = Color3.fromRGB(255, 232, 160),
-		flashTransparency = 0.32,
+	warn = {
+		background = Color3.fromRGB(112, 73, 45),
+		stroke = Color3.fromRGB(244, 193, 121),
+		text = Color3.fromRGB(255, 240, 214),
 	},
-	blessing = {
-		background = Color3.fromRGB(48, 34, 18),
-		stroke = Color3.fromRGB(244, 222, 152),
-		title = Color3.fromRGB(255, 245, 222),
-		body = Color3.fromRGB(246, 236, 210),
-		flash = Color3.fromRGB(255, 242, 196),
-		flashTransparency = 0.38,
-	},
-	warning = {
-		background = Color3.fromRGB(56, 23, 16),
-		stroke = Color3.fromRGB(226, 117, 94),
-		title = Color3.fromRGB(255, 224, 214),
-		body = Color3.fromRGB(247, 219, 204),
-		flash = Color3.fromRGB(255, 170, 150),
-		flashTransparency = 0.4,
-	},
-	restoration = {
-		background = Color3.fromRGB(27, 41, 19),
-		stroke = Color3.fromRGB(142, 220, 116),
-		title = Color3.fromRGB(232, 255, 222),
-		body = Color3.fromRGB(214, 244, 204),
-		flash = Color3.fromRGB(188, 255, 170),
-		flashTransparency = 0.42,
+	info = {
+		background = Color3.fromRGB(44, 65, 92),
+		stroke = Color3.fromRGB(155, 212, 241),
+		text = Color3.fromRGB(239, 248, 255),
 	},
 }
 
-local function applyResponsiveLayout()
-	local viewport = getViewportSize()
-	local widthScale = clamp(viewport.X / 1440, 0.72, 1.12)
-	local heightScale = clamp(viewport.Y / 900, 0.72, 1.08)
-	local compact = viewport.X < 1100 or viewport.Y < 760
+local feedbackToken = 0
 
-	questFrame.Size = UDim2.fromOffset(math.floor(420 * widthScale), math.floor((compact and 156 or 140) * heightScale))
-	questFrame.Position = UDim2.fromOffset(math.floor(20 * widthScale), math.floor(18 * heightScale))
-	setTextSize(questTitle, compact and 22 or 24)
-	setTextSize(questBody, compact and 16 or 18)
-	setTextSize(statsLabel, compact and 14 or 15)
-	setTextSize(hintLabel, compact and 12 or 13)
-	questTitle.Size = UDim2.new(1, -24, 0, compact and 28 or 30)
-	questBody.Size = UDim2.new(1, -24, 0, compact and 64 or 56)
-	statsLabel.Position = UDim2.fromOffset(12, compact and 110 or 100)
-	statsLabel.Size = UDim2.new(1, -24, 0, 18)
-	hintLabel.Position = UDim2.fromOffset(12, compact and 130 or 120)
-	hintLabel.Size = UDim2.new(1, -24, 0, 16)
+local function getAttribute(name)
+	return player:GetAttribute(name)
+end
 
-	endingFrame.Size = UDim2.fromOffset(math.floor(clamp(viewport.X * 0.68, 460, 640)), math.floor(clamp(viewport.Y * 0.44, 280, 360)))
-	endingFrame.Position = UDim2.fromScale(0.5, compact and 0.56 or 0.53)
-	setTextSize(endingTitle, compact and 24 or 28)
-	setTextSize(endingBody, compact and 15 or 17)
-	setTextSize(endingStatus, compact and 13 or 14)
+local function showFeedback(text, tone)
+	feedbackToken += 1
+	local activeToken = feedbackToken
+	local colors = feedbackColors[tone] or feedbackColors.info
 
-	dialogueFrame.Size = UDim2.fromOffset(math.floor(clamp(viewport.X * 0.58, 480, 760)), math.floor(clamp(viewport.Y * 0.2, 132, 196)))
-	dialogueFrame.Position = UDim2.new(0.5, 0, 1, -math.floor(clamp(viewport.Y * 0.04, 24, 42)))
-	setTextSize(speakerLabel, compact and 18 or 20)
-	setTextSize(bodyLabel, compact and 16 or 18)
-	bodyLabel.Size = UDim2.new(1, -32, 1, compact and -60 or -58)
+	feedbackLabel.Text = text or ""
+	feedbackLabel.BackgroundColor3 = colors.background
+	feedbackLabel.TextColor3 = colors.text
+	feedbackStroke.Color = colors.stroke
+	feedbackLabel.Visible = text ~= nil and text ~= ""
 
-	eventBanner.Size = UDim2.fromOffset(math.floor(clamp(viewport.X * 0.4, 360, 560)), math.floor(clamp(viewport.Y * 0.11, 78, 108)))
-	setTextSize(bannerTitle, compact and 20 or 22)
-	setTextSize(bannerBody, compact and 14 or 15)
-
-	local endingWidth = endingFrame.AbsoluteSize.X > 0 and endingFrame.AbsoluteSize.X or math.floor(clamp(viewport.X * 0.68, 460, 640))
-	local buttonGap = compact and 12 or 16
-	local buttonWidth = math.floor((endingWidth - 40 - buttonGap) / 2)
-	local buttonHeight = compact and 140 or 128
-	local buttonY = compact and 154 or 148
-	local rightX = 20 + buttonWidth + buttonGap
-
-	restorationButton.Position = UDim2.fromOffset(20, buttonY)
-	restorationButton.Size = UDim2.fromOffset(buttonWidth, buttonHeight)
-	tributeButton.Position = UDim2.fromOffset(rightX, buttonY)
-	tributeButton.Size = UDim2.fromOffset(buttonWidth, buttonHeight)
-	for _, button in ipairs(choiceButtons) do
-		setTextSize(button.Title, compact and 18 or 20)
-		setTextSize(button.Body, compact and 14 or 15)
+	if not feedbackLabel.Visible then
+		return
 	end
-end
 
-local function formatStats()
-	local seeds = player:GetAttribute("Seeds") or 0
-	local gourds = player:GetAttribute("Gourds") or 0
-	local herbs = player:GetAttribute("Herbs") or 0
-	local coins = player:GetAttribute("Coins") or 0
-	local blessedSeeds = player:GetAttribute("BlessedSeeds") or 0
-	local blessedGourds = player:GetAttribute("BlessedGourds") or 0
-	statsLabel.Text = string.format("Seeds %d · Gourds %d · Blessed %d · Magic %d · Herbs %d · Coins %d", seeds, gourds, blessedSeeds, blessedGourds, herbs, coins)
-end
-
-local function refreshQuest()
-	questTitle.Text = player:GetAttribute("QuestTitle") or "Village Rumor"
-	questBody.Text = player:GetAttribute("QuestObjective") or "Help the village."
-	hintLabel.Text = player:GetAttribute("QuestHint") or "Watch the village signs for story changes."
-	formatStats()
-end
-
-local function setChoiceButtonState(button, enabled)
-	button.Active = enabled
-	button.AutoButtonColor = enabled
-	button.BackgroundTransparency = enabled and 0 or 0.25
-end
-
-local function closeEndingChoice()
-	endingChoiceOpen = false
-	endingChoiceLocked = false
-	endingFrame.Visible = false
-	for _, button in ipairs(choiceButtons) do
-		setChoiceButtonState(button, true)
-	end
-	endingStatus.Text = "Choose once. Your ending will shape the village mood."
-end
-
-local function openEndingChoice(payload)
-	endingChoiceOpen = true
-	endingChoiceLocked = false
-	endingFrame.Visible = true
-	endingTitle.Text = payload.title or "The Valley Waits"
-	endingBody.Text = payload.body or "Choose what kind of harvest the valley should protect."
-	endingStatus.Text = "Choose once. Your ending will shape the village mood."
-
-	local choices = payload.choices or {}
-	local mappedButtons = { restorationButton, tributeButton }
-	for index, button in ipairs(mappedButtons) do
-		local choice = choices[index]
-		button.Visible = choice ~= nil
-		if choice then
-			button:SetAttribute("ChoiceId", choice.id)
-			button.Title.Text = choice.title or "Choice"
-			button.Body.Text = choice.body or ""
-			setChoiceButtonState(button, true)
-		end
-	end
-end
-
-local function showDialogue(payload)
-	activeDialogueToken += 1
-	local token = activeDialogueToken
-	speakerLabel.Text = payload.speaker or "Village"
-	dialogueStroke.Color = payload.accent or Color3.fromRGB(111, 224, 128)
-	dialogueFrame.Visible = true
-	dialogueFrame.BackgroundTransparency = 0.35
-	TweenService:Create(dialogueFrame, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 0.18 }):Play()
-	bodyLabel.Text = table.concat(payload.lines or {}, "\n\n")
-	task.delay(5.5, function()
-		if activeDialogueToken ~= token then return end
-		dialogueFrame.Visible = false
-	end)
-end
-
-local function showBanner(payload)
-	activeBannerToken += 1
-	local token = activeBannerToken
-	local style = kindStyles[payload.kind or "banner"] or kindStyles.banner
-	bannerTitle.Text = payload.title or "Story Beat"
-	bannerBody.Text = payload.body or ""
-	eventBanner.BackgroundColor3 = style.background
-	bannerStroke.Color = payload.color or style.stroke
-	bannerTitle.TextColor3 = style.title
-	bannerBody.TextColor3 = style.body
-	eventBanner.Visible = true
-	local targetPosition = UDim2.new(0.5, 0, 0, 18)
-	local currentY = eventBanner.Position.Y.Offset
-	eventBanner.Position = currentY > -70 and UDim2.new(0.5, 0, 0, math.min(currentY, 18)) or UDim2.new(0.5, 0, 0, -90)
-	TweenService:Create(eventBanner, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = targetPosition }):Play()
-	local duration = payload.duration or ((payload.kind == "blessing" or payload.kind == "restoration") and 4.6 or 3.8)
-	task.delay(duration, function()
-		if activeBannerToken ~= token then return end
-		local tween = TweenService:Create(eventBanner, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(0.5, 0, 0, -90) })
-		tween:Play()
-		tween.Completed:Wait()
-		if activeBannerToken == token then eventBanner.Visible = false end
-	end)
-end
-
-local function doFlash(color, targetTransparency)
-	flash.BackgroundColor3 = color or Color3.fromRGB(255, 236, 180)
-	flash.BackgroundTransparency = 1
-	TweenService:Create(flash, TweenInfo.new(0.12), { BackgroundTransparency = targetTransparency or 0.45 }):Play()
-	task.delay(0.12, function()
-		TweenService:Create(flash, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
-	end)
-end
-
-local function pulseFlash(payload)
-	activeBannerPulseToken += 1
-	local token = activeBannerPulseToken
-	local style = kindStyles[payload.kind or "banner"] or kindStyles.banner
-	local pulses = math.max(payload.pulseCount or 1, 1)
-	task.spawn(function()
-		for index = 1, pulses do
-			if activeBannerPulseToken ~= token then
-				return
-			end
-			doFlash(payload.color or style.flash, style.flashTransparency)
-			if index < pulses then
-				task.wait(0.18)
-			end
-		end
-	end)
-end
-
-for _, button in ipairs(choiceButtons) do
-	button.MouseButton1Click:Connect(function()
-		if not endingChoiceOpen or endingChoiceLocked then
+	task.delay(1.8, function()
+		if feedbackToken ~= activeToken then
 			return
 		end
-		endingChoiceLocked = true
-		for _, otherButton in ipairs(choiceButtons) do
-			setChoiceButtonState(otherButton, false)
-		end
-		endingStatus.Text = "The valley is listening..."
-		endingChoiceResponseEvent:FireServer(button:GetAttribute("ChoiceId"))
-		task.delay(0.45, function()
-			if endingChoiceOpen then
-				endingFrame.Visible = false
-			end
-		end)
+
+		feedbackLabel.Visible = false
+		feedbackLabel.Text = ""
 	end)
 end
 
-for _, attributeName in ipairs({ "QuestTitle", "QuestObjective", "QuestHint", "Seeds", "Gourds", "Herbs", "Coins", "BlessedSeeds", "BlessedGourds" }) do
-	player:GetAttributeChangedSignal(attributeName):Connect(refreshQuest)
+local function refreshHud()
+	local seeds = getAttribute(playerAttributes.Seeds) or 0
+	local money = getAttribute(playerAttributes.Money) or 0
+	local footworkLevel = getAttribute(playerAttributes.MoveSpeedLevel) or 0
+	local handsLevel = getAttribute(playerAttributes.AttackSpeedLevel) or 0
+	local blessingLevel = getAttribute(playerAttributes.SeedMultiplierLevel) or 0
+	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
+
+	resourcesLabel.Text = string.format("Seeds %d   |   Money %d", seeds, money)
+	footworkLabel.Text = string.format("Footwork Lv.%d   Cost path: 20 / 40 / 80", footworkLevel)
+	handsLabel.Text = string.format("Quick Hands Lv.%d   Faster pumpkin hits", handsLevel)
+	blessingLabel.Text = string.format("Blessing Lv.%d   More seeds per heal", blessingLevel)
+	statusLabel.Text = isSlowed and "Status: Goblin slow active" or "Status: Clear"
+	statusLabel.TextColor3 = isSlowed and Color3.fromRGB(240, 149, 112) or Color3.fromRGB(245, 215, 152)
+
+	useSeedButton.Active = seeds > 0
+	useSeedButton.AutoButtonColor = seeds > 0
+	useSeedButton.BackgroundColor3 = seeds > 0 and Color3.fromRGB(97, 162, 88) or Color3.fromRGB(88, 82, 78)
+	useSeedButton.Text = seeds > 0 and string.format("Use Seed [Q]\nSpawn an owned pumpkin near you (%d ready)", seeds) or "Need a Seed\nHeal an injured swallow first"
 end
 
-player:GetAttributeChangedSignal("EndingName"):Connect(function()
-	if (player:GetAttribute("EndingName") or "Unwritten") ~= "Unwritten" then
-		closeEndingChoice()
+local function useSeed()
+	local seeds = getAttribute(playerAttributes.Seeds) or 0
+	if seeds <= 0 then
+		return
+	end
+
+	useSeedRemote:FireServer()
+end
+
+useSeedButton.MouseButton1Click:Connect(useSeed)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.Q then
+		useSeed()
 	end
 end)
 
-applyResponsiveLayout()
-refreshQuest()
+ProximityPromptService.PromptTriggered:Connect(function(prompt, promptedPlayer)
+	if promptedPlayer ~= player then
+		return
+	end
 
-UserInputService:GetPropertyChangedSignal("WindowSize"):Connect(applyResponsiveLayout)
-workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-	task.defer(applyResponsiveLayout)
+	local promptParent = prompt.Parent
+	if not promptParent then
+		return
+	end
+
+	local kind = promptParent:GetAttribute(interactionAttributes.Kind)
+	local entityId = promptParent:GetAttribute(interactionAttributes.EntityId)
+	if not entityId then
+		return
+	end
+
+	if kind == "Swallow" then
+		healSwallowRemote:FireServer(entityId)
+	elseif kind == "Pumpkin" then
+		hitPumpkinRemote:FireServer(entityId)
+	end
 end)
 
-local camera = workspace.CurrentCamera
-if camera then
-	camera:GetPropertyChangedSignal("ViewportSize"):Connect(applyResponsiveLayout)
+for _, attributeName in ipairs({
+	playerAttributes.Seeds,
+	playerAttributes.Money,
+	playerAttributes.MoveSpeedLevel,
+	playerAttributes.AttackSpeedLevel,
+	playerAttributes.SeedMultiplierLevel,
+	playerAttributes.IsSlowed,
+}) do
+	player:GetAttributeChangedSignal(attributeName):Connect(refreshHud)
 end
 
-dialogueEvent.OnClientEvent:Connect(showDialogue)
-effectEvent.OnClientEvent:Connect(function(payload)
-	showBanner(payload)
-	pulseFlash(payload)
+feedbackRemote.OnClientEvent:Connect(function(payload)
+	if typeof(payload) ~= "table" then
+		return
+	end
+
+	showFeedback(payload.text, payload.tone)
 end)
-endingChoiceEvent.OnClientEvent:Connect(function(payload)
-	openEndingChoice(payload)
-	task.defer(applyResponsiveLayout)
-end)
+
+refreshHud()
