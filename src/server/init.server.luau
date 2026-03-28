@@ -155,22 +155,26 @@ local housePlacementSpecs = {
 	HeungbuHouse = {
 		padName = villageLayout.heungbu.housePad.name,
 		padPosition = villageLayout.heungbu.housePad.position,
+		padYaw = villageLayout.heungbu.housePad.yaw,
 		orientationCorrection = Vector3.new(90, 0, 0),
-		facingYaw = -22,
+		yawOffset = -2,
 		groundOffset = 0,
 		visualOffset = Vector3.new(0, 0, -2),
 		fallbackFootprint = Vector3.new(34, 18, 26),
 		narrativeRole = "humble",
+		frontOffset = Vector3.new(0, 0, 12),
 	},
 	NolbuHouse = {
 		padName = villageLayout.nolbu.yardPad.name,
 		padPosition = villageLayout.nolbu.yardPad.position,
+		padYaw = villageLayout.nolbu.yardPad.yaw,
 		orientationCorrection = Vector3.new(90, 0, 0),
-		facingYaw = 20,
+		yawOffset = 2,
 		groundOffset = 0,
 		visualOffset = Vector3.new(0, 0, -8),
 		fallbackFootprint = Vector3.new(42, 22, 30),
 		narrativeRole = "imposing",
+		frontOffset = Vector3.new(0, 0, 16),
 	},
 }
 
@@ -399,22 +403,32 @@ local function resolvePlacementSpec(def)
 	end
 
 	local anchorPosition = spec.padPosition or def.position or Vector3.zero
+	local padYaw = spec.padYaw or (def.rotation and def.rotation.Y) or 0
+	local yawOffset = spec.yawOffset or 0
+	local facingYaw = spec.facingYaw or (padYaw + yawOffset)
 	local visualOffset = spec.visualOffset or Vector3.zero
+	local facingCf = CFrame.new(anchorPosition) * CFrame.Angles(0, math.rad(facingYaw), 0)
+	local worldOffset = facingCf:VectorToWorldSpace(visualOffset)
 	local worldPosition = Vector3.new(
-		anchorPosition.X + visualOffset.X,
+		anchorPosition.X + worldOffset.X,
 		(spec.position and spec.position.Y) or anchorPosition.Y + visualOffset.Y,
-		anchorPosition.Z + visualOffset.Z
+		anchorPosition.Z + worldOffset.Z
 	)
+	local frontOffset = spec.frontOffset or Vector3.zero
+	local frontPosition = worldPosition + facingCf:VectorToWorldSpace(frontOffset)
 
 	return {
 		padName = spec.padName,
+		padPosition = anchorPosition,
+		padYaw = padYaw,
 		position = worldPosition,
 		orientationCorrection = spec.orientationCorrection or Vector3.zero,
-		facingYaw = spec.facingYaw or 0,
+		facingYaw = facingYaw,
 		groundOffset = spec.groundOffset or 0,
 		visualOffset = visualOffset,
 		fallbackFootprint = spec.fallbackFootprint,
 		narrativeRole = spec.narrativeRole,
+		frontPosition = frontPosition,
 	}
 end
 
@@ -441,6 +455,14 @@ local function createFallbackHouse(def)
 	end
 	if placement.narrativeRole then
 		model:SetAttribute("NarrativeRole", placement.narrativeRole)
+	end
+	if placement.facingYaw then
+		model:SetAttribute("FacingYaw", placement.facingYaw)
+	end
+	if placement.frontPosition then
+		model:SetAttribute("FrontX", placement.frontPosition.X)
+		model:SetAttribute("FrontY", placement.frontPosition.Y)
+		model:SetAttribute("FrontZ", placement.frontPosition.Z)
 	end
 	model.Parent = placedAssets
 	return model
@@ -509,9 +531,11 @@ local function applyPlacement(candidate, def)
 	local correction = placement and placement.orientationCorrection or rotation
 	local facingYaw = placement and placement.facingYaw or rotation.Y
 	local targetPosition = placement and placement.position or def.position
-	local groundY = (placement and placement.position and placement.position.Y) or (def.position and def.position.Y) or 0
+	local groundY = (placement and placement.padPosition and placement.padPosition.Y) or (def.position and def.position.Y) or 0
 	local groundOffset = placement and placement.groundOffset or def.groundOffset or 0
-	local cf = CFrame.new(targetPosition) * CFrame.Angles(math.rad(correction.X), math.rad(facingYaw), math.rad(correction.Z))
+	local orientationCf = CFrame.Angles(math.rad(correction.X), 0, math.rad(correction.Z))
+	local yawCf = CFrame.Angles(0, math.rad(facingYaw), 0)
+	local cf = CFrame.new(targetPosition) * yawCf * orientationCf
 
 	if candidate:IsA("Model") then
 		local primary = getPrimary(candidate)
@@ -526,6 +550,12 @@ local function applyPlacement(candidate, def)
 		if placement then
 			candidate:SetAttribute("PlacementPad", placement.padName)
 			candidate:SetAttribute("NarrativeRole", placement.narrativeRole)
+			candidate:SetAttribute("FacingYaw", placement.facingYaw)
+			if placement.frontPosition then
+				candidate:SetAttribute("FrontX", placement.frontPosition.X)
+				candidate:SetAttribute("FrontY", placement.frontPosition.Y)
+				candidate:SetAttribute("FrontZ", placement.frontPosition.Z)
+			end
 		end
 		return true
 	elseif candidate:IsA("BasePart") then
@@ -535,6 +565,10 @@ local function applyPlacement(candidate, def)
 		local bottomY = candidate.Position.Y - (candidate.Size.Y / 2)
 		local lift = groundY - bottomY + groundOffset
 		candidate.Position += Vector3.new(0, lift, 0)
+		if placement then
+			candidate:SetAttribute("PlacementPad", placement.padName)
+			candidate:SetAttribute("FacingYaw", placement.facingYaw)
+		end
 		return true
 	end
 	return false, "unsupported instance type"
@@ -706,13 +740,48 @@ for _, def in ipairs(assetDefinitions) do
 	placedByName[def.name] = candidate
 end
 
+local function getHouseFrontPosition(name, fallbackPosition)
+	local house = placedByName[name]
+	if not house then
+		return fallbackPosition
+	end
+
+	local frontX = house:GetAttribute("FrontX")
+	local frontY = house:GetAttribute("FrontY")
+	local frontZ = house:GetAttribute("FrontZ")
+	if typeof(frontX) == "number" and typeof(frontY) == "number" and typeof(frontZ) == "number" then
+		return Vector3.new(frontX, frontY, frontZ)
+	end
+
+	return fallbackPosition
+end
+
+local function getHouseFacingYaw(name, fallbackYaw)
+	local house = placedByName[name]
+	if not house then
+		return fallbackYaw
+	end
+
+	local facingYaw = house:GetAttribute("FacingYaw")
+	if typeof(facingYaw) == "number" then
+		return facingYaw
+	end
+
+	return fallbackYaw
+end
+
+local heungbuFront = getHouseFrontPosition("HeungbuHouse", villageLayout.heungbu.talkPart.position)
+local nolbuFront = getHouseFrontPosition("NolbuHouse", villageLayout.nolbu.talkPart.position)
+local nolbuFacingYaw = getHouseFacingYaw("NolbuHouse", villageLayout.nolbu.yardPad.yaw)
+
 local heungbuPad = addPart(placedAssets, villageLayout.heungbu.housePad.name, villageLayout.heungbu.housePad.size, CFrame.new(villageLayout.heungbu.housePad.position) * CFrame.Angles(0, math.rad(villageLayout.heungbu.housePad.yaw), 0), Color3.fromRGB(133, 99, 63), Enum.Material.Ground)
 local nolbuPad = addPart(placedAssets, villageLayout.nolbu.yardPad.name, villageLayout.nolbu.yardPad.size, CFrame.new(villageLayout.nolbu.yardPad.position) * CFrame.Angles(0, math.rad(villageLayout.nolbu.yardPad.yaw), 0), Color3.fromRGB(142, 111, 77), Enum.Material.Ground)
 local villageWell = addPart(placedAssets, villageLayout.village.well.name, villageLayout.village.well.size, CFrame.new(villageLayout.village.well.position), Color3.fromRGB(114, 101, 86), Enum.Material.Slate)
 local marketMat = addPart(placedAssets, villageLayout.village.seedMat.name, villageLayout.village.seedMat.size, CFrame.new(villageLayout.village.seedMat.position), Color3.fromRGB(156, 106, 64), Enum.Material.WoodPlanks)
 local gourdPatch = addPart(placedAssets, villageLayout.village.gourdPatch.name, villageLayout.village.gourdPatch.size, CFrame.new(villageLayout.village.gourdPatch.position), Color3.fromRGB(80, 55, 34), Enum.Material.Mud)
 local festivalStone = addPart(placedAssets, villageLayout.village.storyStone.name, villageLayout.village.storyStone.size, CFrame.new(villageLayout.village.storyStone.position), Color3.fromRGB(124, 118, 112), Enum.Material.Slate)
-local tributeBasket = addPart(placedAssets, "NolbuTributeBasket", Vector3.new(6, 2.2, 6), CFrame.new(villageLayout.nolbu.tributePart.position.X, 2.2, villageLayout.nolbu.tributePart.position.Z), Color3.fromRGB(101, 71, 43), Enum.Material.WoodPlanks)
+local tributeBasketPosition = nolbuFront + (CFrame.Angles(0, math.rad(nolbuFacingYaw), 0):VectorToWorldSpace(Vector3.new(10, -1.6, 8)))
+local tributeBasket = addPart(placedAssets, "NolbuTributeBasket", Vector3.new(6, 2.2, 6), CFrame.new(tributeBasketPosition.X, 2.2, tributeBasketPosition.Z), Color3.fromRGB(101, 71, 43), Enum.Material.WoodPlanks)
 local herbPatch = addPart(placedAssets, villageLayout.village.herbPatch.name, villageLayout.village.herbPatch.size, CFrame.new(villageLayout.village.herbPatch.position), Color3.fromRGB(73, 107, 49), Enum.Material.Grass)
 local clotheslineBeam = addPart(placedAssets, villageLayout.village.clothesline.name, villageLayout.village.clothesline.size, CFrame.new(villageLayout.village.clothesline.position), Color3.fromRGB(104, 78, 58), Enum.Material.WoodPlanks)
 addPart(placedAssets, "ClothesPoleA", Vector3.new(1, 8, 1), CFrame.new(villageLayout.village.clothesline.position + Vector3.new(-7, -4, 0)), Color3.fromRGB(117, 86, 61), Enum.Material.Wood)
@@ -747,7 +816,8 @@ local patrolBNodes = buildWanderRing("NolbuPatrolB", Vector3.new(92, 2, 30), 14,
 if placedByName.NolbuPatrolA then startWanderNpc(placedByName.NolbuPatrolA, { walkSpeed = 8, nodes = patrolANodes }) end
 if placedByName.NolbuPatrolB then startWanderNpc(placedByName.NolbuPatrolB, { walkSpeed = 7, nodes = patrolBNodes }) end
 
-local heungbuTalkPart = ensureInteractionPart(villageLayout.heungbu.talkPart.name, villageLayout.heungbu.talkPart.position, villageLayout.heungbu.talkPart.size)
+local heungbuTalkPosition = heungbuFront + Vector3.new(0, 5, 0)
+local heungbuTalkPart = ensureInteractionPart(villageLayout.heungbu.talkPart.name, heungbuTalkPosition, villageLayout.heungbu.talkPart.size)
 local heungbuPrompt = createPrompt(heungbuTalkPart, "Talk", "Heungbu", 0.2, 14)
 local heungbuSign = attachBillboard(heungbuTalkPart, "Heungbu", "He keeps smiling even when the house is quiet.", Color3.fromRGB(111, 224, 128))
 local seedPart = ensureInteractionPart("SeedBasket", villageLayout.village.seedMat.position + Vector3.new(0, 1.8, 0), Vector3.new(8, 6, 8))
@@ -755,9 +825,11 @@ local seedPrompt = createPrompt(seedPart, "Collect", "Seed Basket", 0.15, 12)
 local patchPart = ensureInteractionPart(villageLayout.heungbu.patchPart.name, villageLayout.heungbu.patchPart.position, villageLayout.heungbu.patchPart.size)
 local plantPrompt = createPrompt(patchPart, "Plant / Harvest", "Gourd Patch", 0.25, 14)
 local patchSign = attachBillboard(patchPart, "Gourd Patch", "Bring a seed, then return when the vine is ready.", Color3.fromRGB(120, 219, 95))
-local nolbuTalkPart = ensureInteractionPart(villageLayout.nolbu.talkPart.name, villageLayout.nolbu.talkPart.position, villageLayout.nolbu.talkPart.size)
+local nolbuTalkPosition = nolbuFront + Vector3.new(0, 5, 0)
+local nolbuTalkPart = ensureInteractionPart(villageLayout.nolbu.talkPart.name, nolbuTalkPosition, villageLayout.nolbu.talkPart.size)
 local nolbuPrompt = createPrompt(nolbuTalkPart, "Listen", "Nolbu", 0.15, 12)
-local tributePart = ensureInteractionPart(villageLayout.nolbu.tributePart.name, villageLayout.nolbu.tributePart.position, villageLayout.nolbu.tributePart.size)
+local tributePosition = tributeBasketPosition + Vector3.new(0, 2, 0)
+local tributePart = ensureInteractionPart(villageLayout.nolbu.tributePart.name, tributePosition, villageLayout.nolbu.tributePart.size)
 local tributePrompt = createPrompt(tributePart, "Offer", "Tribute Basket", 0.15, 12)
 local swallowPart = ensureInteractionPart(villageLayout.nolbu.swallowPart.name, villageLayout.nolbu.swallowPart.position, villageLayout.nolbu.swallowPart.size)
 local swallowPrompt = createPrompt(swallowPart, "Inspect", "Injured Swallow", 0.1, 12)

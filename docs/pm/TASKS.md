@@ -28,7 +28,7 @@
 |---|---|---|---|---|---|---|
 | MG-PM-101 | Nolbu wandering patrol NPCs | village runtime slice | done | 배회 NPC 2명/pathfinding 구현 보고됨 | 실제 체감만 계속 다듬기 | P1 |
 | MG-PM-102 | Heungbu interaction presence | village runtime slice | done | Heungbu 대화/보상 루프 존재 | 유지 | P1 |
-| MG-PM-103 | House placement/orientation final polish | house setup goal | rebuild | fallback/런타임 안정화는 있으나 실제 자산 배치 완성도는 미확정 | Studio 기준 튜닝 | P1 |
+| MG-PM-103 | House placement/orientation final polish | house setup goal | rebuild | pad/yaw 기반 house placement contract, bottom anchoring, front-anchor metadata, and prompt/tribute alignment logic are now implemented in server code; final visual confirmation in Studio is still pending | Run one Studio visual pass, then close if imported houses read upright and grounded | P1 |
 | MG-PM-104 | World storytelling props | village decor slice | done | 울타리/나무/돌/등불 및 추가 마당 연출 반영 | 유지 | P2 |
 | MG-PM-105 | Swallow/nest scene staging | swallow healing slice | done | 담벼락 근처 제비/둥지 연출 추가됨 | 유지 | P2 |
 
