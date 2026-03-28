@@ -3,6 +3,7 @@ print("MagicGourd client started")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -291,6 +292,23 @@ local activeBannerPulseToken = 0
 local endingChoiceOpen = false
 local endingChoiceLocked = false
 
+local function clamp(value, minimum, maximum)
+	return math.max(minimum, math.min(maximum, value))
+end
+
+local function getViewportSize()
+	local camera = workspace.CurrentCamera
+	if camera then
+		return camera.ViewportSize
+	end
+	return Vector2.new(1280, 720)
+end
+
+local function setTextSize(label, size)
+	label.TextScaled = false
+	label.TextSize = size
+end
+
 local kindStyles = {
 	banner = {
 		background = Color3.fromRGB(36, 24, 14),
@@ -333,6 +351,58 @@ local kindStyles = {
 		flashTransparency = 0.42,
 	},
 }
+
+local function applyResponsiveLayout()
+	local viewport = getViewportSize()
+	local widthScale = clamp(viewport.X / 1440, 0.72, 1.12)
+	local heightScale = clamp(viewport.Y / 900, 0.72, 1.08)
+	local compact = viewport.X < 1100 or viewport.Y < 760
+
+	questFrame.Size = UDim2.fromOffset(math.floor(420 * widthScale), math.floor((compact and 156 or 140) * heightScale))
+	questFrame.Position = UDim2.fromOffset(math.floor(20 * widthScale), math.floor(18 * heightScale))
+	setTextSize(questTitle, compact and 22 or 24)
+	setTextSize(questBody, compact and 16 or 18)
+	setTextSize(statsLabel, compact and 14 or 15)
+	setTextSize(hintLabel, compact and 12 or 13)
+	questTitle.Size = UDim2.new(1, -24, 0, compact and 28 or 30)
+	questBody.Size = UDim2.new(1, -24, 0, compact and 64 or 56)
+	statsLabel.Position = UDim2.fromOffset(12, compact and 110 or 100)
+	statsLabel.Size = UDim2.new(1, -24, 0, 18)
+	hintLabel.Position = UDim2.fromOffset(12, compact and 130 or 120)
+	hintLabel.Size = UDim2.new(1, -24, 0, 16)
+
+	endingFrame.Size = UDim2.fromOffset(math.floor(clamp(viewport.X * 0.68, 460, 640)), math.floor(clamp(viewport.Y * 0.44, 280, 360)))
+	endingFrame.Position = UDim2.fromScale(0.5, compact and 0.56 or 0.53)
+	setTextSize(endingTitle, compact and 24 or 28)
+	setTextSize(endingBody, compact and 15 or 17)
+	setTextSize(endingStatus, compact and 13 or 14)
+
+	dialogueFrame.Size = UDim2.fromOffset(math.floor(clamp(viewport.X * 0.58, 480, 760)), math.floor(clamp(viewport.Y * 0.2, 132, 196)))
+	dialogueFrame.Position = UDim2.new(0.5, 0, 1, -math.floor(clamp(viewport.Y * 0.04, 24, 42)))
+	setTextSize(speakerLabel, compact and 18 or 20)
+	setTextSize(bodyLabel, compact and 16 or 18)
+	bodyLabel.Size = UDim2.new(1, -32, 1, compact and -60 or -58)
+
+	eventBanner.Size = UDim2.fromOffset(math.floor(clamp(viewport.X * 0.4, 360, 560)), math.floor(clamp(viewport.Y * 0.11, 78, 108)))
+	setTextSize(bannerTitle, compact and 20 or 22)
+	setTextSize(bannerBody, compact and 14 or 15)
+
+	local endingWidth = endingFrame.AbsoluteSize.X > 0 and endingFrame.AbsoluteSize.X or math.floor(clamp(viewport.X * 0.68, 460, 640))
+	local buttonGap = compact and 12 or 16
+	local buttonWidth = math.floor((endingWidth - 40 - buttonGap) / 2)
+	local buttonHeight = compact and 140 or 128
+	local buttonY = compact and 154 or 148
+	local rightX = 20 + buttonWidth + buttonGap
+
+	restorationButton.Position = UDim2.fromOffset(20, buttonY)
+	restorationButton.Size = UDim2.fromOffset(buttonWidth, buttonHeight)
+	tributeButton.Position = UDim2.fromOffset(rightX, buttonY)
+	tributeButton.Size = UDim2.fromOffset(buttonWidth, buttonHeight)
+	for _, button in ipairs(choiceButtons) do
+		setTextSize(button.Title, compact and 18 or 20)
+		setTextSize(button.Body, compact and 14 or 15)
+	end
+end
 
 local function formatStats()
 	local seeds = player:GetAttribute("Seeds") or 0
@@ -485,10 +555,25 @@ player:GetAttributeChangedSignal("EndingName"):Connect(function()
 	end
 end)
 
+applyResponsiveLayout()
 refreshQuest()
+
+UserInputService:GetPropertyChangedSignal("WindowSize"):Connect(applyResponsiveLayout)
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	task.defer(applyResponsiveLayout)
+end)
+
+local camera = workspace.CurrentCamera
+if camera then
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(applyResponsiveLayout)
+end
+
 dialogueEvent.OnClientEvent:Connect(showDialogue)
 effectEvent.OnClientEvent:Connect(function(payload)
 	showBanner(payload)
 	pulseFlash(payload)
 end)
-endingChoiceEvent.OnClientEvent:Connect(openEndingChoice)
+endingChoiceEvent.OnClientEvent:Connect(function(payload)
+	openEndingChoice(payload)
+	task.defer(applyResponsiveLayout)
+end)

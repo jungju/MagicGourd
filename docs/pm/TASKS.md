@@ -38,7 +38,7 @@
 |---|---|---|---|---|---|---|
 | MG-PM-201 | Quest HUD | guided quest slice | done | quest title/objective/stats HUD 구현됨 | 유지 | P1 |
 | MG-PM-202 | Dialogue box system | guided quest slice | done | RemoteEvent 기반 대화창 구현됨 | 유지 | P1 |
-| MG-PM-203 | Dialogue readability / sizing polish | guided quest slice | rebuild | 실제 화면 기준 검증 필요 메모 존재 | 실기 검증 후 보정 | P2 |
+| MG-PM-203 | Dialogue readability / sizing polish | guided quest slice | done | client HUD/dialogue/ending UI가 viewport 기반 responsive sizing으로 재구성되어 `TextScaled` 의존이 줄고 작은 화면에서도 읽기 쉬운 고정 글자 크기와 패널 크기 보정이 들어감 | 유지, Studio 실기에서 최종 체감만 확인 | P2 |
 | MG-PM-204 | Stronger cinematic payoff UI/effects | 2026-03-28 payoff presentation pass | done | `StoryEffectEvent` kind/duration/pulse 기반 연출, Heungbu ceremony multi-beat 보상 타이밍, retaliation/restoration presentation이 구현됨 | 유지, Studio 체감만 추가 검증 | P2 |
 
 ## Systems / Robustness
