@@ -188,7 +188,7 @@ function ArcadeWorld.build(config)
 		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName, upgradePromptDistance)
 	end
 
-	for index, point in ipairs(config.World.GoblinSpawnPoints) do
+	for index, point in ipairs(config.World.DangerRockPositions or config.World.GoblinSpawnPoints) do
 		createPart(staticFolder, "DangerRock" .. index, Vector3.new(5, 3, 4), CFrame.new(point + Vector3.new(0, 0.9, 0)), Color3.fromRGB(71, 63, 67), Enum.Material.Rock)
 	end
 

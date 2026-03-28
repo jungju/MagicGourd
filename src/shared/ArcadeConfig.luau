@@ -137,10 +137,16 @@ local config = {
 			Vector3.new(-66, 2.3, 20),
 		},
 		GoblinSpawnPoints = {
-			Vector3.new(64, 3.5, 16),
-			Vector3.new(74, 3.5, 30),
-			Vector3.new(84, 3.5, 18),
-			Vector3.new(78, 3.5, 38),
+			Vector3.new(62, 3.5, 14),
+			Vector3.new(72, 3.5, 31),
+			Vector3.new(86, 3.5, 16),
+			Vector3.new(80, 3.5, 40),
+		},
+		DangerRockPositions = {
+			Vector3.new(58, 0.5, 9),
+			Vector3.new(68, 0.5, 37),
+			Vector3.new(84, 0.5, 10),
+			Vector3.new(92, 0.5, 33),
 		},
 	},
 	Swallows = {
