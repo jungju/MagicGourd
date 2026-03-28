@@ -171,6 +171,14 @@ local config = {
 		ClearanceRadius = 2.6,
 		HitDistance = 14,
 		PromptDistance = 12,
+		PlacementBias = {
+			UpgradePadDistance = 8.5,
+			SwallowDistance = 6.5,
+			DangerRockDistance = 4.5,
+			UpgradePadWeight = 2.8,
+			SwallowWeight = 1.4,
+			DangerRockWeight = 0.8,
+		},
 	},
 	Goblins = {
 		ActiveCount = 2,

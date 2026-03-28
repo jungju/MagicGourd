@@ -25,6 +25,22 @@ local function createPrompt(parent, actionText, objectText, maxDistance)
 	return prompt
 end
 
+local function addAnchorPenalty(spawnPosition, anchors, preferredDistance, weight)
+	if preferredDistance <= 0 or weight <= 0 then
+		return 0
+	end
+
+	local penalty = 0
+	for _, anchorPosition in ipairs(anchors or {}) do
+		local distance = (spawnPosition - anchorPosition).Magnitude
+		if distance < preferredDistance then
+			penalty += ((preferredDistance - distance) / preferredDistance) * weight
+		end
+	end
+
+	return penalty
+end
+
 function PumpkinService.new(config, world, playerState)
 	local self = setmetatable({}, PumpkinService)
 	self.config = config
@@ -260,6 +276,15 @@ function PumpkinService:_getSpawnPosition(player, root)
 	local spawnRadius = self.config.Pumpkins.SpawnRadius
 	local clearanceRadius = self.config.Pumpkins.ClearanceRadius or 2.6
 	local spawnAttempts = self.config.Pumpkins.SpawnAttempts or 8
+	local placementBias = self.config.Pumpkins.PlacementBias or {}
+	local upgradePadAnchors = {}
+	for _, padDef in pairs(self.config.World.UpgradePads or {}) do
+		if typeof(padDef.position) == "Vector3" then
+			table.insert(upgradePadAnchors, padDef.position)
+		end
+	end
+	local swallowAnchors = self.world.swallowSpawnPoints or self.config.World.SwallowSpawnPoints or {}
+	local dangerRockAnchors = self.config.World.DangerRockPositions or {}
 	local bestPosition
 	local bestPenalty = math.huge
 
@@ -282,6 +307,25 @@ function PumpkinService:_getSpawnPosition(player, root)
 				penalty += 1
 			end
 		end
+
+		penalty += addAnchorPenalty(
+			spawnPosition,
+			upgradePadAnchors,
+			placementBias.UpgradePadDistance or 0,
+			placementBias.UpgradePadWeight or 0
+		)
+		penalty += addAnchorPenalty(
+			spawnPosition,
+			swallowAnchors,
+			placementBias.SwallowDistance or 0,
+			placementBias.SwallowWeight or 0
+		)
+		penalty += addAnchorPenalty(
+			spawnPosition,
+			dangerRockAnchors,
+			placementBias.DangerRockDistance or 0,
+			placementBias.DangerRockWeight or 0
+		)
 
 		if penalty <= 0 then
 			return spawnPosition
