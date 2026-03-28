@@ -206,6 +206,17 @@ local feedbackColors = {
 }
 
 local feedbackToken = 0
+local activeWorldPopupCounts = {}
+
+local function getWorldPopupBucketKey(worldPosition)
+	local bucketSize = 10
+	return string.format(
+		"%d:%d:%d",
+		math.floor(worldPosition.X / bucketSize + 0.5),
+		math.floor(worldPosition.Y / bucketSize + 0.5),
+		math.floor(worldPosition.Z / bucketSize + 0.5)
+	)
+end
 
 local function getAttribute(name)
 	return player:GetAttribute(name)
@@ -414,6 +425,12 @@ local function showWorldPopup(text, tone, worldPosition)
 	end
 
 	local colors = getFeedbackColors(tone)
+	local bucketKey = getWorldPopupBucketKey(worldPosition)
+	local activeCount = activeWorldPopupCounts[bucketKey] or 0
+	activeWorldPopupCounts[bucketKey] = activeCount + 1
+
+	local lateralOffset = ((activeCount % 3) - 1) * 1.2
+	local verticalOffset = 3.6 + math.min(activeCount, 3) * 1.15
 	local popupPart = Instance.new("Part")
 	popupPart.Name = "ArcadeFeedbackAnchor"
 	popupPart.Anchored = true
@@ -422,12 +439,12 @@ local function showWorldPopup(text, tone, worldPosition)
 	popupPart.CanQuery = false
 	popupPart.Transparency = 1
 	popupPart.Size = Vector3.new(0.2, 0.2, 0.2)
-	popupPart.CFrame = CFrame.new(worldPosition + Vector3.new(0, 3.6, 0))
+	popupPart.CFrame = CFrame.new(worldPosition + Vector3.new(lateralOffset, verticalOffset, 0))
 	popupPart.Parent = Workspace
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "ArcadeFeedbackBillboard"
-	billboard.Size = UDim2.fromOffset(170, 46)
+	billboard.Size = string.len(text) > 12 and UDim2.fromOffset(210, 54) or UDim2.fromOffset(170, 46)
 	billboard.StudsOffsetWorldSpace = Vector3.new(0, 0, 0)
 	billboard.AlwaysOnTop = true
 	billboard.MaxDistance = 110
@@ -440,6 +457,7 @@ local function showWorldPopup(text, tone, worldPosition)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
+	label.TextWrapped = true
 	label.TextStrokeTransparency = 0.4
 	label.TextStrokeColor3 = Color3.new(0, 0, 0)
 	label.TextColor3 = colors.text
@@ -448,18 +466,22 @@ local function showWorldPopup(text, tone, worldPosition)
 
 	local riseTween = TweenService:Create(
 		popupPart,
-		TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-		{ CFrame = popupPart.CFrame + Vector3.new(0, 2.2, 0) }
+		TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ CFrame = popupPart.CFrame + Vector3.new(0, 2.4, 0) }
 	)
 	local fadeTween = TweenService:Create(
 		label,
-		TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
 		{ TextTransparency = 1, TextStrokeTransparency = 1 }
 	)
 
 	riseTween:Play()
 	fadeTween:Play()
 	fadeTween.Completed:Connect(function()
+		activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
+		if activeWorldPopupCounts[bucketKey] == 0 then
+			activeWorldPopupCounts[bucketKey] = nil
+		end
 		popupPart:Destroy()
 	end)
 end
