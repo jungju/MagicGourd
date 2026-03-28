@@ -313,7 +313,7 @@ local housePlacementSpecs = {
 		visualOffset = Vector3.new(0, 0, -2),
 		fallbackFootprint = Vector3.new(34, 18, 26),
 		narrativeRole = "humble",
-		frontOffset = Vector3.new(0, 0, 12),
+		frontClearance = 4,
 		talkOffset = Vector3.new(0, 5, 2.5),
 		yardMarkerOffset = Vector3.new(7, 0.8, -6),
 	},
@@ -327,7 +327,7 @@ local housePlacementSpecs = {
 		visualOffset = Vector3.new(0, 0, -8),
 		fallbackFootprint = Vector3.new(42, 22, 30),
 		narrativeRole = "imposing",
-		frontOffset = Vector3.new(0, 0, 16),
+		frontClearance = 5,
 		talkOffset = Vector3.new(0, 5, 2),
 		tributeOffset = Vector3.new(10, -1.6, 8),
 	},
@@ -880,8 +880,7 @@ local function resolvePlacementSpec(def)
 		(spec.position and spec.position.Y) or anchorPosition.Y + visualOffset.Y,
 		anchorPosition.Z + worldOffset.Z
 	)
-	local frontOffset = spec.frontOffset or Vector3.zero
-	local frontPosition = worldPosition + facingCf:VectorToWorldSpace(frontOffset)
+	local frontClearance = spec.frontClearance or 0
 
 	return {
 		padName = spec.padName,
@@ -894,8 +893,37 @@ local function resolvePlacementSpec(def)
 		visualOffset = visualOffset,
 		fallbackFootprint = spec.fallbackFootprint,
 		narrativeRole = spec.narrativeRole,
-		frontPosition = frontPosition,
+		frontClearance = frontClearance,
 	}
+end
+
+local function stampHousePlacementAttributes(instance, placement, boxCf, boxSize)
+	if not placement then
+		return
+	end
+
+	if placement.padName then
+		instance:SetAttribute("PlacementPad", placement.padName)
+	end
+	if placement.narrativeRole then
+		instance:SetAttribute("NarrativeRole", placement.narrativeRole)
+	end
+	instance:SetAttribute("FacingYaw", placement.facingYaw or 0)
+	instance:SetAttribute("GroundY", (placement.padPosition and placement.padPosition.Y) or 0)
+	instance:SetAttribute("BoundsCenterX", boxCf.Position.X)
+	instance:SetAttribute("BoundsCenterY", boxCf.Position.Y)
+	instance:SetAttribute("BoundsCenterZ", boxCf.Position.Z)
+	instance:SetAttribute("BoundsSizeX", boxSize.X)
+	instance:SetAttribute("BoundsSizeY", boxSize.Y)
+	instance:SetAttribute("BoundsSizeZ", boxSize.Z)
+	instance:SetAttribute("TopY", boxCf.Position.Y + (boxSize.Y / 2))
+
+	local clearance = placement.frontClearance or 0
+	local frontDirection = CFrame.Angles(0, math.rad(placement.facingYaw or 0), 0).LookVector
+	local frontPosition = boxCf.Position + (frontDirection * ((boxSize.Z / 2) + clearance))
+	instance:SetAttribute("FrontX", frontPosition.X)
+	instance:SetAttribute("FrontY", frontPosition.Y)
+	instance:SetAttribute("FrontZ", frontPosition.Z)
 end
 
 local function createFallbackHouse(def)
@@ -916,21 +944,9 @@ local function createFallbackHouse(def)
 	roofRight.CanCollide = false
 	porch.CanCollide = true
 	model.PrimaryPart = floor
-	if placement.padName then
-		model:SetAttribute("PlacementPad", placement.padName)
-	end
-	if placement.narrativeRole then
-		model:SetAttribute("NarrativeRole", placement.narrativeRole)
-	end
-	if placement.facingYaw then
-		model:SetAttribute("FacingYaw", placement.facingYaw)
-	end
-	if placement.frontPosition then
-		model:SetAttribute("FrontX", placement.frontPosition.X)
-		model:SetAttribute("FrontY", placement.frontPosition.Y)
-		model:SetAttribute("FrontZ", placement.frontPosition.Z)
-	end
 	model.Parent = placedAssets
+	local boxCf, boxSize = model:GetBoundingBox()
+	stampHousePlacementAttributes(model, placement, boxCf, boxSize)
 	return model
 end
 
@@ -1013,16 +1029,8 @@ local function applyPlacement(candidate, def)
 		local bottomY = boxCf.Position.Y - (boxSize.Y / 2)
 		local lift = groundY - bottomY + groundOffset
 		if math.abs(lift) > 0.001 then candidate:PivotTo(candidate:GetPivot() + Vector3.new(0, lift, 0)) end
-		if placement then
-			candidate:SetAttribute("PlacementPad", placement.padName)
-			candidate:SetAttribute("NarrativeRole", placement.narrativeRole)
-			candidate:SetAttribute("FacingYaw", placement.facingYaw)
-			if placement.frontPosition then
-				candidate:SetAttribute("FrontX", placement.frontPosition.X)
-				candidate:SetAttribute("FrontY", placement.frontPosition.Y)
-				candidate:SetAttribute("FrontZ", placement.frontPosition.Z)
-			end
-		end
+		boxCf, boxSize = candidate:GetBoundingBox()
+		stampHousePlacementAttributes(candidate, placement, boxCf, boxSize)
 		return true
 	elseif candidate:IsA("BasePart") then
 		if typeof(def.scale) == "number" and def.scale > 0 and def.scale ~= 1 then candidate.Size = candidate.Size * def.scale end
