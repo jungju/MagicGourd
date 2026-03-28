@@ -21,7 +21,8 @@
     },
     "Workspace": {
       "Map": {
-        "$path": "src/workspace"
+        "$path": "src/workspace",
+        "$ignoreUnknownInstances": true
       }
     }
   }

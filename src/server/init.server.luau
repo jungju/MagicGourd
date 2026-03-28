@@ -151,6 +151,8 @@ local function getPlayerProfile(player)
 		magicPayoffDone = false,
 		retaliationTriggered = false,
 		bramblesCleared = false,
+		activePresentationToken = 0,
+		presentationBusy = false,
 	}
 	playerData[player] = profile
 	return profile
@@ -182,13 +184,66 @@ local function showDialogue(player, speaker, lines, accent)
 	dialogueEvent:FireClient(player, { speaker = speaker, lines = lines, accent = accent })
 end
 
-local function showEffect(player, kind, title, body, color)
+local function showEffect(player, kind, title, body, color, duration, pulseCount)
 	effectEvent:FireClient(player, {
 		kind = kind,
 		title = title,
 		body = body,
 		color = color,
+		duration = duration,
+		pulseCount = pulseCount,
 	})
+end
+
+local function startPresentation(player)
+	local profile = getPlayerProfile(player)
+	profile.activePresentationToken += 1
+	profile.presentationBusy = true
+	return profile.activePresentationToken
+end
+
+local function finishPresentation(player, token)
+	local profile = getPlayerProfile(player)
+	if profile.activePresentationToken == token then
+		profile.presentationBusy = false
+	end
+end
+
+local function playPresentationSequence(player, beats, onComplete)
+	local token = startPresentation(player)
+	task.spawn(function()
+		for _, beat in ipairs(beats) do
+			local profile = getPlayerProfile(player)
+			if profile.activePresentationToken ~= token then
+				return
+			end
+			if beat.effect then
+				showEffect(
+					player,
+					beat.effect.kind,
+					beat.effect.title,
+					beat.effect.body,
+					beat.effect.color,
+					beat.effect.duration,
+					beat.effect.pulseCount
+				)
+			end
+			if beat.dialogue then
+				showDialogue(player, beat.dialogue.speaker, beat.dialogue.lines, beat.dialogue.accent)
+			end
+			if beat.delay and beat.delay > 0 then
+				task.wait(beat.delay)
+			end
+		end
+		local profile = getPlayerProfile(player)
+		if profile.activePresentationToken ~= token then
+			return
+		end
+		if onComplete then
+			onComplete()
+		end
+		finishPresentation(player, token)
+	end)
 end
 
 Players.PlayerAdded:Connect(function(player)
@@ -684,8 +739,8 @@ plantPrompt.Triggered:Connect(function(player)
 		if currentCrop.cropType == "blessed" then
 			profile.blessedGourds += 1
 			setQuestStage(player, QUEST.MAGIC_PAYOFF)
-			showEffect(player, "banner", "True Magic Gourd", "+1 magic gourd harvested", Color3.fromRGB(245, 211, 94))
-			showDialogue(player, "Harvest", { "The true magic gourd comes free with a warm golden hum.", "Heungbu should be the one to open this blessing." }, Color3.fromRGB(245, 211, 94))
+			showEffect(player, "blessing", "A True Magic Gourd", "The vine answers Heungbu's kindness. Bring the sacred harvest home.", Color3.fromRGB(245, 211, 94), 4.8, 2)
+			showDialogue(player, "Harvest", { "The true magic gourd comes free with a warm golden hum.", "This is no market crop. Bring the sacred harvest back to Heungbu." }, Color3.fromRGB(245, 211, 94))
 		else
 			profile.gourds += 1
 			setQuestStage(player, math.max(profile.questStage, QUEST.DELIVER_FIRST))
@@ -731,16 +786,59 @@ heungbuPrompt.Triggered:Connect(function(player)
 		return
 	end
 	if profile.blessedGourds > 0 and profile.questStage >= QUEST.MAGIC_PAYOFF and not profile.magicPayoffDone then
+		if profile.presentationBusy then
+			showDialogue(player, "Heungbu", { "Wait— let the blessing settle for a breath.", "This miracle should land cleanly, not all at once." }, Color3.fromRGB(111, 224, 128))
+			return
+		end
 		profile.blessedGourds -= 1
-		profile.coins += 20
-		profile.seeds += 3
 		profile.magicPayoffDone = true
 		villageState.magicPayoffs += 1
-		setQuestStage(player, QUEST.NOLBU_RETALIATION)
-		syncPlayerAttributes(player)
-		refreshVillageSigns()
-		showEffect(player, "celebration", "The Gourd Opens", "Heungbu's yard fills with warmth, coins, and hope.", Color3.fromRGB(250, 218, 120))
-		showDialogue(player, "Heungbu", { "A true magic gourd... and it opened for a kind heart.", "Take these coins and extra seeds. Let the valley remember this morning.", "Nolbu is already staring from his gate. Go hear what envy sounds like." }, Color3.fromRGB(111, 224, 128))
+		playPresentationSequence(player, {
+			{
+				effect = {
+					kind = "celebration",
+					title = "Heungbu's Blessing",
+					body = "The village gathers around the miracle harvest.",
+					color = Color3.fromRGB(250, 218, 120),
+					duration = 4.4,
+					pulseCount = 2,
+				},
+				dialogue = {
+					speaker = "Heungbu",
+					lines = {
+						"A true magic gourd... and it opened for a kind heart.",
+						"Even this quiet yard feels full when a blessing arrives like this.",
+					},
+					accent = Color3.fromRGB(111, 224, 128),
+				},
+				delay = 1.75,
+			},
+			{
+				effect = {
+					kind = "celebration",
+					title = "Prosperity Spreads",
+					body = "You receive coins and blessed seed stock for future hope.",
+					color = Color3.fromRGB(255, 224, 138),
+					duration = 4.8,
+					pulseCount = 2,
+				},
+				dialogue = {
+					speaker = "Heungbu",
+					lines = {
+						"Take these coins and extra seeds. Let the valley remember this morning.",
+						"Nolbu is already staring from his gate. Go hear what envy sounds like.",
+					},
+					accent = Color3.fromRGB(111, 224, 128),
+				},
+				delay = 0.5,
+			},
+		}, function()
+			profile.coins += 20
+			profile.seeds += 3
+			setQuestStage(player, QUEST.NOLBU_RETALIATION)
+			syncPlayerAttributes(player)
+			refreshVillageSigns()
+		end)
 		return
 	end
 	if profile.gourds <= 0 then
@@ -797,8 +895,28 @@ nolbuPrompt.Triggered:Connect(function(player)
 		setBramblesVisible(true)
 		syncPlayerAttributes(player)
 		refreshVillageSigns()
-		showEffect(player, "warning", "Nolbu Retaliates", "Jealous brambles choke Heungbu's patch.", Color3.fromRGB(226, 117, 94))
-		showDialogue(player, "Nolbu", { "A magic gourd in that shabby yard? Ridiculous.", "If Heungbu's patch grows miracles now, it can grow through thorns too.", "Go back and look. Envy leaves marks." }, Color3.fromRGB(226, 117, 94))
+		playPresentationSequence(player, {
+			{
+				effect = {
+					kind = "warning",
+					title = "Jealous Eyes Turn Here",
+					body = "Nolbu sees the miracle and vows to ruin the patch.",
+					color = Color3.fromRGB(226, 117, 94),
+					duration = 4.2,
+					pulseCount = 2,
+				},
+				dialogue = {
+					speaker = "Nolbu",
+					lines = {
+						"A magic gourd in that shabby yard? Ridiculous.",
+						"If Heungbu's patch grows miracles now, it can grow through thorns too.",
+						"Go back and look. Envy leaves marks.",
+					},
+					accent = Color3.fromRGB(226, 117, 94),
+				},
+				delay = 0.25,
+			},
+		}, nil)
 		return
 	end
 	showDialogue(player, "Nolbu", { string.format("My estate still has %d patrol steps and %d reasons to stay impressed.", #patrolANodes + #patrolBNodes, villageState.nolbuTributes), profile.retaliationTriggered and "If Heungbu cannot keep brambles out, perhaps he does not deserve a harvest." or "If you have a spare gourd, the basket is right there." }, Color3.fromRGB(226, 117, 94))
@@ -884,7 +1002,7 @@ bramblePrompt.Triggered:Connect(function(player)
 	setBramblesVisible(false)
 	syncPlayerAttributes(player)
 	refreshVillageSigns()
-	showEffect(player, "banner", "Patch Restored", "+1 seed and +4 coins", Color3.fromRGB(142, 220, 116))
+	showEffect(player, "restoration", "Hope Returns", "The patch breathes again. Kindness still grows here.", Color3.fromRGB(142, 220, 116), 4.8, 1)
 	showDialogue(player, "Heungbu", { "You cleared the patch before the thorns could win.", "Kindness grows back faster than spite here.", "Take one more seed. The valley can keep going now." }, Color3.fromRGB(111, 224, 128))
 end)
 

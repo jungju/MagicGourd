@@ -1,0 +1,19 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    {
+      "Name": "VillageSpawn",
+      "ClassName": "SpawnLocation",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "Material": "Slate",
+        "Color": [1, 1, 1],
+        "Neutral": true,
+        "Transparency": 1,
+        "Size": [16, 1, 16],
+        "Position": [0, 1.7, 58]
+      }
+    }
+  ]
+}

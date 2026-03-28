@@ -173,6 +173,50 @@ flash.Parent = screenGui
 
 local activeDialogueToken = 0
 local activeBannerToken = 0
+local activeBannerPulseToken = 0
+
+local kindStyles = {
+	banner = {
+		background = Color3.fromRGB(36, 24, 14),
+		stroke = Color3.fromRGB(245, 211, 94),
+		title = Color3.fromRGB(255, 240, 206),
+		body = Color3.fromRGB(241, 232, 216),
+		flash = Color3.fromRGB(255, 236, 180),
+		flashTransparency = 0.45,
+	},
+	celebration = {
+		background = Color3.fromRGB(56, 33, 14),
+		stroke = Color3.fromRGB(250, 218, 120),
+		title = Color3.fromRGB(255, 243, 214),
+		body = Color3.fromRGB(255, 234, 196),
+		flash = Color3.fromRGB(255, 232, 160),
+		flashTransparency = 0.32,
+	},
+	blessing = {
+		background = Color3.fromRGB(48, 34, 18),
+		stroke = Color3.fromRGB(244, 222, 152),
+		title = Color3.fromRGB(255, 245, 222),
+		body = Color3.fromRGB(246, 236, 210),
+		flash = Color3.fromRGB(255, 242, 196),
+		flashTransparency = 0.38,
+	},
+	warning = {
+		background = Color3.fromRGB(56, 23, 16),
+		stroke = Color3.fromRGB(226, 117, 94),
+		title = Color3.fromRGB(255, 224, 214),
+		body = Color3.fromRGB(247, 219, 204),
+		flash = Color3.fromRGB(255, 170, 150),
+		flashTransparency = 0.4,
+	},
+	restoration = {
+		background = Color3.fromRGB(27, 41, 19),
+		stroke = Color3.fromRGB(142, 220, 116),
+		title = Color3.fromRGB(232, 255, 222),
+		body = Color3.fromRGB(214, 244, 204),
+		flash = Color3.fromRGB(188, 255, 170),
+		flashTransparency = 0.42,
+	},
+}
 
 local function formatStats()
 	local seeds = player:GetAttribute("Seeds") or 0
@@ -208,13 +252,20 @@ end
 local function showBanner(payload)
 	activeBannerToken += 1
 	local token = activeBannerToken
+	local style = kindStyles[payload.kind or "banner"] or kindStyles.banner
 	bannerTitle.Text = payload.title or "Story Beat"
 	bannerBody.Text = payload.body or ""
-	bannerStroke.Color = payload.color or Color3.fromRGB(245, 211, 94)
+	eventBanner.BackgroundColor3 = style.background
+	bannerStroke.Color = payload.color or style.stroke
+	bannerTitle.TextColor3 = style.title
+	bannerBody.TextColor3 = style.body
 	eventBanner.Visible = true
-	eventBanner.Position = UDim2.new(0.5, 0, 0, -90)
-	TweenService:Create(eventBanner, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = UDim2.new(0.5, 0, 0, 18) }):Play()
-	task.delay(3.8, function()
+	local targetPosition = UDim2.new(0.5, 0, 0, 18)
+	local currentY = eventBanner.Position.Y.Offset
+	eventBanner.Position = currentY > -70 and UDim2.new(0.5, 0, 0, math.min(currentY, 18)) or UDim2.new(0.5, 0, 0, -90)
+	TweenService:Create(eventBanner, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Position = targetPosition }):Play()
+	local duration = payload.duration or ((payload.kind == "blessing" or payload.kind == "restoration") and 4.6 or 3.8)
+	task.delay(duration, function()
 		if activeBannerToken ~= token then return end
 		local tween = TweenService:Create(eventBanner, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(0.5, 0, 0, -90) })
 		tween:Play()
@@ -223,12 +274,30 @@ local function showBanner(payload)
 	end)
 end
 
-local function doFlash(color)
+local function doFlash(color, targetTransparency)
 	flash.BackgroundColor3 = color or Color3.fromRGB(255, 236, 180)
 	flash.BackgroundTransparency = 1
-	TweenService:Create(flash, TweenInfo.new(0.12), { BackgroundTransparency = 0.45 }):Play()
+	TweenService:Create(flash, TweenInfo.new(0.12), { BackgroundTransparency = targetTransparency or 0.45 }):Play()
 	task.delay(0.12, function()
 		TweenService:Create(flash, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+	end)
+end
+
+local function pulseFlash(payload)
+	activeBannerPulseToken += 1
+	local token = activeBannerPulseToken
+	local style = kindStyles[payload.kind or "banner"] or kindStyles.banner
+	local pulses = math.max(payload.pulseCount or 1, 1)
+	task.spawn(function()
+		for index = 1, pulses do
+			if activeBannerPulseToken ~= token then
+				return
+			end
+			doFlash(payload.color or style.flash, style.flashTransparency)
+			if index < pulses then
+				task.wait(0.18)
+			end
+		end
 	end)
 end
 
@@ -240,11 +309,5 @@ refreshQuest()
 dialogueEvent.OnClientEvent:Connect(showDialogue)
 effectEvent.OnClientEvent:Connect(function(payload)
 	showBanner(payload)
-	if payload.kind == "celebration" then
-		doFlash(payload.color or Color3.fromRGB(255, 232, 160))
-	elseif payload.kind == "warning" then
-		doFlash(payload.color or Color3.fromRGB(255, 170, 150))
-	elseif payload.kind == "banner" then
-		doFlash((payload.color or Color3.fromRGB(245, 211, 94)):Lerp(Color3.new(1, 1, 1), 0.3))
-	end
+	pulseFlash(payload)
 end)
