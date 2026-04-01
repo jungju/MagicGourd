@@ -1,0 +1,41 @@
+# MagicGourd project-scoped Codex configuration
+# Keep this file project-safe and additive. Do not encode secrets, personal paths,
+# or environment-specific MCP bootstrap commands here.
+
+version = 1
+project_name = "MagicGourd"
+project_type = "roblox-rojo-game"
+default_operating_mode = "single_active_slice"
+
+[paths]
+rojo_project = "default.project.json"
+source_root = "src"
+server_root = "src/server"
+client_root = "src/client"
+shared_root = "src/shared"
+workspace_root = "src/workspace"
+loop_root = ".loop"
+docs_root = "docs"
+
+[truth]
+sources = [
+  "src",
+  "default.project.json",
+  "sourcemap.json",
+  "docs",
+  ".loop",
+  "git history"
+]
+
+[validation]
+primary_build_command = "rojo build default.project.json --output <temp>"
+primary_build_tool = "rojo"
+studio_mcp = "optional-session-capability"
+
+[process]
+one_active_slice = true
+preserve_existing_layout = true
+prefer_additive_migration = true
+
+[notes]
+summary = "The repo already has a live arcade baseline. Keep src layout intact and use docs/.loop/.codex to make iteration safer."

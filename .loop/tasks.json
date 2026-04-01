@@ -1,0 +1,119 @@
+{
+  "project": "MagicGourd",
+  "baseline": "shared-arcade-loop",
+  "tasks": [
+    {
+      "id": "SLICE-001",
+      "title": "Bootstrap Codex operating foundation",
+      "status": "done",
+      "acceptance": [
+        "Canonical docs exist for overview, PRD, pillars, testing, and architecture",
+        ".loop and .codex operating surfaces exist and are populated",
+        "Project skills exist and are grounded in current repo truth"
+      ],
+      "notes": "This migration establishes the working foundation without broad gameplay refactors."
+    },
+    {
+      "id": "SLICE-002",
+      "title": "Run Studio smoke baseline for the current arcade loop",
+      "status": "done",
+      "acceptance": [
+        "Studio play can start and stop cleanly",
+        "The arcade loop boots without immediate blocker errors",
+        "Validation notes are recorded in .loop/progress.md"
+      ],
+      "notes": "Completed on 2026-04-01. Rojo build passed, Studio MCP play start/stop succeeded, and the arcade loop boot blockers in src/server/init.server.luau and src/client/init.client.luau were fixed. The currently open Studio session still shows legacy chat core-script noise; MagicGourd.rbxlx now switches the place to TextChatService on the next Studio reload."
+    },
+    {
+      "id": "SLICE-003",
+      "title": "Verify multiplayer pumpkin ownership and cleanup",
+      "status": "todo",
+      "acceptance": [
+        "A second player cannot cash out another player's pumpkin",
+        "Player leave cleanup removes owned pumpkins without harming shared systems",
+        "Multiplayer regression notes are recorded"
+      ]
+    },
+    {
+      "id": "SLICE-004",
+      "title": "Audit remotes, attributes, and trust boundaries",
+      "status": "todo",
+      "acceptance": [
+        "Current remotes and replicated attributes are inventoried",
+        "Server authority checks are documented against the current source",
+        "Any exploit-surface concerns are either fixed or logged as concrete follow-up work"
+      ]
+    },
+    {
+      "id": "SLICE-005",
+      "title": "Validate HUD next-step clarity in live Studio play",
+      "status": "todo",
+      "acceptance": [
+        "HUD guidance remains readable during heal, plant, break, buy, and slow-recovery beats",
+        "Prompt ownership and seed CTA do not fight each other in live play",
+        "Any readability tuning is minimal and documented"
+      ]
+    },
+    {
+      "id": "SLICE-006",
+      "title": "Retune goblin fairness only if live validation proves confusion",
+      "status": "todo",
+      "acceptance": [
+        "Danger-entry hits can be explained clearly by players",
+        "Goblin chase reach remains fair near plaza and danger boundaries",
+        "Changes stay within current arcade scope"
+      ]
+    },
+    {
+      "id": "SLICE-007",
+      "title": "Review runtime prompt density and CTA overlap",
+      "status": "todo",
+      "acceptance": [
+        "Plaza, village, and danger route prompts remain readable in dense camera slices",
+        "Prompt overlap fixes do not require source-tree reorganization",
+        "Validation output records what was observed in Studio"
+      ]
+    },
+    {
+      "id": "SLICE-008",
+      "title": "Capture current architecture and PM drift follow-through",
+      "status": "todo",
+      "acceptance": [
+        "Canonical docs and PM artifacts still match live source after validation slices",
+        "Historical reference docs are clearly separated from active canon",
+        "No misleading design-source path drift remains in top-level operator docs"
+      ]
+    },
+    {
+      "id": "SLICE-009",
+      "title": "Perform current-loop performance budget review",
+      "status": "todo",
+      "acceptance": [
+        "HUD, popup churn, goblin loops, and runtime prop counts are reviewed for current risk",
+        "Observed bottlenecks are documented with concrete impact and follow-ups",
+        "No speculative optimization pass is started without evidence"
+      ]
+    },
+    {
+      "id": "SLICE-010",
+      "title": "Create release-candidate checklist for the arcade baseline",
+      "status": "todo",
+      "acceptance": [
+        "Rojo build, doc sync, Studio smoke, and multiplayer fairness checks are assembled into one checklist",
+        "Blocked items are reported explicitly instead of being implied",
+        "The repo has a repeatable RC review path for the current baseline"
+      ]
+    },
+    {
+      "id": "SLICE-011",
+      "title": "Place static Heungbu and Nolbu house assets in the world",
+      "status": "done",
+      "acceptance": [
+        "Heungbu House and Nolbu House are placed under Workspace.Map.PlacedAssets with the planned world-facing composition",
+        "Both imported houses are upright, grounded to Y=1.0, and do not require new runtime/server placement logic",
+        "Rojo build passes and Studio edit/play checks confirm the houses persist and do not break the current arcade loop readability"
+      ],
+      "notes": "Completed on 2026-04-01 using ASSET_IDS.md house IDs 93969099298348 and 76012677304613. The houses were inserted into Workspace.Map.PlacedAssets, scaled and oriented from the archived house-placement baseline, and persisted into MagicGourd.rbxlx without adding runtime interaction logic."
+    }
+  ]
+}

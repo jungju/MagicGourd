@@ -528,7 +528,8 @@ local function getPromptOwnerKey(prompt)
 		return nil
 	end
 
-	return prompt:GetDebugId()
+	-- `GetDebugId()` requires plugin capabilities in live play; the prompt instance itself is a stable table key.
+	return prompt
 end
 
 local function syncPumpkinPrompt(prompt)

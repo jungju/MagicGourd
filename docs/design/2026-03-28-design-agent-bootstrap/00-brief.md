@@ -1,7 +1,7 @@
 # Feature Brief
 
 ## Name
-MagicGourd Design Agent Workflow
+MagicGourd Design Workflow
 
 ## Problem
 지금까지 기능 확장이 빠르게 진행되었지만, 아이디어 제안/후보 비교/채택 근거/정교한 설계/검증 단계가 프로젝트 안에 명시적으로 남아 있지 않았다.

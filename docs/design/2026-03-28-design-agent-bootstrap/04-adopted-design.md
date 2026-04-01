@@ -1,7 +1,7 @@
 # Adopted Design
 
 ## Chosen Candidate
-문서 중심의 Design Agent Workflow를 프로젝트에 내장하고, 모든 중대 기능은 단계별 산출물을 남기도록 한다.
+문서 중심의 Design Workflow를 프로젝트에 내장하고, 모든 중대 기능은 단계별 산출물을 남기도록 한다.
 
 ## Why Chosen
 - 구현 리스크가 낮다.
@@ -42,7 +42,6 @@
 - 구현이 급하면 brief / adopted design / verification 최소 세트만 사용
 
 ## MVP Cut Line
-- DESIGN_AGENT.md
 - docs/design/README.md
 - 템플릿 파일
 - 첫 bootstrap 설계 폴더

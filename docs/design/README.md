@@ -19,12 +19,14 @@
 
 새 기능을 설계할 때마다 다음 형식의 폴더를 만든다.
 
-- `docs/design/YYYY-MM-DD-<feature-slug>/`
+- `docs/design/YYYY-MM-DD-HHMM-<feature-slug>/`
 
 예시:
 
-- `docs/design/2026-03-28-blessed-gourd/`
-- `docs/design/2026-03-28-nolbu-retaliation/`
+- `docs/design/2026-03-28-1430-blessed-gourd/`
+- `docs/design/2026-03-28-1515-nolbu-retaliation/`
+
+시간과 분(HHMM)까지 포함해서, 같은 날 여러 설계가 누적돼도 어떤 설계가 더 최신인지 쉽게 알 수 있게 한다.
 
 그 안에 아래 파일을 채운다.
 

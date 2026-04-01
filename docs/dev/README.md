@@ -11,8 +11,15 @@
 5. 커밋
 6. 다음 업무로 연결
 
-## 역할 구분
+## 기준 문서
 
-- Design Agent: 무엇을 왜 만들지 설계
-- PM Agent: 지금 무엇이 done/rebuild/new 인지 판정
-- Developer Agent: 실제 구현 담당
+- `AGENTS.md`
+- `docs/pm/TASKS.md`
+- 활성 설계 폴더의 `04-adopted-design.md` / `05-verification.md`
+- 현재 코드 상태
+
+## 역할 분리
+
+- 설계 문서는 무엇을 왜 만들지 정의한다.
+- PM 문서는 지금 무엇이 `done` / `rebuild` / `new` / `blocked`인지 정리한다.
+- 개발 레이어는 그 우선순위를 실제 구현으로 옮긴다.

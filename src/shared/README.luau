@@ -1,1 +1,1 @@
--- shared modules go here
+-- Shared arcade-loop modules live here.

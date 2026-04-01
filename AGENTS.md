@@ -1,205 +1,219 @@
 # AGENTS.md - MagicGourd
 
-This file defines how agents should work inside the `MagicGourd` repository.
+This file is the canonical Codex operating contract for the `MagicGourd` repository.
+
+`MagicGourd` is an already-running Roblox + Rojo project. Treat it as a live brownfield repo whose current gameplay baseline is the shared arcade loop in `src/`, not as a blank scaffold and not as the older archived branching-story prototype.
 
 ## Project Identity
 
-- **Project:** MagicGourd
-- **Theme:** 흥부전 / Heungbu & Nolbu inspired Roblox game
-- **Engine:** Roblox
-- **Sync:** Rojo
-- **Primary goal:** Build a playable, expandable story game around the Heungbu/Nolbu tale with clear progression, strong atmosphere, and robust fallbacks.
+- Project: `MagicGourd`
+- Engine: Roblox
+- Sync model: Rojo
+- Live gameplay baseline: shared Heungbu-themed arcade loop
+- Canonical operating surfaces already present:
+  - `AGENTS.md`
+  - `docs/design/*`
+  - `docs/pm/TASKS.md`
+  - `.loop/*`
 
-## Working Priorities
+## Truth Sources
 
-When choosing what to work on next, prefer this order unless the user overrides it:
+When there is doubt, trust sources in this order:
 
-1. **Keep the game playable**
-2. **Advance the main Heungbu story content**
-3. **Improve visible player experience**
-4. **Stabilize fragile Roblox/runtime behaviors**
-5. **Improve internal structure/documentation**
+1. Source code in the repo
+2. Git history
+3. Rojo project files
+   - `default.project.json`
+   - `sourcemap.json`
+4. `docs/*`
+5. `.loop/*`
 
-## Operating Rule
+Interpretation rules:
+- The current gameplay truth lives in `src/server`, `src/client`, `src/shared`, and `src/workspace`.
+- The current active direction is what code + current README + active PM/docs agree on.
+- Historical design folders under `docs/design/` are reference material unless they match the live code and PM baseline.
+- `.omx/` is runtime/session tooling state, not a replacement for repo canon.
 
-The user has delegated day-to-day development authority for this repo.
+## Current Repo Baseline
 
-Agents should:
-- make small and medium product decisions directly
-- implement features proactively
-- commit meaningful increments
-- ask only for:
-  - major direction changes
-  - destructive/rewrite-heavy decisions
-  - ambiguous aesthetic choices that materially affect the game identity
+### Rojo Mapping
 
-## Design Workflow
+- `src/server` -> `ServerScriptService/Server`
+- `src/client` -> `StarterPlayer/StarterPlayerScripts/Client`
+- `src/shared` -> `ReplicatedStorage/Shared`
+- `src/workspace` -> `Workspace/Map`
 
-For meaningful features, use the repository design workflow:
+### Current Gameplay Architecture
 
-- `DESIGN_AGENT.md`
-- `docs/design/README.md`
-- `docs/design/TEMPLATES.md`
+- `src/server/init.server.luau` is a thin bootstrap.
+- `src/server/ArcadeRuntime.luau` wires the current loop together.
+- The server is split into focused services such as:
+  - `ArcadeWorld.luau`
+  - `PlayerStateService.luau`
+  - `SwallowService.luau`
+  - `PumpkinService.luau`
+  - `GoblinService.luau`
+  - `UpgradeService.luau`
+- `src/client/init.client.luau` is currently the main HUD/input/feedback orchestration surface.
+- `src/shared/ArcadeConfig.luau` is the current shared gameplay contract for remotes, attributes, zone tuning, upgrade values, and feedback behavior.
+- `src/workspace/JoseonBase` is the Rojo-managed base map.
+- `Workspace/Map/Runtime` is the server-authored runtime gameplay layer.
 
-Default design stages:
-1. propose
-2. candidates
-3. analyze
-4. adopt
-5. design spec
-6. final verification
+### Active Remote Surface
 
-For tiny fixes, this can be compressed.
-For major features, this should be documented explicitly under:
-- `docs/design/YYYY-MM-DD-<feature-slug>/`
+Document and preserve the current remote contract unless a slice explicitly changes it:
 
-## PM Workflow
+- `HealSwallow`
+- `UseSeed`
+- `HitPumpkin`
+- `ArcadeFeedback`
 
-The repository also has a PM review layer:
+### Persistence Boundary
 
-- `PM_AGENT.md`
-- `docs/pm/README.md`
+- No repo-local DataStore/ProfileService save implementation currently exists in `src/`.
+- Do not write docs or agent guidance that imply a live persistence layer unless one is actually added.
+
+## One Slice Rule
+
+- Work on exactly one feature slice at a time.
+- Do not start the next slice until the current slice is either:
+  - done, or
+  - explicitly blocked with evidence.
+- A slice must be a shippable vertical increment, not an open-ended category of work.
+- Keep `.loop/tasks.json`, `.loop/progress.md`, PM state, and slice docs aligned with the single active slice.
+
+## Additive Migration Rule
+
+- Prefer additive migration over large rewrites.
+- Do not reorganize `src/` just to satisfy an ideal structure.
+- Do not remap Rojo paths unless the slice explicitly requires it and the benefit is proven.
+- Do not casually move or rename runtime/gameplay modules that the current repo already uses coherently.
+- Existing reasonable structure should be preserved and documented rather than “fixed” by force.
+
+## Client / Server / Shared Boundary Rules
+
+### Client
+
+Client code may:
+- own HUD, local readability logic, input routing, prompt visibility handling, and client-side feedback presentation
+- read replicated attributes and react to replicated runtime objects
+- fire remotes with user intent only
+
+Client code must not:
+- grant rewards
+- decide authoritative ownership
+- decide final hit/heal validity
+- mutate authoritative game economy state on its own
+
+### Server
+
+Server code should:
+- validate all gameplay intent
+- mutate player economy and runtime state
+- create/destroy runtime gameplay objects
+- own shared-world NPC behavior
+- enforce multiplayer fairness
+
+### Shared
+
+Shared code should be limited to:
+- stable contracts
+- names/constants/tuning
+- data that both client and server must agree on
+
+Do not put server-only authority logic into `src/shared`.
+
+## Remote / Authority / Trust Boundary Rules
+
+- Treat every client remote as untrusted input.
+- The client may request an action; the server decides whether it is valid.
+- Validate at minimum:
+  - distance/range
+  - ownership
+  - cooldowns / action cadence
+  - object existence / liveness
+  - current state compatibility
+- Prefer Attributes for replicated read models and object ownership markers, but do not treat client-visible attributes as secure proof by themselves.
+- When changing remotes or replicated attributes:
+  - update `docs/architecture.md`
+  - update any affected skills
+  - update `.loop/progress.md` if the contract meaningfully changes
+
+## Validation Rules
+
+### Always Required
+
+- Read the current slice and current PM state before editing.
+- Keep the game playable.
+- Run the primary repo-local build gate after meaningful changes:
+  - `rojo build default.project.json --output <temp>`
+- Record what was actually validated.
+
+### Required When Gameplay Changes
+
+If a slice changes gameplay behavior:
+- verify the server/client/shared contract touched by the change
+- verify the current loop still works end-to-end
+- update product/architecture docs if player-facing behavior changed
+
+### Required When UI Changes
+
+If a slice changes UI/HUD/feedback:
+- verify player-facing copy and layout still match the current loop
+- verify next-step guidance and prompt/readability behavior remain coherent
+- use Studio/MCP validation when available for final confidence
+
+### Required When Replication Changes
+
+If a slice changes remotes, ownership, shared runtime objects, or multiplayer behavior:
+- perform a remote/trust-boundary audit
+- document server authority and client assumptions
+- run multiplayer regression steps, or mark exactly why that validation is blocked
+
+## Documentation Update Rules
+
+Update docs when you change the behavior they describe.
+
+At minimum, behavior-changing slices must review:
+- `README.md`
+- `docs/game_overview.md`
+- `docs/prd.md`
+- `docs/architecture.md`
+- `docs/testing_strategy.md`
 - `docs/pm/TASKS.md`
+- `.loop/progress.md`
 
-PM Agent compares:
-- fixed/adopted design
-- current code and project state
-- existing gameplay behavior
+Do not leave repo docs knowingly describing an older baseline after changing live behavior.
 
-Then it updates work items into:
-- `done`
-- `rebuild`
-- `new`
-- `blocked`
+## PM / Loop Coordination Rules
 
-Agents should use this PM layer to avoid assuming old work is fully complete just because code exists.
+- `docs/pm/TASKS.md` is the current implementation-facing task ledger.
+- `.loop/tasks.json` is the Codex execution/backlog surface.
+- Keep them consistent in direction even if they use different granularity.
+- Treat `README.md`, the latest adopted design, and `docs/pm/TASKS.md` as the current execution baseline; use `.loop/*` to support that baseline, not to contradict it.
 
-## Developer Workflow
+## Files To Treat Carefully
 
-The repository also has a Developer Agent layer:
-
-- `DEV_AGENT.md`
-- `docs/dev/README.md`
-
-Developer Agent should:
-- read `docs/pm/TASKS.md`
-- choose the highest-value build/rebuild task
-- consult design docs as needed
-- implement the task
-- keep the project playable
-- commit meaningful progress
-
-In short:
-- Design Agent decides what should exist
-- PM Agent judges what state work is in
-- Developer Agent actually builds it
-
-## Loop / Orchestrator Workflow
-
-The repository also has a loop orchestrator layer:
-
-- `LOOP_AGENT.md`
-
-Loop Agent keeps the project moving by rotating:
-- Design
-- PM
-- Dev
-- Review
-
-This is the default long-running autonomous mode for MagicGourd unless the user pauses or redirects it.
-
-## Roblox / Rojo Rules
-
-- Prefer **Rojo-safe** structures.
-- Keep base world content under `src/workspace` whenever practical.
-- Avoid brittle solutions that depend entirely on Studio-only manual state.
-- If external asset loading is flaky, provide local/fallback behavior so gameplay still works.
-- Runtime-created content should be organized and named clearly.
-- Do not create chaos under `Workspace`; use the project’s existing structure conventions.
-
-## Runtime Content Guidelines
-
-Current project direction:
-- `Workspace/Map/JoseonBase` = Rojo-managed base village/map
-- `Workspace/Map/Runtime` = runtime-spawned or fallback gameplay objects
-
-Agents should preserve this separation.
-
-## Story Direction
-
-MagicGourd should continue expanding in this narrative order unless a better structured variation is justified:
-
-1. village introduction
-2. Heungbu request/help loop
-3. seed / planting / harvest
-4. Nolbu demand / tribute
-5. swallow injury / healing
-6. magical reward escalation
-7. Nolbu retaliation / consequence
-8. stronger payoff events / endings / replay loop
-
-## Gameplay Direction
-
-Prefer features that improve one or more of these:
-- clear quest progression
-- meaningful NPC interactions
-- visible world state change
-- better reward loops
-- emotional / narrative payoff
-- replayable farming / delivery / event loop
-
-## Quality Bar
-
-Before considering work "done", check:
-- Is it visible to the player?
-- Does it help the Heungbu/Nolbu fantasy?
-- Does it keep or improve playability?
-- Is there a fallback if Roblox asset/runtime behavior fails?
-- Is the implementation understandable by the next agent?
-
-## Commit Policy
-
-- Commit meaningful, scoped changes.
-- Avoid bundling unrelated dirty/generated files unless the task explicitly requires them.
-- Prefer descriptive commit messages like:
-  - `feat: add swallow healing story slice`
-  - `fix: prevent village ground z-fighting`
-  - `docs: add design agent workflow`
-
-## Files to Treat Carefully
-
-These may be generated, Studio-touched, or noisy depending on workflow and should not be casually bundled:
 - `MagicGourd.rbxlx`
 - `MagicGourd.rbxlx.lock`
 - `sourcemap.json`
-- Studio-generated or unrelated dirty files outside the task scope
 
-## Preferred Work Style
+Only touch them when the slice truly requires it.
 
-When continuing autonomously:
-- inspect current state
-- choose the next meaningful vertical slice
-- design if needed
-- implement
-- keep the game playable
-- commit
-- leave the repo in a coherent state
+## Default Development Heuristic
 
-## Next Good Directions
+If the user does not override direction, prefer:
+1. keeping the current shared arcade loop correct and readable
+2. validating blocked Studio/MCP confidence gaps
+3. tightening multiplayer fairness and remote authority
+4. improving visible player clarity and feel
+5. only then expanding scope
 
-If no fresh instruction is given, good default expansions are:
-- blessed seed / magical gourd payoff
-- gourd opening or striking event sequence
-- Nolbu retaliation event
-- richer dialogue/UI polish
-- village environmental storytelling
-- stronger NPC behavior/state handling
-- clearer progression/reward feedback
+## Success Condition
 
-## Success Definition
-
-MagicGourd succeeds if it becomes:
-- immediately playable
-- emotionally recognizable as a Heungbu/Nolbu story game
-- robust under imperfect Roblox asset/runtime conditions
-- easy for future agents to extend without breaking structure
+Good work in this repo:
+- preserves playability
+- respects the current Rojo mapping
+- keeps one active slice in motion
+- records truth in docs and loop artifacts
+- improves the live arcade baseline without speculative rewrites

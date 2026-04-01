@@ -1,0 +1,3825 @@
+<roblox version="4">
+  <Item class="ReplicatedStorage" referent="0">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="1">
+      <Properties>
+        <string name="Name">Shared</string>
+      </Properties>
+      <Item class="ModuleScript" referent="2">
+        <Properties>
+          <string name="Name">ArcadeConfig</string>
+          <string name="Source"><![CDATA[local moveSpeedValues = { 16, 18, 20, 22 }
+local attackSpeedValues = { 0.75, 0.6, 0.45, 0.3 }
+local seedGainValues = { 1, 2, 3, 4 }
+
+local config = {
+	RemoteNames = {
+		HealSwallow = "HealSwallow",
+		UseSeed = "UseSeed",
+		HitPumpkin = "HitPumpkin",
+		Feedback = "ArcadeFeedback",
+	},
+	Attributes = {
+		Player = {
+			Seeds = "Seeds",
+			Money = "Money",
+			MoveSpeedLevel = "MoveSpeedLevel",
+			AttackSpeedLevel = "AttackSpeedLevel",
+			SeedMultiplierLevel = "SeedMultiplierLevel",
+			IsSlowed = "IsSlowed",
+		},
+		Pumpkin = {
+			Owner = "owner",
+			Health = "Health",
+			ExpiresAt = "ExpiresAt",
+		},
+		Interaction = {
+			Kind = "InteractionKind",
+			EntityId = "EntityId",
+			UpgradeId = "UpgradeId",
+		},
+	},
+	World = {
+		SpawnPoint = Vector3.new(0, 2, 18),
+		Zones = {
+			CentralPlaza = {
+				center = Vector3.new(0, 0.5, 18),
+				size = Vector3.new(40, 1, 34),
+				color = Color3.fromRGB(167, 147, 109),
+				material = Enum.Material.Slate,
+				title = "Central Plaza",
+				body = "Buy upgrades for the next run.",
+			},
+			HeungbuVillage = {
+				center = Vector3.new(-72, 0.5, 24),
+				size = Vector3.new(46, 1, 38),
+				color = Color3.fromRGB(111, 145, 88),
+				material = Enum.Material.Grass,
+				title = "Heungbu Village",
+				body = "Heal swallows for seeds.",
+			},
+			NolbuDanger = {
+				center = Vector3.new(72, 0.5, 24),
+				size = Vector3.new(44, 1, 36),
+				color = Color3.fromRGB(82, 72, 76),
+				material = Enum.Material.Slate,
+				title = "Nolbu Area",
+				body = "Watch for slowing goblins.",
+			},
+		},
+		Paths = {
+			{
+				name = "VillagePathA",
+				size = Vector3.new(48, 1, 12),
+				cframe = CFrame.new(-35, 0.45, 22) * CFrame.Angles(0, math.rad(8), 0),
+				color = Color3.fromRGB(138, 114, 84),
+			},
+			{
+				name = "DangerPathA",
+				size = Vector3.new(48, 1, 12),
+				cframe = CFrame.new(35, 0.45, 22) * CFrame.Angles(0, math.rad(-8), 0),
+				color = Color3.fromRGB(116, 98, 86),
+			},
+			{
+				name = "CrossPath",
+				size = Vector3.new(26, 1, 14),
+				cframe = CFrame.new(0, 0.44, 34),
+				color = Color3.fromRGB(129, 104, 80),
+			},
+		},
+		LaneLandmarks = {
+			{
+				name = "VillageStartSign",
+				position = Vector3.new(-24, 1.8, 20),
+				color = Color3.fromRGB(214, 196, 124),
+				title = "Village First",
+				body = "Start left: heal for seeds.",
+			},
+			{
+				name = "WorkLaneSign",
+				position = Vector3.new(0, 1.8, 33),
+				color = Color3.fromRGB(222, 170, 92),
+				title = "Work Lane",
+				body = "Plant and break for money.",
+			},
+			{
+				name = "DangerGateSign",
+				position = Vector3.new(40, 1.8, 20),
+				color = Color3.fromRGB(226, 135, 102),
+				title = "Slow Zone",
+				body = "Goblins slow risky pushes.",
+			},
+			{
+				name = "RetreatLaneSign",
+				position = Vector3.new(28, 1.8, 29),
+				color = Color3.fromRGB(237, 195, 123),
+				title = "Reset Lane",
+				body = "Tagged? Pull back to plaza.",
+			},
+		},
+		WorkLanePosts = {
+			Vector3.new(-10, 0.5, 33),
+			Vector3.new(10, 0.5, 33),
+		},
+		UpgradePads = {
+			MoveSpeed = {
+				displayName = "Footwork",
+				body = "Run faster between loop steps.",
+				position = Vector3.new(-13, 1.3, 18),
+				color = Color3.fromRGB(93, 174, 214),
+			},
+			AttackSpeed = {
+				displayName = "Quick Hands",
+				body = "Break pumpkins faster.",
+				position = Vector3.new(0, 1.3, 18),
+				color = Color3.fromRGB(223, 171, 88),
+			},
+			SeedMultiplier = {
+				displayName = "Blessing",
+				body = "More seeds per heal.",
+				position = Vector3.new(13, 1.3, 18),
+				color = Color3.fromRGB(121, 201, 127),
+			},
+		},
+		SwallowSpawnPoints = {
+			Vector3.new(-84, 2.3, 12),
+			Vector3.new(-84, 2.3, 24),
+			Vector3.new(-84, 2.3, 36),
+			Vector3.new(-72, 2.3, 10),
+			Vector3.new(-72, 2.3, 30),
+			Vector3.new(-60, 2.3, 14),
+			Vector3.new(-60, 2.3, 28),
+			Vector3.new(-60, 2.3, 38),
+			Vector3.new(-76, 2.3, 40),
+			Vector3.new(-66, 2.3, 20),
+		},
+		GoblinSpawnPoints = {
+			Vector3.new(62, 3.5, 14),
+			Vector3.new(72, 3.5, 31),
+			Vector3.new(86, 3.5, 16),
+			Vector3.new(80, 3.5, 40),
+		},
+		DangerRockPositions = {
+			Vector3.new(60, 0.5, 8),
+			Vector3.new(72, 0.5, 41),
+			Vector3.new(86, 0.5, 9),
+			Vector3.new(96, 0.5, 36),
+		},
+	},
+	Swallows = {
+		ActiveCount = 6,
+		HealDistance = 14,
+		PromptDistance = 12,
+	},
+	Pumpkins = {
+		Lifetime = 45,
+		Health = 3,
+		Reward = 10,
+		SpawnRadius = 6,
+		SpawnHeight = 24,
+		SpawnAttempts = 9,
+		ClearanceRadius = 2.6,
+		HitDistance = 14,
+		PromptDistance = 12,
+		PlacementBias = {
+			UpgradePadDistance = 8.5,
+			SwallowDistance = 6.5,
+			DangerRockDistance = 4.5,
+			UpgradePadWeight = 2.8,
+			SwallowWeight = 1.4,
+			DangerRockWeight = 0.8,
+		},
+	},
+	Goblins = {
+		ActiveCount = 2,
+		WalkSpeed = 10,
+		ChaseRange = 84,
+		LeashRadius = 18,
+		ChaseZonePadding = {
+			Front = 4,
+			Back = 10,
+			Side = 8,
+		},
+		IdleRoamInset = {
+			Front = 10,
+			Back = 4,
+			Side = 5,
+		},
+		RetargetInterval = 0.75,
+		TouchSlowDuration = 2.5,
+		TouchSlowFactor = 0.55,
+		TouchCooldown = 1.5,
+	},
+	Feedback = {
+		DefaultIntensity = "T2",
+		PopupYieldWindow = 0.32,
+		MaxWorldPopupsPerBucket = 2,
+		CrowdedBucketSuppressionPriority = 2,
+		BannerDurationByIntensity = {
+			T1 = 1.55,
+			T2 = 2.1,
+			T3 = 2.55,
+			T4 = 2.65,
+		},
+		WorldPopupPriorityByIntensity = {
+			T1 = 1,
+			T2 = 2,
+			T3 = 3,
+			T4 = 4,
+		},
+		WorldPopupByIntensity = {
+			T1 = {
+				duration = 0.65,
+				rise = 1.6,
+				size = Vector2.new(158, 42),
+				maxDistance = 95,
+			},
+			T2 = {
+				duration = 0.82,
+				rise = 2.2,
+				size = Vector2.new(170, 46),
+				maxDistance = 110,
+			},
+			T3 = {
+				duration = 1.02,
+				rise = 2.8,
+				size = Vector2.new(188, 50),
+				maxDistance = 120,
+			},
+			T4 = {
+				duration = 1.1,
+				rise = 3.0,
+				size = Vector2.new(194, 54),
+				maxDistance = 122,
+			},
+		},
+	},
+}
+
+config.Upgrades = {
+	Costs = { 20, 40, 80 },
+	PromptDistance = 9,
+	Order = { "MoveSpeed", "AttackSpeed", "SeedMultiplier" },
+	Definitions = {
+		MoveSpeed = {
+			AttributeName = config.Attributes.Player.MoveSpeedLevel,
+			DisplayName = "Footwork",
+			Values = moveSpeedValues,
+		},
+		AttackSpeed = {
+			AttributeName = config.Attributes.Player.AttackSpeedLevel,
+			DisplayName = "Quick Hands",
+			Values = attackSpeedValues,
+		},
+		SeedMultiplier = {
+			AttributeName = config.Attributes.Player.SeedMultiplierLevel,
+			DisplayName = "Blessing",
+			Values = seedGainValues,
+		},
+	},
+}
+
+return config
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="3">
+        <Properties>
+          <string name="Name">README</string>
+          <string name="Source"><![CDATA[-- Shared arcade-loop modules live here.
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="4">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Script" referent="5">
+      <Properties>
+        <string name="Name">Server</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[local ArcadeRuntime = require(script.Parent:WaitForChild("ArcadeRuntime"))
+
+ArcadeRuntime.start()
+]]></string>
+      </Properties>
+      <Item class="ModuleScript" referent="6">
+        <Properties>
+          <string name="Name">ArcadeRuntime</string>
+          <string name="Source"><![CDATA[local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+
+local ArcadeConfig = require(Shared:WaitForChild("ArcadeConfig"))
+local ArcadeWorld = require(script.Parent:WaitForChild("ArcadeWorld"))
+local GoblinService = require(script.Parent:WaitForChild("GoblinService"))
+local PlayerStateService = require(script.Parent:WaitForChild("PlayerStateService"))
+local PumpkinService = require(script.Parent:WaitForChild("PumpkinService"))
+local SwallowService = require(script.Parent:WaitForChild("SwallowService"))
+local UpgradeService = require(script.Parent:WaitForChild("UpgradeService"))
+
+local ArcadeRuntime = {}
+
+local function ensureRemotes(sharedFolder)
+	local remotes = {}
+
+	-- Only ensure the arcade loop remotes exist.
+	-- Do not delete unrelated Shared remotes here: Studio helpers, migration shims,
+	-- or parallel experiments may coexist during refinement passes.
+	for key, remoteName in pairs(ArcadeConfig.RemoteNames) do
+		local remote = sharedFolder:FindFirstChild(remoteName)
+		if not remote then
+			remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = sharedFolder
+		end
+		remotes[key] = remote
+	end
+
+	return remotes
+end
+
+function ArcadeRuntime.start()
+	print("MagicGourd arcade server started")
+
+	local remotes = ensureRemotes(Shared)
+	local world = ArcadeWorld.build(ArcadeConfig)
+	local playerState = PlayerStateService.new(ArcadeConfig, world)
+	local pumpkinService = PumpkinService.new(ArcadeConfig, world, playerState)
+	local swallowService = SwallowService.new(ArcadeConfig, world, playerState)
+	local upgradeService = UpgradeService.new(ArcadeConfig, world, playerState)
+	local goblinService = GoblinService.new(ArcadeConfig, world, playerState)
+
+	playerState:registerCleanup(function(player)
+		pumpkinService:destroyPlayerPumpkins(player)
+	end)
+
+	playerState:start()
+	upgradeService:start(remotes)
+	swallowService:start(remotes)
+	pumpkinService:start(remotes)
+	goblinService:start(remotes)
+end
+
+return ArcadeRuntime
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="7">
+        <Properties>
+          <string name="Name">ArcadeWorld</string>
+          <string name="Source"><![CDATA[local Workspace = game:GetService("Workspace")
+
+local ArcadeWorld = {}
+
+local function createFolder(parent, name)
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = parent
+	return folder
+end
+
+local function createPart(parent, name, size, cframe, color, material)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.CFrame = cframe
+	part.Anchored = true
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Color = color
+	part.Material = material
+	part.Parent = parent
+	return part
+end
+
+local function createPrompt(parent, actionText, objectText, maxDistance)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = actionText
+	prompt.ObjectText = objectText
+	prompt.MaxActivationDistance = maxDistance or 12
+	prompt.RequiresLineOfSight = false
+	prompt.HoldDuration = 0
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
+	prompt.Parent = parent
+	return prompt
+end
+
+local BILLBOARD_PRESETS = {
+	Loop = {
+		size = Vector2.new(236, 86),
+		offset = Vector3.new(0, 5.5, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.16,
+		strokeThickness = 2.4,
+		titleHeight = 24,
+		titleSize = 20,
+		titleTransparency = 0,
+		bodyY = 34,
+		bodyTextSize = 14,
+		bodyColor = Color3.fromRGB(234, 228, 216),
+		bodyTransparency = 0.02,
+		strokeTransparency = 0.05,
+	},
+	Zone = {
+		size = Vector2.new(204, 72),
+		offset = Vector3.new(0, 5.1, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.31,
+		strokeThickness = 1.8,
+		titleHeight = 20,
+		titleSize = 17,
+		titleTransparency = 0.03,
+		bodyY = 29,
+		bodyTextSize = 11,
+		bodyColor = Color3.fromRGB(221, 216, 204),
+		bodyTransparency = 0.16,
+		strokeTransparency = 0.1,
+	},
+	Lane = {
+		size = Vector2.new(194, 68),
+		offset = Vector3.new(0, 5, 0),
+		alwaysOnTop = true,
+		backgroundTransparency = 0.38,
+		strokeThickness = 1.55,
+		titleHeight = 19,
+		titleSize = 16,
+		titleTransparency = 0.06,
+		bodyY = 28,
+		bodyTextSize = 11,
+		bodyColor = Color3.fromRGB(216, 209, 197),
+		bodyTransparency = 0.2,
+		strokeTransparency = 0.14,
+	},
+	Plaza = {
+		size = Vector2.new(170, 54),
+		offset = Vector3.new(0, 4.35, 0),
+		alwaysOnTop = false,
+		backgroundTransparency = 0.54,
+		strokeThickness = 1.15,
+		titleHeight = 18,
+		titleSize = 14,
+		titleTransparency = 0.12,
+		bodyY = 25,
+		bodyTextSize = 10,
+		bodyColor = Color3.fromRGB(205, 199, 190),
+		bodyTransparency = 0.34,
+		strokeTransparency = 0.4,
+	},
+}
+
+local function attachBillboard(part, title, body, color, presetName)
+	local preset = BILLBOARD_PRESETS[presetName] or BILLBOARD_PRESETS.Zone
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Sign"
+	billboard.Size = UDim2.fromOffset(preset.size.X, preset.size.Y)
+	billboard.StudsOffsetWorldSpace = preset.offset
+	billboard.AlwaysOnTop = preset.alwaysOnTop
+	billboard.Adornee = part
+	billboard.Parent = part
+
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.fromScale(1, 1)
+	frame.BackgroundColor3 = Color3.fromRGB(20, 18, 16)
+	frame.BackgroundTransparency = preset.backgroundTransparency
+	frame.BorderSizePixel = 0
+	frame.Parent = billboard
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, 6)
+	padding.PaddingBottom = UDim.new(0, 8)
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.Parent = frame
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = frame
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = preset.strokeThickness
+	stroke.Transparency = preset.strokeTransparency or 0.05
+	stroke.Parent = frame
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Position = UDim2.fromOffset(0, 0)
+	titleLabel.Size = UDim2.new(1, 0, 0, preset.titleHeight)
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.Text = title
+	titleLabel.TextColor3 = Color3.fromRGB(248, 240, 218)
+	titleLabel.TextSize = preset.titleSize
+	titleLabel.TextTransparency = preset.titleTransparency or 0
+	titleLabel.TextWrapped = false
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+	titleLabel.TextYAlignment = Enum.TextYAlignment.Center
+	titleLabel.Parent = frame
+
+	if body and body ~= "" then
+		local bodyLabel = Instance.new("TextLabel")
+		bodyLabel.BackgroundTransparency = 1
+		bodyLabel.Position = UDim2.fromOffset(0, preset.bodyY - 6)
+		bodyLabel.Size = UDim2.new(1, 0, 1, -(preset.bodyY - 2))
+		bodyLabel.Font = Enum.Font.Gotham
+		bodyLabel.Text = body
+		bodyLabel.TextWrapped = true
+		bodyLabel.TextColor3 = preset.bodyColor
+		bodyLabel.TextSize = preset.bodyTextSize
+		bodyLabel.TextTransparency = preset.bodyTransparency
+		bodyLabel.TextXAlignment = Enum.TextXAlignment.Center
+		bodyLabel.TextYAlignment = Enum.TextYAlignment.Top
+		bodyLabel.Parent = frame
+	end
+end
+
+local function createLantern(parent, name, position, color)
+	createPart(parent, name .. "Post", Vector3.new(0.45, 6, 0.45), CFrame.new(position + Vector3.new(0, 3, 0)), Color3.fromRGB(77, 60, 46), Enum.Material.Wood)
+
+	local lightPart = createPart(parent, name .. "Lamp", Vector3.new(1.2, 1.2, 1.2), CFrame.new(position + Vector3.new(0, 6.3, 0)), color, Enum.Material.Neon)
+	lightPart.Shape = Enum.PartType.Ball
+	lightPart.CanCollide = false
+
+	local pointLight = Instance.new("PointLight")
+	pointLight.Brightness = 1.2
+	pointLight.Range = 18
+	pointLight.Color = color
+	pointLight.Parent = lightPart
+end
+
+local function createSignPost(parent, name, position, title, body, color)
+	local post = createPart(parent, name .. "Post", Vector3.new(0.5, 4.2, 0.5), CFrame.new(position + Vector3.new(0, 2.1, 0)), Color3.fromRGB(82, 62, 44), Enum.Material.Wood)
+	post.CanCollide = false
+
+	local sign = createPart(parent, name .. "Board", Vector3.new(6.5, 3.2, 0.4), CFrame.new(position + Vector3.new(0, 4.4, 0)), Color3.fromRGB(54, 40, 31), Enum.Material.WoodPlanks)
+	sign.CanCollide = false
+	attachBillboard(sign, title, body, color, "Lane")
+	return sign
+end
+
+function ArcadeWorld.build(config)
+	local map = Workspace:FindFirstChild("Map")
+	if not map then
+		map = Instance.new("Folder")
+		map.Name = "Map"
+		map.Parent = Workspace
+	end
+
+	local runtime = map:FindFirstChild("Runtime")
+	if not runtime then
+		runtime = Instance.new("Folder")
+		runtime.Name = "Runtime"
+		runtime.Parent = map
+	end
+
+	runtime:ClearAllChildren()
+
+	local root = createFolder(runtime, "ArcadeLoop")
+	local staticFolder = createFolder(root, "Static")
+	local swallowFolder = createFolder(root, "Swallows")
+	local pumpkinFolder = createFolder(root, "Pumpkins")
+	local goblinFolder = createFolder(root, "Goblins")
+
+	for zoneName, zone in pairs(config.World.Zones) do
+		local pad = createPart(
+			staticFolder,
+			zoneName .. "Pad",
+			zone.size,
+			CFrame.new(zone.center),
+			zone.color,
+			zone.material
+		)
+		attachBillboard(
+			pad,
+			zone.title,
+			zone.body,
+			zoneName == "NolbuDanger" and Color3.fromRGB(224, 126, 109) or Color3.fromRGB(229, 196, 124),
+			"Zone"
+		)
+	end
+
+	for _, path in ipairs(config.World.Paths) do
+		createPart(staticFolder, path.name, path.size, path.cframe, path.color, Enum.Material.Cobblestone)
+	end
+
+	for index, position in ipairs(config.World.WorkLanePosts or {}) do
+		createLantern(staticFolder, string.format("WorkLaneLantern%d", index), position, Color3.fromRGB(234, 183, 96))
+	end
+
+	for _, landmark in ipairs(config.World.LaneLandmarks or {}) do
+		createSignPost(staticFolder, landmark.name, landmark.position, landmark.title, landmark.body, landmark.color)
+	end
+
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "ArcadeSpawn"
+	spawn.Size = Vector3.new(10, 1, 10)
+	spawn.CFrame = CFrame.new(config.World.SpawnPoint)
+	spawn.Color = Color3.fromRGB(218, 190, 120)
+	spawn.Material = Enum.Material.SmoothPlastic
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Transparency = 0.2
+	spawn.CanCollide = true
+	spawn.Parent = staticFolder
+
+	attachBillboard(spawn, "Arcade Loop", "Heal -> Plant -> Break -> Buy.", Color3.fromRGB(240, 205, 117), "Loop")
+
+	local statue = createPart(staticFolder, "PumpkinStatue", Vector3.new(4, 4, 4), CFrame.new(config.World.SpawnPoint + Vector3.new(0, 3.2, -8)), Color3.fromRGB(211, 133, 46), Enum.Material.SmoothPlastic)
+	statue.Shape = Enum.PartType.Ball
+
+	local stem = createPart(staticFolder, "PumpkinStatueStem", Vector3.new(0.6, 1.2, 0.6), statue.CFrame + Vector3.new(0, 2.3, 0), Color3.fromRGB(80, 120, 68), Enum.Material.Wood)
+	stem.CanCollide = false
+
+	local upgradePromptDistance = (config.Upgrades and config.Upgrades.PromptDistance) or 9
+	local upgradePrompts = {}
+	for upgradeId, padDef in pairs(config.World.UpgradePads) do
+		local pad = createPart(
+			staticFolder,
+			upgradeId .. "Pad",
+			Vector3.new(8, 1.2, 8),
+			CFrame.new(padDef.position),
+			padDef.color,
+			Enum.Material.WoodPlanks
+		)
+		pad:SetAttribute(config.Attributes.Interaction.UpgradeId, upgradeId)
+		attachBillboard(pad, padDef.displayName, padDef.body, padDef.color, "Plaza")
+		upgradePrompts[upgradeId] = createPrompt(pad, "Buy", padDef.displayName, upgradePromptDistance)
+	end
+
+	for index, point in ipairs(config.World.DangerRockPositions or config.World.GoblinSpawnPoints) do
+		createPart(staticFolder, "DangerRock" .. index, Vector3.new(5, 3, 4), CFrame.new(point + Vector3.new(0, 0.9, 0)), Color3.fromRGB(71, 63, 67), Enum.Material.Rock)
+	end
+
+	createLantern(staticFolder, "VillageLanternA", Vector3.new(-92, 0.5, 22), Color3.fromRGB(240, 211, 125))
+	createLantern(staticFolder, "VillageLanternB", Vector3.new(-54, 0.5, 30), Color3.fromRGB(240, 211, 125))
+	createLantern(staticFolder, "DangerLanternA", Vector3.new(58, 0.5, 12), Color3.fromRGB(236, 144, 104))
+	createLantern(staticFolder, "DangerLanternB", Vector3.new(88, 0.5, 34), Color3.fromRGB(236, 144, 104))
+
+	return {
+		root = root,
+		folders = {
+			static = staticFolder,
+			swallows = swallowFolder,
+			pumpkins = pumpkinFolder,
+			goblins = goblinFolder,
+		},
+		spawnLocation = spawn,
+		spawnCFrame = spawn.CFrame + Vector3.new(0, 4, 0),
+		swallowSpawnPoints = config.World.SwallowSpawnPoints,
+		goblinSpawnPoints = config.World.GoblinSpawnPoints,
+		upgradePrompts = upgradePrompts,
+	}
+end
+
+return ArcadeWorld
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="8">
+        <Properties>
+          <string name="Name">GoblinService</string>
+          <string name="Source"><![CDATA[local Players = game:GetService("Players")
+
+local GoblinService = {}
+
+local function getDangerBounds(dangerZone, padding, invertPadding)
+	if type(dangerZone) ~= "table" then
+		return nil
+	end
+
+	local center = dangerZone.center
+	local size = dangerZone.size
+	if typeof(center) ~= "Vector3" or typeof(size) ~= "Vector3" then
+		return nil
+	end
+
+	local halfSize = size * 0.5
+	local frontPadding = 0
+	local backPadding = 0
+	local sidePadding = 0
+
+	if type(padding) == "table" then
+		frontPadding = math.max(tonumber(padding.Front) or 0, 0)
+		backPadding = math.max(tonumber(padding.Back) or 0, 0)
+		sidePadding = math.max(tonumber(padding.Side) or 0, 0)
+	else
+		local uniformPadding = math.max(tonumber(padding) or 0, 0)
+		frontPadding = uniformPadding
+		backPadding = uniformPadding
+		sidePadding = uniformPadding
+	end
+
+	local direction = invertPadding and 1 or -1
+	local minX = center.X - halfSize.X + (frontPadding * direction)
+	local maxX = center.X + halfSize.X - (backPadding * direction)
+	local minZ = center.Z - halfSize.Z + (sidePadding * direction)
+	local maxZ = center.Z + halfSize.Z - (sidePadding * direction)
+
+	if minX > maxX or minZ > maxZ then
+		return nil
+	end
+
+	return minX, maxX, minZ, maxZ
+end
+GoblinService.__index = GoblinService
+
+local function getPlayerFromHit(hit)
+	if not hit then
+		return nil
+	end
+
+	local model = hit:FindFirstAncestorOfClass("Model")
+	if not model then
+		return nil
+	end
+
+	return Players:GetPlayerFromCharacter(model)
+end
+
+function GoblinService.new(config, world, playerState)
+	local self = setmetatable({}, GoblinService)
+	self.config = config
+	self.world = world
+	self.playerState = playerState
+	self.goblins = {}
+	self.random = Random.new()
+	return self
+end
+
+function GoblinService:start(remotes)
+	self.feedbackRemote = remotes and remotes.Feedback or nil
+
+	for index = 1, self.config.Goblins.ActiveCount do
+		local spawnIndex = ((index - 1) % #self.world.goblinSpawnPoints) + 1
+		self:_spawnGoblin(index, self.world.goblinSpawnPoints[spawnIndex])
+	end
+end
+
+function GoblinService:_spawnGoblin(index, position)
+	local model = Instance.new("Model")
+	model.Name = "Goblin" .. index
+	model.Parent = self.world.folders.goblins
+
+	local root = Instance.new("Part")
+	root.Name = "HumanoidRootPart"
+	root.Size = Vector3.new(2.2, 2.2, 1.6)
+	root.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+	root.Transparency = 1
+	root.Anchored = false
+	root.CanCollide = true
+	root.Parent = model
+
+	local torso = Instance.new("Part")
+	torso.Name = "Torso"
+	torso.Size = Vector3.new(2.8, 2.6, 1.8)
+	torso.CFrame = root.CFrame + Vector3.new(0, 0.8, 0)
+	torso.Anchored = false
+	torso.CanCollide = false
+	torso.Massless = true
+	torso.Color = Color3.fromRGB(84, 120, 86)
+	torso.Material = Enum.Material.SmoothPlastic
+	torso.Parent = model
+
+	local head = Instance.new("Part")
+	head.Name = "Head"
+	head.Shape = Enum.PartType.Ball
+	head.Size = Vector3.new(1.8, 1.8, 1.8)
+	head.CFrame = root.CFrame + Vector3.new(0, 2.6, 0)
+	head.Anchored = false
+	head.CanCollide = false
+	head.Massless = true
+	head.Color = Color3.fromRGB(110, 162, 98)
+	head.Material = Enum.Material.SmoothPlastic
+	head.Parent = model
+
+	local weldTorso = Instance.new("WeldConstraint")
+	weldTorso.Part0 = root
+	weldTorso.Part1 = torso
+	weldTorso.Parent = root
+
+	local weldHead = Instance.new("WeldConstraint")
+	weldHead.Part0 = root
+	weldHead.Part1 = head
+	weldHead.Parent = root
+
+	local club = Instance.new("Part")
+	club.Name = "Club"
+	club.Size = Vector3.new(0.4, 2.2, 0.4)
+	club.CFrame = root.CFrame * CFrame.new(1.2, 0.8, 0)
+	club.Anchored = false
+	club.CanCollide = false
+	club.Massless = true
+	club.Color = Color3.fromRGB(90, 66, 46)
+	club.Material = Enum.Material.Wood
+	club.Parent = model
+
+	local weldClub = Instance.new("WeldConstraint")
+	weldClub.Part0 = root
+	weldClub.Part1 = club
+	weldClub.Parent = root
+
+	local humanoid = Instance.new("Humanoid")
+	humanoid.WalkSpeed = self.config.Goblins.WalkSpeed
+	humanoid.JumpPower = 0
+	humanoid.AutoJumpEnabled = false
+	humanoid.HipHeight = 1.6
+	humanoid.Parent = model
+
+	model.PrimaryPart = root
+	model:PivotTo(CFrame.new(position + Vector3.new(0, 3, 0)))
+
+	pcall(function()
+		root:SetNetworkOwner(nil)
+	end)
+
+	local goblin = {
+		model = model,
+		root = root,
+		humanoid = humanoid,
+		home = position,
+		touchCooldowns = {},
+	}
+
+	self.goblins[index] = goblin
+
+	root.Touched:Connect(function(hit)
+		self:_onTouched(index, hit)
+	end)
+
+	task.spawn(function()
+		self:_runLoop(index)
+	end)
+end
+
+function GoblinService:_onTouched(index, hit)
+	local goblin = self.goblins[index]
+	local player = goblin and getPlayerFromHit(hit)
+	if not goblin or not player then
+		return
+	end
+
+	local now = os.clock()
+	local nextTouchAt = goblin.touchCooldowns[player] or 0
+	if now < nextTouchAt then
+		return
+	end
+
+	goblin.touchCooldowns[player] = now + self.config.Goblins.TouchCooldown
+	self.playerState:applySlow(player, self.config.Goblins.TouchSlowDuration)
+
+	if self.feedbackRemote then
+		local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		self.feedbackRemote:FireClient(player, {
+			text = "Goblin hit. Slowed.",
+			detail = "Back off for a moment, then re-enter when your speed recovers.",
+			worldText = "Slowed",
+			worldPosition = playerRoot and playerRoot.Position or goblin.root.Position,
+			tone = "warn",
+			intensity = "T4",
+		})
+	end
+end
+
+function GoblinService:_runLoop(index)
+	while self.goblins[index] do
+		local goblin = self.goblins[index]
+		if not goblin.model.Parent then
+			self.goblins[index] = nil
+			break
+		end
+
+		if goblin.root.Position.Y < -20 then
+			goblin.model:PivotTo(CFrame.new(goblin.home + Vector3.new(0, 3, 0)))
+		end
+
+		goblin.humanoid:MoveTo(self:_getNextDestination(goblin))
+		task.wait(self.config.Goblins.RetargetInterval)
+	end
+end
+
+function GoblinService:_isInsideExpandedDangerZone(position)
+	local dangerZone = self.config.World
+		and self.config.World.Zones
+		and self.config.World.Zones.NolbuDanger
+	if typeof(position) ~= "Vector3" then
+		return false
+	end
+
+	local minX, maxX, minZ, maxZ = getDangerBounds(dangerZone, self.config.Goblins.ChaseZonePadding or 0, false)
+	if not minX then
+		return false
+	end
+
+	return position.X >= minX and position.X <= maxX and position.Z >= minZ and position.Z <= maxZ
+end
+
+function GoblinService:_getIdleRoamTarget(goblin)
+	local roamOffset = Vector3.new(
+		self.random:NextNumber(-self.config.Goblins.LeashRadius, self.config.Goblins.LeashRadius),
+		0,
+		self.random:NextNumber(-self.config.Goblins.LeashRadius, self.config.Goblins.LeashRadius)
+	)
+	local roamTarget = goblin.home + roamOffset
+
+	local dangerZone = self.config.World
+		and self.config.World.Zones
+		and self.config.World.Zones.NolbuDanger
+	local minX, maxX, minZ, maxZ = getDangerBounds(dangerZone, self.config.Goblins.IdleRoamInset or 0, true)
+	if minX then
+		roamTarget = Vector3.new(
+			math.clamp(roamTarget.X, minX, maxX),
+			roamTarget.Y,
+			math.clamp(roamTarget.Z, minZ, maxZ)
+		)
+	end
+
+	return Vector3.new(roamTarget.X, goblin.root.Position.Y, roamTarget.Z)
+end
+
+function GoblinService:_getNextDestination(goblin)
+	local closestRoot
+	local closestDistance = math.huge
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if humanoid and root and humanoid.Health > 0 and self:_isInsideExpandedDangerZone(root.Position) then
+			local distanceFromGoblin = (root.Position - goblin.root.Position).Magnitude
+			local distanceFromHome = (root.Position - goblin.home).Magnitude
+			if distanceFromGoblin < closestDistance and distanceFromHome <= self.config.Goblins.ChaseRange then
+				closestDistance = distanceFromGoblin
+				closestRoot = root
+			end
+		end
+	end
+
+	if closestRoot then
+		return Vector3.new(closestRoot.Position.X, goblin.root.Position.Y, closestRoot.Position.Z)
+	end
+
+	return self:_getIdleRoamTarget(goblin)
+end
+
+return GoblinService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="9">
+        <Properties>
+          <string name="Name">PlayerStateService</string>
+          <string name="Source"><![CDATA[local Players = game:GetService("Players")
+
+local PlayerStateService = {}
+PlayerStateService.__index = PlayerStateService
+
+function PlayerStateService.new(config, world)
+	local self = setmetatable({}, PlayerStateService)
+	self.config = config
+	self.world = world
+	self.playerData = {}
+	self.cleanupCallbacks = {}
+	return self
+end
+
+function PlayerStateService:registerCleanup(callback)
+	table.insert(self.cleanupCallbacks, callback)
+end
+
+function PlayerStateService:start()
+	Players.PlayerAdded:Connect(function(player)
+		self:_onPlayerAdded(player)
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		self:_onPlayerRemoving(player)
+	end)
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		self:_onPlayerAdded(player)
+	end
+end
+
+function PlayerStateService:getData(player)
+	return self.playerData[player]
+end
+
+function PlayerStateService:getSeedReward(player)
+	local data = self.playerData[player]
+	if not data then
+		return self.config.Upgrades.Definitions.SeedMultiplier.Values[1]
+	end
+
+	return self.config.Upgrades.Definitions.SeedMultiplier.Values[data.SeedMultiplierLevel + 1]
+end
+
+function PlayerStateService:getAttackCooldown(player)
+	local data = self.playerData[player]
+	if not data then
+		return self.config.Upgrades.Definitions.AttackSpeed.Values[1]
+	end
+
+	return self.config.Upgrades.Definitions.AttackSpeed.Values[data.AttackSpeedLevel + 1]
+end
+
+function PlayerStateService:addSeeds(player, amount)
+	local data = self.playerData[player]
+	if not data then
+		return
+	end
+
+	data.Seeds += amount
+	self:_syncPlayer(player)
+end
+
+function PlayerStateService:addMoney(player, amount)
+	local data = self.playerData[player]
+	if not data then
+		return
+	end
+
+	data.Money += amount
+	self:_syncPlayer(player)
+end
+
+function PlayerStateService:tryConsumeSeed(player)
+	local data = self.playerData[player]
+	if not data or data.Seeds <= 0 then
+		return false
+	end
+
+	data.Seeds -= 1
+	self:_syncPlayer(player)
+	return true
+end
+
+function PlayerStateService:tryPurchaseUpgrade(player, upgradeId)
+	local data = self.playerData[player]
+	local definition = self.config.Upgrades.Definitions[upgradeId]
+	if not data or not definition then
+		return false, "invalid"
+	end
+
+	local currentLevel = data[definition.AttributeName]
+	local nextLevel = currentLevel + 1
+	local cost = self.config.Upgrades.Costs[nextLevel]
+	if not cost then
+		return false, "max"
+	end
+
+	if data.Money < cost then
+		return false, "money", cost
+	end
+
+	data.Money -= cost
+	data[definition.AttributeName] = nextLevel
+	self:_syncPlayer(player)
+	self:_applyWalkSpeed(player)
+	return true, "ok", cost, nextLevel
+end
+
+function PlayerStateService:applySlow(player, duration)
+	local data = self.playerData[player]
+	if not data then
+		return
+	end
+
+	data.SlowToken += 1
+	local slowToken = data.SlowToken
+	data.IsSlowed = true
+	self:_syncPlayer(player)
+	self:_applyWalkSpeed(player)
+
+	task.delay(duration, function()
+		local currentData = self.playerData[player]
+		if not currentData or currentData.SlowToken ~= slowToken then
+			return
+		end
+
+		currentData.IsSlowed = false
+		self:_syncPlayer(player)
+		self:_applyWalkSpeed(player)
+	end)
+end
+
+function PlayerStateService:_onPlayerAdded(player)
+	if self.playerData[player] then
+		return
+	end
+
+	local data = {
+		Seeds = 0,
+		Money = 0,
+		MoveSpeedLevel = 0,
+		AttackSpeedLevel = 0,
+		SeedMultiplierLevel = 0,
+		IsSlowed = false,
+		SlowToken = 0,
+		Connections = {},
+	}
+
+	self.playerData[player] = data
+	self:_syncPlayer(player)
+
+	data.Connections[#data.Connections + 1] = player.CharacterAdded:Connect(function(character)
+		self:_setupCharacter(player, character)
+	end)
+
+	if player.Character then
+		task.defer(function()
+			self:_setupCharacter(player, player.Character)
+		end)
+	end
+end
+
+function PlayerStateService:_onPlayerRemoving(player)
+	local data = self.playerData[player]
+	if not data then
+		return
+	end
+
+	for _, callback in ipairs(self.cleanupCallbacks) do
+		callback(player)
+	end
+
+	for _, connection in ipairs(data.Connections) do
+		connection:Disconnect()
+	end
+
+	self.playerData[player] = nil
+end
+
+function PlayerStateService:_setupCharacter(player, character)
+	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+	local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 5)
+	if not humanoid or not root then
+		return
+	end
+
+	local spreadX = ((player.UserId % 5) - 2) * 3
+	local spreadZ = (((math.floor(player.UserId / 5)) % 5) - 2) * 3
+	character:PivotTo(self.world.spawnCFrame + Vector3.new(spreadX, 0, spreadZ))
+	self:_applyWalkSpeed(player)
+end
+
+function PlayerStateService:_applyWalkSpeed(player)
+	local data = self.playerData[player]
+	local character = player.Character
+	if not data or not character then
+		return
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	local baseSpeed = self.config.Upgrades.Definitions.MoveSpeed.Values[data.MoveSpeedLevel + 1]
+	local speed = data.IsSlowed and (baseSpeed * self.config.Goblins.TouchSlowFactor) or baseSpeed
+	humanoid.WalkSpeed = speed
+end
+
+function PlayerStateService:_syncPlayer(player)
+	local data = self.playerData[player]
+	if not data then
+		return
+	end
+
+	local attributes = self.config.Attributes.Player
+	player:SetAttribute(attributes.Seeds, data.Seeds)
+	player:SetAttribute(attributes.Money, data.Money)
+	player:SetAttribute(attributes.MoveSpeedLevel, data.MoveSpeedLevel)
+	player:SetAttribute(attributes.AttackSpeedLevel, data.AttackSpeedLevel)
+	player:SetAttribute(attributes.SeedMultiplierLevel, data.SeedMultiplierLevel)
+	player:SetAttribute(attributes.IsSlowed, data.IsSlowed)
+end
+
+return PlayerStateService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="10">
+        <Properties>
+          <string name="Name">PumpkinService</string>
+          <string name="Source"><![CDATA[local Workspace = game:GetService("Workspace")
+
+local PumpkinService = {}
+PumpkinService.__index = PumpkinService
+
+local FALLBACK_SURFACE_OFFSET = 1.7
+
+local function getRootPart(player)
+	local character = player.Character
+	if not character then
+		return nil
+	end
+
+	return character:FindFirstChild("HumanoidRootPart")
+end
+
+local function createPrompt(parent, actionText, objectText, maxDistance)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = actionText
+	prompt.ObjectText = objectText
+	prompt.MaxActivationDistance = maxDistance
+	prompt.RequiresLineOfSight = false
+	prompt.HoldDuration = 0
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
+	prompt.Parent = parent
+	return prompt
+end
+
+local function addAnchorPenalty(spawnPosition, anchors, preferredDistance, weight)
+	if preferredDistance <= 0 or weight <= 0 then
+		return 0
+	end
+
+	local penalty = 0
+	for _, anchorPosition in ipairs(anchors or {}) do
+		local distance = (spawnPosition - anchorPosition).Magnitude
+		if distance < preferredDistance then
+			penalty += ((preferredDistance - distance) / preferredDistance) * weight
+		end
+	end
+
+	return penalty
+end
+
+function PumpkinService.new(config, world, playerState)
+	local self = setmetatable({}, PumpkinService)
+	self.config = config
+	self.world = world
+	self.playerState = playerState
+	self.nextId = 0
+	self.pumpkins = {}
+	self.playerPumpkins = {}
+	self.lastHitTimes = {}
+	self.random = Random.new()
+	return self
+end
+
+function PumpkinService:start(remotes)
+	self.feedbackRemote = remotes.Feedback
+
+	remotes.UseSeed.OnServerEvent:Connect(function(player)
+		self:_useSeed(player)
+	end)
+
+	remotes.HitPumpkin.OnServerEvent:Connect(function(player, pumpkinId)
+		self:_hitPumpkin(player, pumpkinId)
+	end)
+end
+
+function PumpkinService:destroyPlayerPumpkins(player)
+	local ownedPumpkins = self.playerPumpkins[player]
+	if not ownedPumpkins then
+		return
+	end
+
+	local ids = {}
+	for pumpkinId in pairs(ownedPumpkins) do
+		ids[#ids + 1] = pumpkinId
+	end
+
+	for _, pumpkinId in ipairs(ids) do
+		self:_destroyPumpkin(pumpkinId)
+	end
+
+	self.playerPumpkins[player] = nil
+	self.lastHitTimes[player] = nil
+end
+
+function PumpkinService:_useSeed(player)
+	local root = getRootPart(player)
+	if not root then
+		return
+	end
+
+	if not self.playerState:tryConsumeSeed(player) then
+		return
+	end
+
+	self.nextId += 1
+	local pumpkinId = self.nextId
+	local position = self:_getSpawnPosition(player, root)
+	local expiresAt = Workspace:GetServerTimeNow() + self.config.Pumpkins.Lifetime
+
+	local model = Instance.new("Model")
+	model.Name = "Pumpkin" .. pumpkinId
+	model.Parent = self.world.folders.pumpkins
+
+	local rootPart = Instance.new("Part")
+	rootPart.Name = "PumpkinRoot"
+	rootPart.Shape = Enum.PartType.Ball
+	rootPart.Size = Vector3.new(3.4, 3.4, 3.4)
+	rootPart.CFrame = CFrame.new(position)
+	rootPart.Anchored = true
+	rootPart.CanCollide = true
+	rootPart.Color = Color3.fromRGB(212, 132, 47)
+	rootPart.Material = Enum.Material.SmoothPlastic
+	rootPart.Parent = model
+
+	local stem = Instance.new("Part")
+	stem.Name = "Stem"
+	stem.Size = Vector3.new(0.5, 1.2, 0.5)
+	stem.CFrame = rootPart.CFrame + Vector3.new(0, 2, 0)
+	stem.Anchored = true
+	stem.CanCollide = false
+	stem.Color = Color3.fromRGB(86, 126, 70)
+	stem.Material = Enum.Material.Wood
+	stem.Parent = model
+
+	local leaf = Instance.new("Part")
+	leaf.Name = "Leaf"
+	leaf.Size = Vector3.new(1.4, 0.2, 0.9)
+	leaf.CFrame = stem.CFrame * CFrame.new(0.4, 0.25, 0) * CFrame.Angles(0, 0, math.rad(24))
+	leaf.Anchored = true
+	leaf.CanCollide = false
+	leaf.Color = Color3.fromRGB(124, 182, 92)
+	leaf.Material = Enum.Material.Grass
+	leaf.Parent = model
+
+	model.PrimaryPart = rootPart
+	model:SetAttribute(self.config.Attributes.Pumpkin.Owner, player.UserId)
+	rootPart:SetAttribute(self.config.Attributes.Pumpkin.Owner, player.UserId)
+	rootPart:SetAttribute(self.config.Attributes.Pumpkin.Health, self.config.Pumpkins.Health)
+	rootPart:SetAttribute(self.config.Attributes.Pumpkin.ExpiresAt, expiresAt)
+	rootPart:SetAttribute(self.config.Attributes.Interaction.Kind, "Pumpkin")
+	rootPart:SetAttribute(self.config.Attributes.Interaction.EntityId, pumpkinId)
+	createPrompt(rootPart, "Break", "Pumpkin", self.config.Pumpkins.PromptDistance)
+
+	self.pumpkins[pumpkinId] = {
+		id = pumpkinId,
+		model = model,
+		root = rootPart,
+		owner = player,
+	}
+
+	self.playerPumpkins[player] = self.playerPumpkins[player] or {}
+	self.playerPumpkins[player][pumpkinId] = true
+
+	if self.feedbackRemote then
+		self.feedbackRemote:FireClient(player, {
+			text = "Pumpkin planted.",
+			detail = string.format("Break it in %d hits before it fades for a money payout.", self.config.Pumpkins.Health),
+			worldText = "Planted",
+			worldPosition = rootPart.Position,
+			tone = "info",
+			intensity = "T1",
+		})
+	end
+
+	task.delay(self.config.Pumpkins.Lifetime, function()
+		if self.pumpkins[pumpkinId] then
+			self:_destroyPumpkin(pumpkinId, "expired")
+		end
+	end)
+end
+
+function PumpkinService:_hitPumpkin(player, pumpkinId)
+	local pumpkin = self.pumpkins[pumpkinId]
+	local root = pumpkin and pumpkin.root
+	local playerRoot = getRootPart(player)
+	if not pumpkin or not root or not playerRoot or pumpkin.owner ~= player then
+		return
+	end
+
+	if (playerRoot.Position - root.Position).Magnitude > self.config.Pumpkins.HitDistance then
+		return
+	end
+
+	local now = os.clock()
+	local lastHitAt = self.lastHitTimes[player] or 0
+	if now - lastHitAt < self.playerState:getAttackCooldown(player) then
+		return
+	end
+
+	self.lastHitTimes[player] = now
+
+	local currentHealth = root:GetAttribute(self.config.Attributes.Pumpkin.Health) or self.config.Pumpkins.Health
+	currentHealth -= 1
+	root:SetAttribute(self.config.Attributes.Pumpkin.Health, currentHealth)
+
+	if currentHealth <= 0 then
+		self.playerState:addMoney(player, self.config.Pumpkins.Reward)
+		if self.feedbackRemote then
+			self.feedbackRemote:FireClient(player, {
+				text = string.format("Pumpkin broken! +%d money", self.config.Pumpkins.Reward),
+				detail = "Bring your money back to the plaza for upgrades, or plant again right away.",
+				worldText = string.format("+%d Money", self.config.Pumpkins.Reward),
+				worldPosition = root.Position,
+				tone = "good",
+				intensity = "T3",
+			})
+		end
+		self:_destroyPumpkin(pumpkinId)
+		return
+	end
+
+	if self.feedbackRemote then
+		self.feedbackRemote:FireClient(player, {
+			text = currentHealth == 1 and "Pumpkin cracked. One hit left." or string.format("Pumpkin cracked. %d hits left.", currentHealth),
+			detail = currentHealth == 1 and "One more break for the money payout." or "Keep breaking to turn this planting into money.",
+			worldText = currentHealth == 1 and "Final Hit" or string.format("%d Left", currentHealth),
+			worldPosition = root.Position,
+			tone = "info",
+			intensity = "T2",
+		})
+	end
+end
+
+function PumpkinService:_destroyPumpkin(pumpkinId, reason)
+	local pumpkin = self.pumpkins[pumpkinId]
+	if not pumpkin then
+		return
+	end
+
+	self.pumpkins[pumpkinId] = nil
+
+	local ownerPumpkins = self.playerPumpkins[pumpkin.owner]
+	if ownerPumpkins then
+		ownerPumpkins[pumpkinId] = nil
+		if not next(ownerPumpkins) then
+			self.playerPumpkins[pumpkin.owner] = nil
+		end
+	end
+
+	if reason == "expired" and self.feedbackRemote and pumpkin.owner and pumpkin.owner.Parent then
+		self.feedbackRemote:FireClient(pumpkin.owner, {
+			text = "Pumpkin faded.",
+			detail = "Break planted pumpkins before they time out, or plant again when you are ready.",
+			worldText = "Faded",
+			worldPosition = pumpkin.root and pumpkin.root.Position or nil,
+			tone = "warn",
+			intensity = "T1",
+		})
+	end
+
+	if pumpkin.model then
+		pumpkin.model:Destroy()
+	end
+end
+
+function PumpkinService:_getSpawnPosition(player, root)
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { player.Character, self.world.folders.pumpkins }
+
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = { player.Character }
+
+	local forward = root.CFrame.LookVector
+	local forwardFlat = Vector3.new(forward.X, 0, forward.Z)
+	if forwardFlat.Magnitude < 0.001 then
+		forwardFlat = Vector3.new(0, 0, -1)
+	else
+		forwardFlat = forwardFlat.Unit
+	end
+
+	local spawnRadius = self.config.Pumpkins.SpawnRadius
+	local clearanceRadius = self.config.Pumpkins.ClearanceRadius or 2.6
+	local spawnAttempts = self.config.Pumpkins.SpawnAttempts or 8
+	local placementBias = self.config.Pumpkins.PlacementBias or {}
+	local upgradePadAnchors = {}
+	for _, padDef in pairs(self.config.World.UpgradePads or {}) do
+		if typeof(padDef.position) == "Vector3" then
+			table.insert(upgradePadAnchors, padDef.position)
+		end
+	end
+	local swallowAnchors = self.world.swallowSpawnPoints or self.config.World.SwallowSpawnPoints or {}
+	local dangerRockAnchors = self.config.World.DangerRockPositions or {}
+	local bestPosition
+	local bestPenalty = math.huge
+
+	for attempt = 1, spawnAttempts do
+		local angleOffset = self.random:NextNumber(-math.pi * 0.85, math.pi * 0.85)
+		local distanceScale = self.random:NextNumber(0.68, 1)
+		local offsetDirection = CFrame.fromAxisAngle(Vector3.yAxis, angleOffset):VectorToWorldSpace(forwardFlat)
+		local targetPosition = root.Position + (offsetDirection * spawnRadius * distanceScale)
+		local origin = targetPosition + Vector3.new(0, self.config.Pumpkins.SpawnHeight, 0)
+		local result = Workspace:Raycast(origin, Vector3.new(0, -self.config.Pumpkins.SpawnHeight * 2, 0), rayParams)
+		local groundPosition = result and result.Position or Vector3.new(targetPosition.X, root.Position.Y - 3, targetPosition.Z)
+		local spawnPosition = Vector3.new(targetPosition.X, groundPosition.Y + FALLBACK_SURFACE_OFFSET, targetPosition.Z)
+		local overlapParts = Workspace:GetPartBoundsInRadius(spawnPosition, clearanceRadius, overlapParams)
+
+		local penalty = 0
+		for _, part in ipairs(overlapParts) do
+			if part:IsDescendantOf(self.world.folders.pumpkins) then
+				penalty += 100
+			elseif part.CanCollide and not part:IsDescendantOf(player.Character) then
+				penalty += 1
+			end
+		end
+
+		penalty += addAnchorPenalty(
+			spawnPosition,
+			upgradePadAnchors,
+			placementBias.UpgradePadDistance or 0,
+			placementBias.UpgradePadWeight or 0
+		)
+		penalty += addAnchorPenalty(
+			spawnPosition,
+			swallowAnchors,
+			placementBias.SwallowDistance or 0,
+			placementBias.SwallowWeight or 0
+		)
+		penalty += addAnchorPenalty(
+			spawnPosition,
+			dangerRockAnchors,
+			placementBias.DangerRockDistance or 0,
+			placementBias.DangerRockWeight or 0
+		)
+
+		if penalty <= 0 then
+			return spawnPosition
+		end
+
+		if penalty < bestPenalty then
+			bestPenalty = penalty
+			bestPosition = spawnPosition
+		end
+	end
+
+	if bestPosition then
+		return bestPosition
+	end
+
+	local fallbackTarget = root.Position + (forwardFlat * spawnRadius)
+	return Vector3.new(fallbackTarget.X, root.Position.Y - 1.3, fallbackTarget.Z)
+end
+
+return PumpkinService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="11">
+        <Properties>
+          <string name="Name">SwallowService</string>
+          <string name="Source"><![CDATA[local SwallowService = {}
+SwallowService.__index = SwallowService
+
+local function getRootPart(player)
+	local character = player.Character
+	if not character then
+		return nil
+	end
+
+	return character:FindFirstChild("HumanoidRootPart")
+end
+
+local function createPrompt(parent, actionText, objectText, maxDistance)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.ActionText = actionText
+	prompt.ObjectText = objectText
+	prompt.MaxActivationDistance = maxDistance
+	prompt.RequiresLineOfSight = false
+	prompt.HoldDuration = 0
+	prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
+	prompt.Parent = parent
+	return prompt
+end
+
+function SwallowService.new(config, world, playerState)
+	local self = setmetatable({}, SwallowService)
+	self.config = config
+	self.world = world
+	self.playerState = playerState
+	self.nextId = 0
+	self.spawnCursor = 0
+	self.swallows = {}
+	self.occupiedSpawnIndices = {}
+	self.random = Random.new()
+	return self
+end
+
+function SwallowService:start(remotes)
+	self.feedbackRemote = remotes.Feedback
+
+	remotes.HealSwallow.OnServerEvent:Connect(function(player, swallowId)
+		self:_healSwallow(player, swallowId)
+	end)
+
+	for _ = 1, self.config.Swallows.ActiveCount do
+		self:_spawnSwallow()
+	end
+end
+
+function SwallowService:_healSwallow(player, swallowId)
+	local swallow = self.swallows[swallowId]
+	local root = swallow and swallow.root
+	local playerRoot = getRootPart(player)
+	if not swallow or not root or not playerRoot then
+		return
+	end
+
+	if (playerRoot.Position - root.Position).Magnitude > self.config.Swallows.HealDistance then
+		return
+	end
+
+	local reward = self.playerState:getSeedReward(player)
+	self.playerState:addSeeds(player, reward)
+
+	if self.feedbackRemote then
+		self.feedbackRemote:FireClient(player, {
+			text = string.format("Swallow healed. +%d seed%s gained.", reward, reward == 1 and "" or "s"),
+			detail = reward > 1 and "Blessing paid out extra seeds for your next planting run." or "Plant a pumpkin anywhere to turn that seed into coins.",
+			worldText = string.format("+%d Seed%s", reward, reward == 1 and "" or "s"),
+			worldPosition = root.Position,
+			tone = "good",
+			intensity = "T2",
+		})
+	end
+
+	self:_destroySwallow(swallowId)
+	self:_maintainSwallows()
+end
+
+function SwallowService:_maintainSwallows()
+	while self:_activeCount() < self.config.Swallows.ActiveCount do
+		self:_spawnSwallow()
+	end
+end
+
+function SwallowService:_activeCount()
+	local count = 0
+	for _ in pairs(self.swallows) do
+		count += 1
+	end
+	return count
+end
+
+function SwallowService:_spawnSwallow()
+	local spawnIndex = self:_takeOpenSpawnIndex()
+	if not spawnIndex then
+		return
+	end
+
+	self.nextId += 1
+	local swallowId = self.nextId
+	local position = self.world.swallowSpawnPoints[spawnIndex]
+
+	local model = Instance.new("Model")
+	model.Name = "Swallow" .. swallowId
+	model.Parent = self.world.folders.swallows
+
+	local nest = Instance.new("Part")
+	nest.Name = "Nest"
+	nest.Shape = Enum.PartType.Cylinder
+	nest.Size = Vector3.new(2.2, 0.35, 2.2)
+	nest.CFrame = CFrame.new(position + Vector3.new(0, -1.15, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	nest.Anchored = true
+	nest.CanCollide = false
+	nest.Color = Color3.fromRGB(112, 83, 56)
+	nest.Material = Enum.Material.WoodPlanks
+	nest.Parent = model
+
+	local root = Instance.new("Part")
+	root.Name = "SwallowRoot"
+	root.Size = Vector3.new(1.7, 0.9, 2.1)
+	root.CFrame = CFrame.new(position) * CFrame.Angles(0, math.rad(self.random:NextInteger(-30, 30)), math.rad(14))
+	root.Anchored = true
+	root.CanCollide = false
+	root.Color = Color3.fromRGB(56, 58, 67)
+	root.Material = Enum.Material.SmoothPlastic
+	root.Parent = model
+
+	local wing = Instance.new("Part")
+	wing.Name = "Wing"
+	wing.Size = Vector3.new(2.3, 0.2, 0.95)
+	wing.CFrame = root.CFrame * CFrame.new(0, 0.2, 0.15) * CFrame.Angles(0, 0, math.rad(-18))
+	wing.Anchored = true
+	wing.CanCollide = false
+	wing.Color = Color3.fromRGB(220, 224, 235)
+	wing.Material = Enum.Material.SmoothPlastic
+	wing.Parent = model
+
+	root:SetAttribute(self.config.Attributes.Interaction.Kind, "Swallow")
+	root:SetAttribute(self.config.Attributes.Interaction.EntityId, swallowId)
+	createPrompt(root, "Heal", "Injured Swallow", self.config.Swallows.PromptDistance)
+
+	self.swallows[swallowId] = {
+		model = model,
+		root = root,
+		spawnIndex = spawnIndex,
+	}
+end
+
+function SwallowService:_destroySwallow(swallowId)
+	local swallow = self.swallows[swallowId]
+	if not swallow then
+		return
+	end
+
+	self.occupiedSpawnIndices[swallow.spawnIndex] = nil
+	self.swallows[swallowId] = nil
+
+	if swallow.model then
+		swallow.model:Destroy()
+	end
+end
+
+function SwallowService:_takeOpenSpawnIndex()
+	local totalSpawns = #self.world.swallowSpawnPoints
+	if totalSpawns == 0 then
+		return nil
+	end
+
+	for step = 1, totalSpawns do
+		local index = ((self.spawnCursor + step - 1) % totalSpawns) + 1
+		if not self.occupiedSpawnIndices[index] then
+			self.spawnCursor = index
+			self.occupiedSpawnIndices[index] = true
+			return index
+		end
+	end
+
+	return nil
+end
+
+return SwallowService
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="12">
+        <Properties>
+          <string name="Name">UpgradeService</string>
+          <string name="Source"><![CDATA[local UpgradeService = {}
+UpgradeService.__index = UpgradeService
+
+local PURCHASE_DETAILS = {
+	MoveSpeed = "Your next route should feel lighter immediately.",
+	AttackSpeed = "Your next pumpkin should cash out faster.",
+	SeedMultiplier = "Your next swallow heal should feed a bigger loop.",
+}
+
+function UpgradeService.new(config, world, playerState)
+	local self = setmetatable({}, UpgradeService)
+	self.config = config
+	self.world = world
+	self.playerState = playerState
+	return self
+end
+
+function UpgradeService:start(remotes)
+	self.feedbackRemote = remotes and remotes.Feedback or nil
+
+	for upgradeId, prompt in pairs(self.world.upgradePrompts) do
+		prompt.Triggered:Connect(function(player)
+			local success, reason, cost, newLevel = self.playerState:tryPurchaseUpgrade(player, upgradeId)
+			if not self.feedbackRemote then
+				return
+			end
+
+			local definition = self.config.Upgrades.Definitions[upgradeId]
+			local displayName = definition.DisplayName
+			local purchaseDetail = PURCHASE_DETAILS[upgradeId] or "Your next loop should feel better right away."
+			local promptParent = prompt.Parent
+			local promptPosition = promptParent and promptParent:IsA("BasePart") and promptParent.Position or nil
+			if success then
+				self.feedbackRemote:FireClient(player, {
+					text = string.format("Bought %s Lv.%d (-%d money)", displayName, newLevel, cost),
+					detail = purchaseDetail,
+					worldText = string.format("%s Up", displayName),
+					worldPosition = promptPosition,
+					tone = "good",
+					intensity = "T3",
+					context = "UpgradePurchase",
+					upgradeId = upgradeId,
+				})
+			elseif reason == "money" then
+				self.feedbackRemote:FireClient(player, {
+					text = string.format("Need %d money for %s", cost, displayName),
+					detail = "Break another pumpkin or two, then come back to the plaza.",
+					worldText = string.format("Need %d", cost),
+					worldPosition = promptPosition,
+					tone = "warn",
+					intensity = "T1",
+				})
+			elseif reason == "max" then
+				self.feedbackRemote:FireClient(player, {
+					text = string.format("%s is maxed", displayName),
+					detail = "Buy a different upgrade or keep the loop moving.",
+					worldText = "MAX",
+					worldPosition = promptPosition,
+					tone = "warn",
+					intensity = "T1",
+				})
+			end
+		end)
+	end
+end
+
+return UpgradeService
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="13">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="14">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="LocalScript" referent="15">
+        <Properties>
+          <string name="Name">Client</string>
+          <string name="Source"><![CDATA[print("MagicGourd arcade client started")
+
+local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local shared = ReplicatedStorage:WaitForChild("Shared")
+local ArcadeConfig = require(shared:WaitForChild("ArcadeConfig"))
+
+local healSwallowRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.HealSwallow)
+local useSeedRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.UseSeed)
+local hitPumpkinRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.HitPumpkin)
+local feedbackRemote = shared:WaitForChild(ArcadeConfig.RemoteNames.Feedback)
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MagicGourdArcadeHUD"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local rootFrame = Instance.new("Frame")
+rootFrame.Name = "HUD"
+rootFrame.AnchorPoint = Vector2.new(0, 0)
+rootFrame.Position = UDim2.fromOffset(18, 18)
+rootFrame.Size = UDim2.fromOffset(360, 280)
+rootFrame.BackgroundColor3 = Color3.fromRGB(26, 20, 15)
+rootFrame.BackgroundTransparency = 0.18
+rootFrame.BorderSizePixel = 0
+rootFrame.Parent = screenGui
+
+local rootCorner = Instance.new("UICorner")
+rootCorner.CornerRadius = UDim.new(0, 16)
+rootCorner.Parent = rootFrame
+
+local rootStroke = Instance.new("UIStroke")
+rootStroke.Color = Color3.fromRGB(230, 196, 117)
+rootStroke.Thickness = 2
+rootStroke.Parent = rootFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.BackgroundTransparency = 1
+titleLabel.Position = UDim2.fromOffset(14, 12)
+titleLabel.Size = UDim2.new(1, -28, 0, 28)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "Heungbu Arcade Loop"
+titleLabel.TextColor3 = Color3.fromRGB(252, 241, 218)
+titleLabel.TextScaled = true
+titleLabel.Parent = rootFrame
+
+local resourcesLabel = Instance.new("TextLabel")
+resourcesLabel.BackgroundTransparency = 1
+resourcesLabel.Position = UDim2.fromOffset(14, 46)
+resourcesLabel.Size = UDim2.new(1, -28, 0, 24)
+resourcesLabel.Font = Enum.Font.GothamBold
+resourcesLabel.TextColor3 = Color3.fromRGB(242, 232, 213)
+resourcesLabel.TextWrapped = true
+resourcesLabel.TextScaled = true
+resourcesLabel.Parent = rootFrame
+
+local nextLabel = Instance.new("TextLabel")
+nextLabel.BackgroundTransparency = 1
+nextLabel.Position = UDim2.fromOffset(14, 74)
+nextLabel.Size = UDim2.new(1, -28, 0, 42)
+nextLabel.Font = Enum.Font.GothamBold
+nextLabel.TextColor3 = Color3.fromRGB(212, 234, 192)
+nextLabel.TextWrapped = true
+nextLabel.TextXAlignment = Enum.TextXAlignment.Left
+nextLabel.TextYAlignment = Enum.TextYAlignment.Top
+nextLabel.TextScaled = true
+nextLabel.Parent = rootFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.BackgroundTransparency = 1
+statusLabel.Position = UDim2.fromOffset(14, 118)
+statusLabel.Size = UDim2.new(1, -28, 0, 18)
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextColor3 = Color3.fromRGB(245, 215, 152)
+statusLabel.TextScaled = true
+statusLabel.Parent = rootFrame
+
+local upgradesFrame = Instance.new("Frame")
+upgradesFrame.BackgroundTransparency = 1
+upgradesFrame.Position = UDim2.fromOffset(14, 144)
+upgradesFrame.Size = UDim2.new(1, -28, 0, 94)
+upgradesFrame.Parent = rootFrame
+
+local upgradesTitle = Instance.new("TextLabel")
+upgradesTitle.BackgroundTransparency = 1
+upgradesTitle.Position = UDim2.fromOffset(0, 0)
+upgradesTitle.Size = UDim2.new(1, 0, 0, 18)
+upgradesTitle.Font = Enum.Font.GothamBold
+upgradesTitle.Text = "Plaza Upgrades"
+upgradesTitle.TextColor3 = Color3.fromRGB(229, 197, 118)
+upgradesTitle.TextScaled = true
+upgradesTitle.Parent = upgradesFrame
+
+local footworkLabel = Instance.new("TextLabel")
+footworkLabel.BackgroundTransparency = 1
+footworkLabel.Position = UDim2.fromOffset(0, 24)
+footworkLabel.Size = UDim2.new(1, 0, 0, 20)
+footworkLabel.Font = Enum.Font.Gotham
+footworkLabel.TextColor3 = Color3.fromRGB(220, 233, 241)
+footworkLabel.TextScaled = true
+footworkLabel.Parent = upgradesFrame
+
+local handsLabel = Instance.new("TextLabel")
+handsLabel.BackgroundTransparency = 1
+handsLabel.Position = UDim2.fromOffset(0, 46)
+handsLabel.Size = UDim2.new(1, 0, 0, 20)
+handsLabel.Font = Enum.Font.Gotham
+handsLabel.TextColor3 = Color3.fromRGB(240, 222, 184)
+handsLabel.TextScaled = true
+handsLabel.Parent = upgradesFrame
+
+local blessingLabel = Instance.new("TextLabel")
+blessingLabel.BackgroundTransparency = 1
+blessingLabel.Position = UDim2.fromOffset(0, 68)
+blessingLabel.Size = UDim2.new(1, 0, 0, 20)
+blessingLabel.Font = Enum.Font.Gotham
+blessingLabel.TextColor3 = Color3.fromRGB(214, 244, 202)
+blessingLabel.TextScaled = true
+blessingLabel.Parent = upgradesFrame
+
+local tipLabel = Instance.new("TextLabel")
+tipLabel.BackgroundTransparency = 1
+tipLabel.Position = UDim2.fromOffset(14, 244)
+tipLabel.Size = UDim2.new(1, -28, 0, 24)
+tipLabel.Font = Enum.Font.Gotham
+tipLabel.Text = "Loop: heal -> plant -> break -> buy."
+tipLabel.TextColor3 = Color3.fromRGB(214, 206, 190)
+tipLabel.TextWrapped = true
+tipLabel.TextScaled = true
+tipLabel.Parent = rootFrame
+
+local feedbackLabel = Instance.new("TextLabel")
+feedbackLabel.Name = "FeedbackLabel"
+feedbackLabel.AnchorPoint = Vector2.new(0.5, 0)
+feedbackLabel.Position = UDim2.new(0.5, 0, 0, 18)
+feedbackLabel.Size = UDim2.fromOffset(360, 44)
+feedbackLabel.BackgroundColor3 = Color3.fromRGB(33, 28, 23)
+feedbackLabel.BackgroundTransparency = 0.2
+feedbackLabel.BorderSizePixel = 0
+feedbackLabel.Font = Enum.Font.GothamBold
+feedbackLabel.Text = ""
+feedbackLabel.TextColor3 = Color3.fromRGB(252, 241, 218)
+feedbackLabel.TextScaled = true
+feedbackLabel.Visible = false
+feedbackLabel.Parent = screenGui
+
+local feedbackCorner = Instance.new("UICorner")
+feedbackCorner.CornerRadius = UDim.new(0, 14)
+feedbackCorner.Parent = feedbackLabel
+
+local feedbackStroke = Instance.new("UIStroke")
+feedbackStroke.Thickness = 2
+feedbackStroke.Color = Color3.fromRGB(229, 196, 124)
+feedbackStroke.Parent = feedbackLabel
+
+local useSeedButton = Instance.new("TextButton")
+useSeedButton.Name = "UseSeedButton"
+useSeedButton.AnchorPoint = Vector2.new(0.5, 1)
+useSeedButton.Position = UDim2.new(0.5, 0, 1, -24)
+useSeedButton.Size = UDim2.fromOffset(260, 64)
+useSeedButton.BackgroundColor3 = Color3.fromRGB(97, 162, 88)
+useSeedButton.BorderSizePixel = 0
+useSeedButton.Font = Enum.Font.GothamBold
+useSeedButton.TextColor3 = Color3.fromRGB(252, 247, 239)
+useSeedButton.TextWrapped = true
+useSeedButton.TextScaled = true
+useSeedButton.Parent = screenGui
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 16)
+buttonCorner.Parent = useSeedButton
+
+local buttonStroke = Instance.new("UIStroke")
+buttonStroke.Color = Color3.fromRGB(235, 219, 177)
+buttonStroke.Thickness = 2
+buttonStroke.Parent = useSeedButton
+
+local isTouchPrimary = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+if isTouchPrimary then
+	useSeedButton.Size = UDim2.fromOffset(300, 76)
+	useSeedButton.Position = UDim2.new(0.5, 0, 1, -18)
+end
+
+local function getPlantButtonTitle(label)
+	if isTouchPrimary then
+		return label
+	end
+
+	return string.format("%s [Q]", label)
+end
+
+local playerAttributes = ArcadeConfig.Attributes.Player
+local interactionAttributes = ArcadeConfig.Attributes.Interaction
+local upgradeDefinitions = ArcadeConfig.Upgrades.Definitions
+local upgradeCosts = ArcadeConfig.Upgrades.Costs
+
+local feedbackColors = {
+	good = {
+		background = Color3.fromRGB(52, 98, 58),
+		stroke = Color3.fromRGB(170, 234, 164),
+		text = Color3.fromRGB(243, 252, 231),
+	},
+	warn = {
+		background = Color3.fromRGB(112, 73, 45),
+		stroke = Color3.fromRGB(244, 193, 121),
+		text = Color3.fromRGB(255, 240, 214),
+	},
+	info = {
+		background = Color3.fromRGB(44, 65, 92),
+		stroke = Color3.fromRGB(155, 212, 241),
+		text = Color3.fromRGB(239, 248, 255),
+	},
+}
+
+local feedbackToken = 0
+local activeWorldPopupCounts = {}
+local activeWorldPopupState = {}
+local activeWorldPopupEntries = {}
+local recentLoopReset = nil
+local recentAffordabilityUnlock = nil
+local lastAffordableUpgradeCount = 0
+local activePromptOwners = {}
+local promptOwnerGraceByKey = {}
+local promptOwnerGraceDuration = 0.24
+local trackedPumpkinPromptConnections = {}
+local trackedPumpkinFolders = {}
+local trackedRuntimeFolders = {}
+local trackedArcadeLoopFolders = {}
+local feedbackConfig = ArcadeConfig.Feedback or {}
+local defaultIntensity = feedbackConfig.DefaultIntensity or "T2"
+local popupYieldWindow = feedbackConfig.PopupYieldWindow or 0.3
+local maxWorldPopupsPerBucket = feedbackConfig.MaxWorldPopupsPerBucket or 2
+local crowdedBucketSuppressionPriority = feedbackConfig.CrowdedBucketSuppressionPriority or 2
+local bannerDurationByIntensity = feedbackConfig.BannerDurationByIntensity or {}
+local worldPopupByIntensity = feedbackConfig.WorldPopupByIntensity or {}
+local worldPopupPriorityByIntensity = feedbackConfig.WorldPopupPriorityByIntensity or {}
+
+local function getWorldPopupBucketKey(worldPosition)
+	local bucketSize = 10
+	return string.format(
+		"%d:%d:%d",
+		math.floor(worldPosition.X / bucketSize + 0.5),
+		math.floor(worldPosition.Y / bucketSize + 0.5),
+		math.floor(worldPosition.Z / bucketSize + 0.5)
+	)
+end
+
+local function getAttribute(name)
+	return player:GetAttribute(name)
+end
+
+local function getFeedbackColors(tone)
+	return feedbackColors[tone] or feedbackColors.info
+end
+
+local function getFeedbackIntensity(payload)
+	if typeof(payload) == "table" and type(payload.intensity) == "string" then
+		return payload.intensity
+	end
+
+	return defaultIntensity
+end
+
+local function getBannerDuration(payload)
+	return bannerDurationByIntensity[getFeedbackIntensity(payload)] or 2.2
+end
+
+local function getWorldPopupPriority(payload)
+	local intensity = getFeedbackIntensity(payload)
+	return worldPopupPriorityByIntensity[intensity] or worldPopupPriorityByIntensity[defaultIntensity] or 2
+end
+
+local function getWorldPopupProfile(payload, text)
+	local profile = worldPopupByIntensity[getFeedbackIntensity(payload)] or worldPopupByIntensity[defaultIntensity] or {}
+	local width = profile.size and profile.size.X or (string.len(text) > 12 and 210 or 170)
+	local height = profile.size and profile.size.Y or (string.len(text) > 12 and 54 or 46)
+
+	return {
+		duration = profile.duration or 0.9,
+		rise = profile.rise or 2.4,
+		maxDistance = profile.maxDistance or 110,
+		size = Vector2.new(width, height),
+	}
+end
+
+local function dismissWorldPopupEntry(entry, bucketKey)
+	if not entry or entry.dismissed then
+		return
+	end
+
+	entry.dismissed = true
+	if entry.fadeTween then
+		entry.fadeTween:Cancel()
+	end
+	if entry.riseTween then
+		entry.riseTween:Cancel()
+	end
+	if entry.label and entry.label.Parent then
+		entry.label.TextTransparency = 1
+		entry.label.TextStrokeTransparency = 1
+	end
+	if entry.part and entry.part.Parent then
+		entry.part:Destroy()
+	end
+
+	activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
+	if activeWorldPopupCounts[bucketKey] == 0 then
+		activeWorldPopupCounts[bucketKey] = nil
+	end
+end
+
+local function removeWorldPopupEntry(bucketKey, entry)
+	local entries = activeWorldPopupEntries[bucketKey]
+	if not entries then
+		return
+	end
+
+	for index = #entries, 1, -1 do
+		if entries[index] == entry then
+			table.remove(entries, index)
+			break
+		end
+	end
+
+	if #entries == 0 then
+		activeWorldPopupEntries[bucketKey] = nil
+	end
+end
+
+local function getAffordableUpgradeIds(money)
+	local affordable = {}
+
+	for _, upgradeId in ipairs(ArcadeConfig.Upgrades.Order) do
+		local definition = upgradeDefinitions[upgradeId]
+		local currentLevel = getAttribute(definition.AttributeName) or 0
+		local nextCost = upgradeCosts[currentLevel + 1]
+		if nextCost and money >= nextCost then
+			table.insert(affordable, upgradeId)
+		end
+	end
+
+	return affordable
+end
+
+local function getThresholdState(money)
+	local nearest = nil
+
+	for _, upgradeId in ipairs(ArcadeConfig.Upgrades.Order) do
+		local definition = upgradeDefinitions[upgradeId]
+		local currentLevel = getAttribute(definition.AttributeName) or 0
+		local nextCost = upgradeCosts[currentLevel + 1]
+		if nextCost then
+			local gap = math.max(nextCost - money, 0)
+			if not nearest or gap < nearest.gap or (gap == nearest.gap and nextCost < nearest.cost) then
+				nearest = {
+					upgradeId = upgradeId,
+					displayName = definition.DisplayName,
+					cost = nextCost,
+					gap = gap,
+				}
+			end
+		end
+	end
+
+	if not nearest then
+		return {
+			allMaxed = true,
+			gap = 0,
+		}
+	end
+
+	local pumpkinReward = ArcadeConfig.Pumpkins and ArcadeConfig.Pumpkins.Reward or 0
+	nearest.allMaxed = false
+	nearest.isAffordable = nearest.gap <= 0
+	nearest.pumpkinsNeeded = nil
+	if pumpkinReward > 0 and nearest.gap > 0 and nearest.gap % pumpkinReward == 0 then
+		nearest.pumpkinsNeeded = nearest.gap / pumpkinReward
+	end
+
+	return nearest
+end
+
+local function findPumpkinFolder()
+	local mapFolder = Workspace:FindFirstChild("Map")
+	local runtimeFolder = mapFolder and mapFolder:FindFirstChild("Runtime")
+	if not runtimeFolder then
+		return nil
+	end
+
+	local arcadeLoopFolder = runtimeFolder:FindFirstChild("ArcadeLoop")
+	if arcadeLoopFolder then
+		local pumpkinsFolder = arcadeLoopFolder:FindFirstChild("Pumpkins")
+		if pumpkinsFolder then
+			return pumpkinsFolder
+		end
+	end
+
+	return runtimeFolder:FindFirstChild("Pumpkins")
+end
+
+local function getOwnedPumpkinCount()
+	local runtimeFolder = findPumpkinFolder()
+
+	if not runtimeFolder then
+		return 0
+	end
+
+	local ownedCount = 0
+	for _, descendant in ipairs(runtimeFolder:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			local ownerUserId = descendant:GetAttribute(ArcadeConfig.Attributes.Pumpkin.Owner)
+			local pumpkinKind = descendant:GetAttribute(interactionAttributes.Kind)
+			if ownerUserId == player.UserId and pumpkinKind == "Pumpkin" then
+				ownedCount += 1
+			end
+		end
+	end
+
+	return ownedCount
+end
+
+local function formatDelta(value)
+	if math.abs(value - math.floor(value)) < 0.001 then
+		return tostring(math.floor(value))
+	end
+
+	return string.format("%.2f", value)
+end
+
+local function getUpgradeBenefitText(upgradeId, currentLevel)
+	local values = upgradeDefinitions[upgradeId].Values
+	local currentValue = values[currentLevel + 1]
+	local nextValue = values[currentLevel + 2]
+	if not nextValue then
+		return "MAX"
+	end
+
+	if upgradeId == "MoveSpeed" then
+		return string.format("%s -> %s speed", formatDelta(currentValue), formatDelta(nextValue))
+	elseif upgradeId == "AttackSpeed" then
+		return string.format("%ss -> %ss hit gap", formatDelta(currentValue), formatDelta(nextValue))
+	elseif upgradeId == "SeedMultiplier" then
+		return string.format("%s -> %s seeds/heal", formatDelta(currentValue), formatDelta(nextValue))
+	end
+
+	return tostring(nextValue)
+end
+
+local function getUpgradeRowState(upgradeId, money, thresholdState)
+	local definition = upgradeDefinitions[upgradeId]
+	local currentLevel = getAttribute(definition.AttributeName) or 0
+	local nextCost = upgradeCosts[currentLevel + 1]
+
+	if not nextCost then
+		return "Maxed", currentLevel, nil
+	end
+
+	if money >= nextCost then
+		return "ReadyNow", currentLevel, nextCost
+	end
+
+	if thresholdState and thresholdState.upgradeId == upgradeId then
+		return "LockedNear", currentLevel, nextCost
+	end
+
+	return "LockedFar", currentLevel, nextCost
+end
+
+local function formatUpgradeRow(upgradeId, money, thresholdState, readyHighlightActive)
+	local definition = upgradeDefinitions[upgradeId]
+	local rowState, currentLevel, nextCost = getUpgradeRowState(upgradeId, money, thresholdState)
+	local nextLevel = currentLevel + 1
+	local baseColor = upgradeId == "MoveSpeed" and Color3.fromRGB(220, 233, 241)
+		or upgradeId == "AttackSpeed" and Color3.fromRGB(240, 222, 184)
+		or Color3.fromRGB(214, 244, 202)
+
+	if rowState == "Maxed" then
+		return string.format("%s Lv.%d | MAX", definition.DisplayName, currentLevel), Color3.fromRGB(171, 190, 160)
+	end
+
+	local benefitText = getUpgradeBenefitText(upgradeId, currentLevel)
+	if rowState == "ReadyNow" then
+		local readyColor = readyHighlightActive and Color3.fromRGB(250, 236, 178) or baseColor
+		return string.format(
+			"%s Lv.%d -> Lv.%d | %s | Ready now (%d)",
+			definition.DisplayName,
+			currentLevel,
+			nextLevel,
+			benefitText,
+			nextCost
+		), readyColor
+	end
+
+	local missing = nextCost - money
+	if rowState == "LockedNear" then
+		return string.format(
+			"%s Lv.%d -> Lv.%d | %s | %d more",
+			definition.DisplayName,
+			currentLevel,
+			nextLevel,
+			benefitText,
+			missing
+		), baseColor
+	end
+
+	return string.format(
+		"%s Lv.%d -> Lv.%d | %s | Later (%d)",
+		definition.DisplayName,
+		currentLevel,
+		nextLevel,
+		benefitText,
+		nextCost
+	), Color3.fromRGB(baseColor.R * 255 * 0.72, baseColor.G * 255 * 0.72, baseColor.B * 255 * 0.72)
+end
+
+local refreshHud
+
+local function getPromptOwnerKey(prompt)
+	if typeof(prompt) ~= "Instance" then
+		return nil
+	end
+
+	return prompt:GetDebugId()
+end
+
+local function syncPumpkinPrompt(prompt)
+	if typeof(prompt) ~= "Instance" or not prompt:IsA("ProximityPrompt") then
+		return
+	end
+
+	local parent = prompt.Parent
+	if not parent or not parent:IsA("BasePart") then
+		return
+	end
+
+	if parent:GetAttribute(interactionAttributes.Kind) ~= "Pumpkin" then
+		return
+	end
+
+	local ownerUserId = parent:GetAttribute(ArcadeConfig.Attributes.Pumpkin.Owner)
+	local isOwnedByLocalPlayer = ownerUserId == player.UserId
+	prompt.Enabled = isOwnedByLocalPlayer
+	prompt.ObjectText = isOwnedByLocalPlayer and "Your Pumpkin" or "Pumpkin"
+end
+
+local function trackPumpkinPrompt(prompt)
+	if typeof(prompt) ~= "Instance" or not prompt:IsA("ProximityPrompt") then
+		return
+	end
+
+	local parent = prompt.Parent
+	if not parent or not parent:IsA("BasePart") then
+		return
+	end
+
+	if parent:GetAttribute(interactionAttributes.Kind) ~= "Pumpkin" then
+		return
+	end
+
+	if trackedPumpkinPromptConnections[prompt] then
+		syncPumpkinPrompt(prompt)
+		return
+	end
+
+	trackedPumpkinPromptConnections[prompt] = {
+		parent:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(function()
+			syncPumpkinPrompt(prompt)
+			refreshHud()
+		end),
+		prompt.Destroying:Connect(function()
+			local connections = trackedPumpkinPromptConnections[prompt]
+			if not connections then
+				return
+			end
+			for _, connection in ipairs(connections) do
+				connection:Disconnect()
+			end
+			trackedPumpkinPromptConnections[prompt] = nil
+		end),
+	}
+
+	syncPumpkinPrompt(prompt)
+end
+
+local function getPromptOwnerState(prompt)
+	if typeof(prompt) ~= "Instance" or not prompt:IsA("ProximityPrompt") then
+		return nil
+	end
+
+	local parent = prompt.Parent
+	if not parent then
+		return nil
+	end
+
+	local kind = parent:GetAttribute(interactionAttributes.Kind)
+	local upgradeId = parent:GetAttribute(interactionAttributes.UpgradeId)
+	if kind == "Pumpkin" then
+		return {
+			kind = "Pumpkin",
+			priority = 4,
+			label = "Break",
+		}
+	end
+
+	if kind == "Swallow" then
+		return {
+			kind = "Swallow",
+			priority = 2,
+			label = "Heal",
+		}
+	end
+
+	if upgradeId or prompt.ActionText == "Buy" then
+		return {
+			kind = "Upgrade",
+			priority = 3,
+			label = "Buy",
+		}
+	end
+
+	return nil
+end
+
+local function setPromptOwnerActive(prompt, isActive)
+	local key = getPromptOwnerKey(prompt)
+	if not key then
+		return
+	end
+
+	if isActive then
+		local state = getPromptOwnerState(prompt)
+		if state then
+			activePromptOwners[key] = state
+			promptOwnerGraceByKey[key] = nil
+		end
+		return
+	end
+
+	if activePromptOwners[key] then
+		promptOwnerGraceByKey[key] = {
+			expiresAt = os.clock() + promptOwnerGraceDuration,
+			owner = activePromptOwners[key],
+		}
+		activePromptOwners[key] = nil
+		task.delay(promptOwnerGraceDuration, refreshHud)
+	end
+end
+
+local function getActivePromptOwner()
+	local now = os.clock()
+	local bestOwner = nil
+
+	for key, graceState in pairs(promptOwnerGraceByKey) do
+		if now > graceState.expiresAt then
+			promptOwnerGraceByKey[key] = nil
+		elseif graceState.owner and (not bestOwner or graceState.owner.priority > bestOwner.priority) then
+			bestOwner = graceState.owner
+		end
+	end
+
+	for _, owner in pairs(activePromptOwners) do
+		if not bestOwner or owner.priority > bestOwner.priority then
+			bestOwner = owner
+		end
+	end
+
+	return bestOwner
+end
+
+local function getZoneState(rootPosition)
+	local zones = ArcadeConfig.World and ArcadeConfig.World.Zones
+	if typeof(rootPosition) ~= "Vector3" or type(zones) ~= "table" then
+		return {
+			inDanger = false,
+			nearDangerEdge = false,
+			inPlaza = false,
+		}
+	end
+
+	local function isInsideZone(zone)
+		if type(zone) ~= "table" or typeof(zone.center) ~= "Vector3" or typeof(zone.size) ~= "Vector3" then
+			return false
+		end
+
+		local halfSize = zone.size * 0.5
+		local delta = rootPosition - zone.center
+		return math.abs(delta.X) <= halfSize.X and math.abs(delta.Z) <= halfSize.Z
+	end
+
+	local dangerZone = zones.NolbuDanger
+	local plazaZone = zones.CentralPlaza
+	local inDanger = isInsideZone(dangerZone)
+	local inPlaza = isInsideZone(plazaZone)
+	local nearDangerEdge = false
+
+	if type(dangerZone) == "table" and typeof(dangerZone.center) == "Vector3" and typeof(dangerZone.size) == "Vector3" then
+		local edgePadding = 16
+		local delta = rootPosition - dangerZone.center
+		local expandedHalfSize = dangerZone.size * 0.5 + Vector3.new(edgePadding, 0, edgePadding)
+		nearDangerEdge = math.abs(delta.X) <= expandedHalfSize.X and math.abs(delta.Z) <= expandedHalfSize.Z
+	end
+
+	return {
+		inDanger = inDanger,
+		nearDangerEdge = nearDangerEdge,
+		inPlaza = inPlaza,
+	}
+end
+
+local function getPrimaryGuidance(playerState)
+	if playerState.thresholdState.allMaxed then
+		if playerState.ownedPumpkins > 0 then
+			return "Next: Break your pumpkin for money.", Color3.fromRGB(240, 224, 163)
+		end
+		if playerState.seeds > 0 then
+			return "Next: Plant a pumpkin nearby.", Color3.fromRGB(220, 235, 196)
+		end
+		return "Next: Keep the farming loop moving.", Color3.fromRGB(220, 235, 196)
+	end
+
+	if playerState.isSlowed then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
+			return "Next: Pull back toward Central Plaza.", Color3.fromRGB(245, 188, 150)
+		end
+		return "Next: Recover from the goblin slow.", Color3.fromRGB(245, 188, 150)
+	end
+
+	if playerState.ownedPumpkins > 0 then
+		if #playerState.affordableUpgradeIds <= 0 and playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+			return string.format("Next: Break %d more pumpkin%s for your next plaza buy.", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s"), Color3.fromRGB(240, 224, 163)
+		end
+		return "Next: Break your pumpkin for money.", Color3.fromRGB(240, 224, 163)
+	end
+
+	if playerState.seeds > 0 then
+		if playerState.recentRecovery and not playerState.zoneState.inDanger then
+			return "Next: Plant on the safe side.", Color3.fromRGB(220, 235, 196)
+		end
+		return "Next: Plant a pumpkin nearby.", Color3.fromRGB(220, 235, 196)
+	end
+
+	if #playerState.affordableUpgradeIds > 0 then
+		return "Next: Return to Central Plaza for an upgrade.", Color3.fromRGB(240, 224, 163)
+	end
+
+	if playerState.seeds <= 0 then
+		return "Next: Heal a swallow in Heungbu Village for seeds.", Color3.fromRGB(206, 232, 190)
+	end
+
+	return "Next: Return to Heungbu Village for seeds.", Color3.fromRGB(206, 232, 190)
+end
+
+local function getRecentLoopReset(playerState)
+	if not recentLoopReset then
+		return nil
+	end
+
+	if os.clock() > recentLoopReset.expiresAt then
+		recentLoopReset = nil
+		return nil
+	end
+
+	if recentLoopReset.kind == "upgradePurchase" and not playerState.isSlowed then
+		return recentLoopReset
+	end
+
+	return nil
+end
+
+local function getDisplayPromptOwner(playerState)
+	local activePromptOwner = playerState.activePromptOwner
+	if not activePromptOwner then
+		return nil
+	end
+
+	if activePromptOwner.kind == "Upgrade" and playerState.recentRecovery then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge or not playerState.zoneState.inPlaza then
+			return nil
+		end
+	end
+
+	return activePromptOwner
+end
+
+local function getStatusSummary(playerState)
+	if playerState.thresholdState.allMaxed then
+		return "Status: All upgrades maxed", Color3.fromRGB(196, 233, 170)
+	end
+
+	if playerState.isSlowed then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
+			return "Status: Under danger pressure", Color3.fromRGB(240, 149, 112)
+		end
+		return "Status: Goblin slow active", Color3.fromRGB(240, 149, 112)
+	end
+
+	if playerState.zoneState.inDanger then
+		return "Status: Inside slow zone", Color3.fromRGB(232, 170, 126)
+	end
+
+	if playerState.ownedPumpkins > 0 then
+		return playerState.ownedPumpkins == 1 and "Status: Pumpkin ready" or string.format("Status: %d pumpkins ready", playerState.ownedPumpkins), Color3.fromRGB(245, 215, 152)
+	end
+
+	if playerState.seeds > 0 then
+		return "Status: Seed-ready", Color3.fromRGB(196, 233, 170)
+	end
+
+	if #playerState.affordableUpgradeIds > 0 then
+		return "Status: Upgrade available", Color3.fromRGB(245, 215, 152)
+	end
+
+	if playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+		return string.format("Status: %d pumpkin%s from upgrade", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s"), Color3.fromRGB(238, 211, 149)
+	end
+
+	if playerState.thresholdState.gap and playerState.thresholdState.gap > 0 then
+		return string.format("Status: %d money from upgrade", playerState.thresholdState.gap), Color3.fromRGB(238, 211, 149)
+	end
+
+	return "Status: Safe to farm", Color3.fromRGB(245, 215, 152)
+end
+
+local function getSupportTip(playerState)
+	if playerState.thresholdState.allMaxed then
+		if playerState.ownedPumpkins > 0 then
+			return "Cash out, then keep farming — your upgrades are already topped off."
+		end
+		if playerState.seeds > 0 then
+			return "Plant and keep the loop rolling — you are now playing for flow, not upgrades."
+		end
+		return "Loop freely — the plaza is finished, so keep farming for pace and mastery."
+	end
+
+	if playerState.isSlowed then
+		if playerState.zoneState.inDanger or playerState.zoneState.nearDangerEdge then
+			if playerState.ownedPumpkins > 0 then
+				return "Back toward the plaza lane first, then cash out your waiting pumpkin."
+			end
+			if playerState.seeds > 0 then
+				return "Retreat toward the plaza lane first, then plant once your pace is back."
+			end
+			return "Use the plaza-side lane to reset, then rejoin the loop."
+		end
+		if playerState.ownedPumpkins > 0 then
+			return "Recover first, then get back to your pumpkin cash-out."
+		end
+		if playerState.seeds > 0 then
+			return "Recover first, then plant once your pace is back."
+		end
+		return "Recover first, then rejoin the loop from the safe side."
+	end
+
+	if playerState.recentRecovery and not playerState.zoneState.inDanger then
+		if playerState.ownedPumpkins > 0 then
+			return "You made it out — cash in before another danger push."
+		end
+		if playerState.seeds > 0 then
+			return "You are clear again — plant nearby before risking another push."
+		end
+		if #playerState.affordableUpgradeIds > 0 then
+			return "The lane is clear again — buy now if you want a stronger re-entry."
+		end
+		return "You are back on the safe side — rebuild the loop from the village."
+	end
+
+	if playerState.zoneState.inDanger and playerState.seeds > 0 then
+		return "Danger is for pressure, not setup — step back before planting if the lane feels messy."
+	end
+
+	if playerState.ownedPumpkins > 0 and #playerState.affordableUpgradeIds > 0 then
+		return "Cash out your pumpkin first, then decide if this is the plaza trip."
+	end
+
+	if playerState.ownedPumpkins > 0 then
+		if playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+			return string.format("This cash-out puts you %d pumpkin%s from the next plaza buy.", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s")
+		end
+		return "Break first, then replant or head back to the plaza."
+	end
+
+	if #playerState.affordableUpgradeIds > 0 and playerState.seeds <= 0 then
+		return "Buy now, then return to Heungbu Village for fresh seeds."
+	end
+
+	if #playerState.affordableUpgradeIds > 0 then
+		return "Plant first, or swing by the plaza if you want a stronger next route."
+	end
+
+	if playerState.thresholdState.pumpkinsNeeded and playerState.thresholdState.pumpkinsNeeded <= 2 then
+		return string.format("Your next plaza buy is only %d pumpkin%s away.", playerState.thresholdState.pumpkinsNeeded, playerState.thresholdState.pumpkinsNeeded == 1 and "" or "s")
+	end
+
+	if playerState.thresholdState.gap and playerState.thresholdState.gap > 0 then
+		return string.format("You are %d money short of the next plaza buy — keep the loop moving.", playerState.thresholdState.gap)
+	end
+
+	return "Loop: heal -> plant -> break -> buy."
+end
+
+local function showFeedback(payload)
+	local text = payload and payload.text
+	local tone = payload and payload.tone
+	local detail = payload and payload.detail
+
+	feedbackToken += 1
+	local activeToken = feedbackToken
+	local colors = getFeedbackColors(tone)
+
+	if detail and detail ~= "" then
+		feedbackLabel.Text = string.format("%s\n%s", text or "", detail)
+	else
+		feedbackLabel.Text = text or ""
+	end
+	feedbackLabel.BackgroundColor3 = colors.background
+	feedbackLabel.TextColor3 = colors.text
+	feedbackStroke.Color = colors.stroke
+	feedbackLabel.Visible = text ~= nil and text ~= ""
+
+	if not feedbackLabel.Visible then
+		return
+	end
+
+	task.delay(getBannerDuration(payload), function()
+		if feedbackToken ~= activeToken then
+			return
+		end
+
+		feedbackLabel.Visible = false
+		feedbackLabel.Text = ""
+	end)
+end
+
+local wasSlowed = getAttribute(playerAttributes.IsSlowed) or false
+
+local function showWorldPopup(payload)
+	local text = payload and (payload.worldText or payload.text)
+	local tone = payload and payload.tone
+	local worldPosition = payload and payload.worldPosition
+	if typeof(worldPosition) ~= "Vector3" or text == nil or text == "" then
+		return
+	end
+
+	local now = os.clock()
+	local bucketKey = getWorldPopupBucketKey(worldPosition)
+	local priority = getWorldPopupPriority(payload)
+	local bucketState = activeWorldPopupState[bucketKey]
+	if bucketState and now - bucketState.lastShownAt <= popupYieldWindow and priority < bucketState.priority then
+		return
+	end
+
+	local existingEntries = activeWorldPopupEntries[bucketKey]
+	if existingEntries and now - (bucketState and bucketState.lastShownAt or 0) <= popupYieldWindow then
+		for index = #existingEntries, 1, -1 do
+			local entry = existingEntries[index]
+			if entry and priority >= entry.priority then
+				dismissWorldPopupEntry(entry, bucketKey)
+				removeWorldPopupEntry(bucketKey, entry)
+			end
+		end
+	end
+
+	existingEntries = activeWorldPopupEntries[bucketKey]
+	local survivingEntries = existingEntries and #existingEntries or 0
+	if survivingEntries >= maxWorldPopupsPerBucket and priority <= crowdedBucketSuppressionPriority then
+		return
+	end
+
+	while existingEntries and #existingEntries >= maxWorldPopupsPerBucket do
+		local weakestEntry = existingEntries[1]
+		for index = 2, #existingEntries do
+			local candidate = existingEntries[index]
+			if candidate and weakestEntry and candidate.priority < weakestEntry.priority then
+				weakestIndex = index
+				weakestEntry = candidate
+			end
+		end
+
+		if not weakestEntry or priority < weakestEntry.priority then
+			return
+		end
+
+		dismissWorldPopupEntry(weakestEntry, bucketKey)
+		removeWorldPopupEntry(bucketKey, weakestEntry)
+		existingEntries = activeWorldPopupEntries[bucketKey]
+	end
+
+	local colors = getFeedbackColors(tone)
+	local profile = getWorldPopupProfile(payload, text)
+	local activeCount = activeWorldPopupCounts[bucketKey] or 0
+	activeWorldPopupCounts[bucketKey] = activeCount + 1
+	activeWorldPopupState[bucketKey] = {
+		priority = priority,
+		lastShownAt = now,
+	}
+
+	local lateralOffset = ((activeCount % 3) - 1) * 1.2
+	local verticalOffset = 3.6 + math.min(activeCount, 3) * 1.15
+	local popupPart = Instance.new("Part")
+	popupPart.Name = "ArcadeFeedbackAnchor"
+	popupPart.Anchored = true
+	popupPart.CanCollide = false
+	popupPart.CanTouch = false
+	popupPart.CanQuery = false
+	popupPart.Transparency = 1
+	popupPart.Size = Vector3.new(0.2, 0.2, 0.2)
+	popupPart.CFrame = CFrame.new(worldPosition + Vector3.new(lateralOffset, verticalOffset, 0))
+	popupPart.Parent = Workspace
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "ArcadeFeedbackBillboard"
+	billboard.Size = UDim2.fromOffset(profile.size.X, profile.size.Y)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 0, 0)
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = profile.maxDistance
+	billboard.Parent = popupPart
+
+	local label = Instance.new("TextLabel")
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextWrapped = true
+	label.TextStrokeTransparency = 0.4
+	label.TextStrokeColor3 = Color3.new(0, 0, 0)
+	label.TextColor3 = colors.text
+	label.Text = text
+	label.Parent = billboard
+
+	local riseTween = TweenService:Create(
+		popupPart,
+		TweenInfo.new(profile.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ CFrame = popupPart.CFrame + Vector3.new(0, profile.rise, 0) }
+	)
+	local fadeTween = TweenService:Create(
+		label,
+		TweenInfo.new(profile.duration, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+		{ TextTransparency = 1, TextStrokeTransparency = 1 }
+	)
+	local entry = {
+		priority = priority,
+		createdAt = now,
+		part = popupPart,
+		label = label,
+		riseTween = riseTween,
+		fadeTween = fadeTween,
+		dismissed = false,
+	}
+	activeWorldPopupEntries[bucketKey] = activeWorldPopupEntries[bucketKey] or {}
+	table.insert(activeWorldPopupEntries[bucketKey], entry)
+
+	riseTween:Play()
+	fadeTween:Play()
+	fadeTween.Completed:Connect(function()
+		local didFinishNaturally = not entry.dismissed
+		removeWorldPopupEntry(bucketKey, entry)
+		if didFinishNaturally then
+			activeWorldPopupCounts[bucketKey] = math.max((activeWorldPopupCounts[bucketKey] or 1) - 1, 0)
+			if activeWorldPopupCounts[bucketKey] == 0 then
+				activeWorldPopupCounts[bucketKey] = nil
+			end
+			if popupPart.Parent then
+				popupPart:Destroy()
+			end
+		end
+		if activeWorldPopupState[bucketKey] and activeWorldPopupState[bucketKey].lastShownAt == now then
+			activeWorldPopupState[bucketKey] = nil
+		end
+	end)
+end
+
+function refreshHud()
+	local seeds = getAttribute(playerAttributes.Seeds) or 0
+	local money = getAttribute(playerAttributes.Money) or 0
+	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
+	local affordableUpgradeIds = getAffordableUpgradeIds(money)
+	local thresholdState = getThresholdState(money)
+	local now = os.clock()
+	if #affordableUpgradeIds > 0 and lastAffordableUpgradeCount <= 0 then
+		recentAffordabilityUnlock = {
+			expiresAt = now + 2.6,
+		}
+	elseif recentAffordabilityUnlock and now >= recentAffordabilityUnlock.expiresAt then
+		recentAffordabilityUnlock = nil
+	end
+	lastAffordableUpgradeCount = #affordableUpgradeIds
+
+	local ownedPumpkins = getOwnedPumpkinCount()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local zoneState = getZoneState(root and root.Position or nil)
+	local activePromptOwner = getActivePromptOwner()
+	local playerState = {
+		seeds = seeds,
+		money = money,
+		isSlowed = isSlowed,
+		affordableUpgradeIds = affordableUpgradeIds,
+		ownedPumpkins = ownedPumpkins,
+		zoneState = zoneState,
+		activePromptOwner = activePromptOwner,
+		thresholdState = thresholdState,
+		recentRecovery = recentLoopReset ~= nil and recentLoopReset.kind == "slowRecovery" and now <= recentLoopReset.expiresAt,
+	}
+	local displayPromptOwner = getDisplayPromptOwner(playerState)
+	local recentReset = getRecentLoopReset(playerState)
+
+	resourcesLabel.Text = string.format("Seeds %d   |   Money %d", seeds, money)
+
+	local nextText, nextColor
+	if recentReset and recentReset.kind == "upgradePurchase" then
+		if seeds > 0 then
+			nextText = "Next: Plant a pumpkin and feel the upgrade on this run."
+			nextColor = Color3.fromRGB(220, 235, 196)
+		else
+			nextText = "Next: Return to Heungbu Village for fresh seeds."
+			nextColor = Color3.fromRGB(206, 232, 190)
+		end
+	else
+		nextText, nextColor = getPrimaryGuidance(playerState)
+	end
+	nextLabel.Text = nextText
+	nextLabel.TextColor3 = nextColor
+
+	local statusText, statusColor
+	if recentReset and recentReset.kind == "upgradePurchase" then
+		statusText = "Status: Upgrade applied"
+		statusColor = Color3.fromRGB(245, 215, 152)
+	else
+		statusText, statusColor = getStatusSummary(playerState)
+	end
+	statusLabel.Text = statusText
+	statusLabel.TextColor3 = statusColor
+
+	local readyHighlightActive = recentAffordabilityUnlock ~= nil and now < recentAffordabilityUnlock.expiresAt
+
+	local footworkText, footworkColor = formatUpgradeRow("MoveSpeed", money, thresholdState, readyHighlightActive)
+	footworkLabel.Text = footworkText
+	footworkLabel.TextColor3 = footworkColor
+
+	local handsText, handsColor = formatUpgradeRow("AttackSpeed", money, thresholdState, readyHighlightActive)
+	handsLabel.Text = handsText
+	handsLabel.TextColor3 = handsColor
+
+	local blessingText, blessingColor = formatUpgradeRow("SeedMultiplier", money, thresholdState, readyHighlightActive)
+	blessingLabel.Text = blessingText
+	blessingLabel.TextColor3 = blessingColor
+
+	if recentReset and recentReset.kind == "upgradePurchase" then
+		if recentReset.upgradeId == "MoveSpeed" then
+			tipLabel.Text = seeds > 0 and "Plant now, then take the village route again and feel the lighter pace." or "Take the village route again and feel the lighter pace."
+		elseif recentReset.upgradeId == "AttackSpeed" then
+			tipLabel.Text = seeds > 0 and "Plant now and cash out the next pumpkin faster." or "Heal once more, then cash out the next pumpkin faster."
+		elseif recentReset.upgradeId == "SeedMultiplier" then
+			tipLabel.Text = seeds > 0 and "Plant if you want, or heal again to turn one swallow into a bigger setup." or "Go heal again to turn one swallow into a bigger setup."
+		else
+			tipLabel.Text = getSupportTip(playerState)
+		end
+	else
+		tipLabel.Text = getSupportTip(playerState)
+	end
+
+	useSeedButton.Active = seeds > 0
+	useSeedButton.AutoButtonColor = seeds > 0
+
+	if seeds > 0 then
+		local buttonTitle = getPlantButtonTitle("Plant Pumpkin")
+		local secondLine = string.format("Spend 1 seed and grow your own pumpkin (%d ready)", seeds)
+		local backgroundColor = Color3.fromRGB(97, 162, 88)
+		local strokeColor = Color3.fromRGB(235, 219, 177)
+		local textColor = Color3.fromRGB(252, 247, 239)
+
+		if isSlowed then
+			buttonTitle = getPlantButtonTitle("Plant After Recovery")
+			secondLine = string.format("You can plant now, but recovering first keeps the loop cleaner (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(128, 104, 78)
+			strokeColor = Color3.fromRGB(245, 188, 150)
+		elseif displayPromptOwner and displayPromptOwner.kind == "Pumpkin" then
+			buttonTitle = getPlantButtonTitle("Plant After This Break")
+			secondLine = string.format("Your pumpkin prompt owns this moment — cash out first, or step off to plant again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(132, 110, 72)
+			strokeColor = Color3.fromRGB(240, 224, 163)
+		elseif ownedPumpkins > 0 then
+			buttonTitle = getPlantButtonTitle("Plant Another Pumpkin")
+			secondLine = string.format("Break yours first for the clean cash-out, or spend another seed now (%d ready)", seeds)
+			backgroundColor = Color3.fromRGB(132, 110, 72)
+			strokeColor = Color3.fromRGB(240, 224, 163)
+		elseif displayPromptOwner and displayPromptOwner.kind == "Upgrade" then
+			buttonTitle = getPlantButtonTitle("Plant After This Buy")
+			secondLine = string.format("A plaza pad owns this moment — step off it to make planting primary again (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(118, 96, 74)
+			strokeColor = Color3.fromRGB(236, 190, 126)
+		elseif displayPromptOwner and displayPromptOwner.kind == "Swallow" then
+			buttonTitle = getPlantButtonTitle("Plant After This Heal")
+			secondLine = string.format("The village heal prompt is the local commitment here; planting stays ready after that (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+			backgroundColor = Color3.fromRGB(101, 122, 88)
+			strokeColor = Color3.fromRGB(206, 232, 190)
+		elseif #affordableUpgradeIds > 0 then
+			secondLine = string.format("Plant first to keep momentum, or swing by the plaza instead (%d seed%s ready)", seeds, seeds == 1 and "" or "s")
+		end
+
+		useSeedButton.BackgroundColor3 = backgroundColor
+		buttonStroke.Color = strokeColor
+		useSeedButton.TextColor3 = textColor
+		useSeedButton.Text = string.format("%s\n%s", buttonTitle, secondLine)
+	else
+		useSeedButton.BackgroundColor3 = Color3.fromRGB(88, 82, 78)
+		buttonStroke.Color = Color3.fromRGB(235, 219, 177)
+		useSeedButton.TextColor3 = Color3.fromRGB(252, 247, 239)
+		useSeedButton.Text = "Need Seeds\nHeal a swallow first"
+	end
+end
+
+local function useSeed()
+	local seeds = getAttribute(playerAttributes.Seeds) or 0
+	if seeds <= 0 then
+		return
+	end
+
+	useSeedRemote:FireServer()
+end
+
+useSeedButton.MouseButton1Click:Connect(useSeed)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.Q then
+		useSeed()
+	end
+end)
+
+ProximityPromptService.PromptShown:Connect(function(prompt)
+	setPromptOwnerActive(prompt, true)
+	refreshHud()
+end)
+
+ProximityPromptService.PromptHidden:Connect(function(prompt)
+	setPromptOwnerActive(prompt, false)
+	refreshHud()
+end)
+
+ProximityPromptService.PromptTriggered:Connect(function(prompt, promptedPlayer)
+	if promptedPlayer ~= player then
+		return
+	end
+
+	setPromptOwnerActive(prompt, false)
+
+	local promptParent = prompt.Parent
+	if not promptParent then
+		return
+	end
+
+	local kind = promptParent:GetAttribute(interactionAttributes.Kind)
+	local entityId = promptParent:GetAttribute(interactionAttributes.EntityId)
+	if not entityId then
+		return
+	end
+
+	if kind == "Swallow" then
+		healSwallowRemote:FireServer(entityId)
+	elseif kind == "Pumpkin" then
+		hitPumpkinRemote:FireServer(entityId)
+	end
+end)
+
+for _, attributeName in ipairs({
+	playerAttributes.Seeds,
+	playerAttributes.Money,
+	playerAttributes.MoveSpeedLevel,
+	playerAttributes.AttackSpeedLevel,
+	playerAttributes.SeedMultiplierLevel,
+	playerAttributes.IsSlowed,
+}) do
+	player:GetAttributeChangedSignal(attributeName):Connect(refreshHud)
+end
+
+local function connectPumpkinFolder(folder)
+	if not folder or trackedPumpkinFolders[folder] then
+		return
+	end
+
+	trackedPumpkinFolders[folder] = true
+	folder.Destroying:Connect(function()
+		trackedPumpkinFolders[folder] = nil
+	end)
+
+	folder.ChildAdded:Connect(refreshHud)
+	folder.ChildRemoved:Connect(refreshHud)
+
+	for _, descendant in ipairs(folder:GetDescendants()) do
+		if descendant:IsA("BasePart") then
+			descendant:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(refreshHud)
+		elseif descendant:IsA("ProximityPrompt") then
+			trackPumpkinPrompt(descendant)
+		end
+	end
+
+	folder.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("BasePart") then
+			descendant:GetAttributeChangedSignal(ArcadeConfig.Attributes.Pumpkin.Owner):Connect(refreshHud)
+			refreshHud()
+		elseif descendant:IsA("ProximityPrompt") then
+			trackPumpkinPrompt(descendant)
+			refreshHud()
+		end
+	end)
+
+	folder.DescendantRemoving:Connect(function(descendant)
+		if descendant:IsA("BasePart") or descendant:IsA("ProximityPrompt") then
+			refreshHud()
+		end
+	end)
+end
+
+local function connectRuntimeFolder(runtimeFolder)
+	if not runtimeFolder or trackedRuntimeFolders[runtimeFolder] then
+		return
+	end
+
+	trackedRuntimeFolders[runtimeFolder] = true
+	runtimeFolder.Destroying:Connect(function()
+		trackedRuntimeFolders[runtimeFolder] = nil
+	end)
+
+	connectPumpkinFolder(findPumpkinFolder())
+
+	local function onRuntimeChildAdded(child)
+		if child.Name == "Pumpkins" then
+			connectPumpkinFolder(child)
+			refreshHud()
+			return
+		end
+
+		if child.Name == "ArcadeLoop" then
+			connectPumpkinFolder(child:FindFirstChild("Pumpkins"))
+			if not trackedArcadeLoopFolders[child] then
+				trackedArcadeLoopFolders[child] = true
+				child.Destroying:Connect(function()
+					trackedArcadeLoopFolders[child] = nil
+				end)
+				child.ChildAdded:Connect(function(grandChild)
+					if grandChild.Name == "Pumpkins" then
+						connectPumpkinFolder(grandChild)
+						refreshHud()
+					end
+				end)
+			end
+			refreshHud()
+		end
+	end
+
+	runtimeFolder.ChildAdded:Connect(onRuntimeChildAdded)
+
+	local arcadeLoopFolder = runtimeFolder:FindFirstChild("ArcadeLoop")
+	if arcadeLoopFolder then
+		connectPumpkinFolder(arcadeLoopFolder:FindFirstChild("Pumpkins"))
+		if not trackedArcadeLoopFolders[arcadeLoopFolder] then
+			trackedArcadeLoopFolders[arcadeLoopFolder] = true
+			arcadeLoopFolder.Destroying:Connect(function()
+				trackedArcadeLoopFolders[arcadeLoopFolder] = nil
+			end)
+			arcadeLoopFolder.ChildAdded:Connect(function(child)
+				if child.Name == "Pumpkins" then
+					connectPumpkinFolder(child)
+					refreshHud()
+				end
+			end)
+		end
+	end
+end
+
+local mapFolder = Workspace:FindFirstChild("Map")
+if mapFolder then
+	connectRuntimeFolder(mapFolder:FindFirstChild("Runtime"))
+
+	mapFolder.ChildAdded:Connect(function(child)
+		if child.Name ~= "Runtime" then
+			return
+		end
+
+		connectRuntimeFolder(child)
+		refreshHud()
+	end)
+end
+
+player:GetAttributeChangedSignal(playerAttributes.IsSlowed):Connect(function()
+	local isSlowed = getAttribute(playerAttributes.IsSlowed) or false
+	if wasSlowed and not isSlowed then
+		recentLoopReset = {
+			kind = "slowRecovery",
+			expiresAt = os.clock() + 1.8,
+		}
+		showFeedback({
+			text = "Slow faded.",
+			detail = "You are back to full pace.",
+			tone = "good",
+			intensity = "T1",
+		})
+		task.delay(1.8, function()
+			if recentLoopReset and recentLoopReset.kind == "slowRecovery" and os.clock() >= recentLoopReset.expiresAt then
+				recentLoopReset = nil
+				refreshHud()
+			end
+		end)
+	end
+	wasSlowed = isSlowed
+end)
+
+feedbackRemote.OnClientEvent:Connect(function(payload)
+	if typeof(payload) ~= "table" then
+		return
+	end
+
+	if payload.context == "UpgradePurchase" then
+		recentLoopReset = {
+			kind = "upgradePurchase",
+			upgradeId = payload.upgradeId,
+			expiresAt = os.clock() + 2.8,
+		}
+		task.delay(2.8, function()
+			if recentLoopReset and recentLoopReset.kind == "upgradePurchase" and recentLoopReset.upgradeId == payload.upgradeId and os.clock() >= recentLoopReset.expiresAt then
+				recentLoopReset = nil
+				refreshHud()
+			end
+		end)
+	end
+
+	showFeedback(payload)
+	showWorldPopup(payload)
+	refreshHud()
+end)
+
+local lastHudPosition
+RunService.RenderStepped:Connect(function()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		if lastHudPosition ~= nil then
+			lastHudPosition = nil
+			refreshHud()
+		end
+		return
+	end
+
+	if not lastHudPosition or (root.Position - lastHudPosition).Magnitude >= 4 then
+		lastHudPosition = root.Position
+		refreshHud()
+	end
+end)
+
+refreshHud()
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="Workspace" referent="16">
+    <Properties>
+      <string name="Name">Workspace</string>
+      <bool name="NeedsPivotMigration">false</bool>
+    </Properties>
+    <Item class="Folder" referent="17">
+      <Properties>
+        <string name="Name">Map</string>
+      </Properties>
+      <Item class="Model" referent="18">
+        <Properties>
+          <string name="Name">JoseonBase</string>
+          <bool name="NeedsPivotMigration">false</bool>
+        </Properties>
+        <Item class="Folder" referent="19">
+          <Properties>
+            <string name="Name">Fields</string>
+          </Properties>
+          <Item class="Part" referent="20">
+            <Properties>
+              <string name="Name">HeungbuField</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">5717290</Color3uint8>
+              <token name="Material">1344</token>
+              <Vector3 name="Position">
+                <X>-92</X>
+                <Y>1.1</Y>
+                <Z>34</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>52</X>
+                <Y>1</Y>
+                <Z>38</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="21">
+            <Properties>
+              <string name="Name">NolbuField</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6505776</Color3uint8>
+              <token name="Material">1344</token>
+              <Vector3 name="Position">
+                <X>102</X>
+                <Y>1.16</Y>
+                <Z>26</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>46</X>
+                <Y>1</Y>
+                <Z>34</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+        </Item>
+        <Item class="Folder" referent="22">
+          <Properties>
+            <string name="Name">Ground</string>
+          </Properties>
+          <Item class="Part" referent="23">
+            <Properties>
+              <string name="Name">ValleyFloor</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">7297598</Color3uint8>
+              <token name="Material">1360</token>
+              <Vector3 name="Position">
+                <X>0</X>
+                <Y>0.6</Y>
+                <Z>0</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>350</X>
+                <Y>2</Y>
+                <Z>350</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+        </Item>
+        <Item class="Folder" referent="24">
+          <Properties>
+            <string name="Name">Paths</string>
+          </Properties>
+          <Item class="Part" referent="25">
+            <Properties>
+              <string name="Name">MainPath</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">8744528</Color3uint8>
+              <token name="Material">1360</token>
+              <Vector3 name="Position">
+                <X>0</X>
+                <Y>1.05</Y>
+                <Z>18</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>28</X>
+                <Y>0.4</Y>
+                <Z>120</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="26">
+            <Properties>
+              <string name="Name">CrossPath</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">8218442</Color3uint8>
+              <token name="Material">1360</token>
+              <Vector3 name="Position">
+                <X>0</X>
+                <Y>1.05</Y>
+                <Z>42</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>120</X>
+                <Y>0.4</Y>
+                <Z>20</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+        </Item>
+        <Item class="Folder" referent="27">
+          <Properties>
+            <string name="Name">Ridges</string>
+          </Properties>
+          <Item class="Part" referent="28">
+            <Properties>
+              <string name="Name">NorthRidge</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6906203</Color3uint8>
+              <token name="Material">896</token>
+              <Vector3 name="Position">
+                <X>0</X>
+                <Y>8</Y>
+                <Z>-148</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>360</X>
+                <Y>18</Y>
+                <Z>28</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="29">
+            <Properties>
+              <string name="Name">SouthRidge</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6511445</Color3uint8>
+              <token name="Material">896</token>
+              <Vector3 name="Position">
+                <X>0</X>
+                <Y>7</Y>
+                <Z>152</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>360</X>
+                <Y>16</Y>
+                <Z>24</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+        </Item>
+        <Item class="Folder" referent="30">
+          <Properties>
+            <string name="Name">SpawnArea</string>
+          </Properties>
+          <Item class="SpawnLocation" referent="31">
+            <Properties>
+              <string name="Name">VillageSpawn</string>
+              <bool name="Anchored">true</bool>
+              <bool name="CanCollide">false</bool>
+              <Color3uint8 name="Color3uint8">16777215</Color3uint8>
+              <token name="Material">800</token>
+              <bool name="Neutral">true</bool>
+              <Vector3 name="Position">
+                <X>0</X>
+                <Y>1.7</Y>
+                <Z>58</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>16</X>
+                <Y>1</Y>
+                <Z>16</Z>
+              </Vector3>
+              <float name="Transparency">1</float>
+            </Properties>
+          </Item>
+        </Item>
+        <Item class="Folder" referent="32">
+          <Properties>
+            <string name="Name">VillageDecor</string>
+          </Properties>
+          <Item class="Part" referent="33">
+            <Properties>
+              <string name="Name">HeungbuFenceWest</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">7557683</Color3uint8>
+              <token name="Material">528</token>
+              <Vector3 name="Position">
+                <X>-108</X>
+                <Y>2.2</Y>
+                <Z>30</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>2</X>
+                <Y>3</Y>
+                <Z>30</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="34">
+            <Properties>
+              <string name="Name">HeungbuFenceNorth</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">7557683</Color3uint8>
+              <token name="Material">528</token>
+              <Vector3 name="Position">
+                <X>-90</X>
+                <Y>2.2</Y>
+                <Z>14</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>34</X>
+                <Y>3</Y>
+                <Z>2</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="35">
+            <Properties>
+              <string name="Name">HeungbuFenceSouth</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">7557683</Color3uint8>
+              <token name="Material">528</token>
+              <Vector3 name="Position">
+                <X>-96</X>
+                <Y>2.2</Y>
+                <Z>54</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>24</X>
+                <Y>3</Y>
+                <Z>2</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="36">
+            <Properties>
+              <string name="Name">NolbuFenceEast</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">8413247</Color3uint8>
+              <token name="Material">528</token>
+              <Vector3 name="Position">
+                <X>120</X>
+                <Y>2.2</Y>
+                <Z>26</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>2</X>
+                <Y>3</Y>
+                <Z>34</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="37">
+            <Properties>
+              <string name="Name">NolbuFenceNorth</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">8413247</Color3uint8>
+              <token name="Material">528</token>
+              <Vector3 name="Position">
+                <X>92</X>
+                <Y>2.2</Y>
+                <Z>8</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>32</X>
+                <Y>3</Y>
+                <Z>2</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="38">
+            <Properties>
+              <string name="Name">NolbuFenceSouth</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">8413247</Color3uint8>
+              <token name="Material">528</token>
+              <Vector3 name="Position">
+                <X>96</X>
+                <Y>2.2</Y>
+                <Z>48</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>26</X>
+                <Y>3</Y>
+                <Z>2</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="39">
+            <Properties>
+              <string name="Name">VillageTreeA</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">4556093</Color3uint8>
+              <token name="Material">1280</token>
+              <Vector3 name="Position">
+                <X>-132</X>
+                <Y>9</Y>
+                <Z>82</Z>
+              </Vector3>
+              <token name="shape">0</token>
+              <Vector3 name="size">
+                <X>10</X>
+                <Y>10</Y>
+                <Z>10</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="40">
+            <Properties>
+              <string name="Name">VillageTreeB</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">4028470</Color3uint8>
+              <token name="Material">1280</token>
+              <Vector3 name="Position">
+                <X>126</X>
+                <Y>10</Y>
+                <Z>76</Z>
+              </Vector3>
+              <token name="shape">0</token>
+              <Vector3 name="size">
+                <X>12</X>
+                <Y>12</Y>
+                <Z>12</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="41">
+            <Properties>
+              <string name="Name">VillageTreeC</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">4886338</Color3uint8>
+              <token name="Material">1280</token>
+              <Vector3 name="Position">
+                <X>-18</X>
+                <Y>8</Y>
+                <Z>108</Z>
+              </Vector3>
+              <token name="shape">0</token>
+              <Vector3 name="size">
+                <X>9</X>
+                <Y>9</Y>
+                <Z>9</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="42">
+            <Properties>
+              <string name="Name">VillageTrunkA</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6636321</Color3uint8>
+              <token name="Material">512</token>
+              <Vector3 name="Position">
+                <X>-132</X>
+                <Y>4</Y>
+                <Z>82</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>2.5</X>
+                <Y>8</Y>
+                <Z>2.5</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="43">
+            <Properties>
+              <string name="Name">VillageTrunkB</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6636321</Color3uint8>
+              <token name="Material">512</token>
+              <Vector3 name="Position">
+                <X>126</X>
+                <Y>4.5</Y>
+                <Z>76</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>2.5</X>
+                <Y>9</Y>
+                <Z>2.5</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="44">
+            <Properties>
+              <string name="Name">VillageTrunkC</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6636321</Color3uint8>
+              <token name="Material">512</token>
+              <Vector3 name="Position">
+                <X>-18</X>
+                <Y>3.5</Y>
+                <Z>108</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>2.5</X>
+                <Y>7</Y>
+                <Z>2.5</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="45">
+            <Properties>
+              <string name="Name">StoneClusterA</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">7499629</Color3uint8>
+              <token name="Material">800</token>
+              <Vector3 name="Position">
+                <X>-38</X>
+                <Y>2.3</Y>
+                <Z>62</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>7</X>
+                <Y>3</Y>
+                <Z>5</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="46">
+            <Properties>
+              <string name="Name">StoneClusterB</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">7499629</Color3uint8>
+              <token name="Material">800</token>
+              <Vector3 name="Position">
+                <X>44</X>
+                <Y>2.05</Y>
+                <Z>70</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>6</X>
+                <Y>2.5</Y>
+                <Z>4</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="47">
+            <Properties>
+              <string name="Name">LanternPostA</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6636321</Color3uint8>
+              <token name="Material">512</token>
+              <Vector3 name="Position">
+                <X>-6</X>
+                <Y>5</Y>
+                <Z>44</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>1.5</X>
+                <Y>8</Y>
+                <Z>1.5</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="48">
+            <Properties>
+              <string name="Name">LanternGlowA</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">16764784</Color3uint8>
+              <token name="Material">288</token>
+              <Vector3 name="Position">
+                <X>-6</X>
+                <Y>8.8</Y>
+                <Z>44</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>1.8</X>
+                <Y>1.8</Y>
+                <Z>1.8</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="49">
+            <Properties>
+              <string name="Name">LanternPostB</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">6636321</Color3uint8>
+              <token name="Material">512</token>
+              <Vector3 name="Position">
+                <X>18</X>
+                <Y>5</Y>
+                <Z>44</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>1.5</X>
+                <Y>8</Y>
+                <Z>1.5</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+          <Item class="Part" referent="50">
+            <Properties>
+              <string name="Name">LanternGlowB</string>
+              <bool name="Anchored">true</bool>
+              <Color3uint8 name="Color3uint8">16764784</Color3uint8>
+              <token name="Material">288</token>
+              <Vector3 name="Position">
+                <X>18</X>
+                <Y>8.8</Y>
+                <Z>44</Z>
+              </Vector3>
+              <Vector3 name="size">
+                <X>1.8</X>
+                <Y>1.8</Y>
+                <Z>1.8</Z>
+              </Vector3>
+            </Properties>
+          </Item>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+</roblox>
